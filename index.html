@@ -635,7 +635,17 @@
     try { results = JSON.parse(localStorage.getItem('nx_results') || '{}'); } catch(e) {}
     try { notifLog = JSON.parse(localStorage.getItem('nx_notifs') || '[]'); } catch(e) {}
     try { confFilter = parseInt(localStorage.getItem('nx_conf') || '0'); } catch(e) {}
-    try { credits = parseInt(localStorage.getItem('nx_credits') || '10'); } catch(e) {}
+    try { 
+      const savedCredits = localStorage.getItem('nx_credits');
+      if (savedCredits === null) {
+        // Pehli baar app khul raha hai
+        credits = 10;
+        localStorage.setItem('nx_credits', '10');
+        localStorage.setItem('nx_first_open', new Date().toDateString());
+      } else {
+        credits = parseInt(savedCredits);
+      }
+    } catch(e) {}
     try { transactions = JSON.parse(localStorage.getItem('nx_txns') || '[]'); } catch(e) {}
     try { unlockedCards = new Set(JSON.parse(localStorage.getItem('nx_unlocked') || '[]')); } catch(e) {}
     try { predictionsRunning = JSON.parse(localStorage.getItem('nx_pred_running') !== null ? localStorage.getItem('nx_pred_running') : 'true'); } catch(e) {}
@@ -712,11 +722,8 @@
     function checkDailyBonus() {
       const today = new Date().toDateString();
       const lastLogin = localStorage.getItem('nx_last_login');
-      if (lastLogin !== today) {
-        localStorage.setItem('nx_last_login', today);
-        setTimeout(() => addCredit(2, '🌅 Daily Login Bonus'), 800);
-      }
-      // Update claim button state
+      // AUTO credit band - sirf button click se milega
+      // Update claim button state only
       const btn = document.getElementById('daily-earn-btn');
       if (btn) btn.disabled = (lastLogin === today);
     }
@@ -978,7 +985,8 @@
         'subscribe','channel join','free mein','earning','ny_hack','help desk','vip tips',
         'daily free','win rate','latest updates','next level','premium bot','automation','hack bot',
         'click to join','click here','join here','join us','abhi join','channel ko join',
-        'tap to join','press to join','visit','follow us','@','whatsapp','invite'
+        'tap to join','press to join','visit','follow us','@','whatsapp','invite',
+        'ny prediction bot','prediction bot','badsha engine','server 3','server 1','server 2','v10.0','tri-server'
       ];
       const lines = text.split('\n').filter(line => {
         const l = line.toLowerCase().trim();
@@ -1098,7 +1106,7 @@
         const l = line.trim();
         if (!l) return '';
         const ll = l.toLowerCase();
-        if (ll.includes('server') || ll.includes('engine') || ll.includes('mode') || ll.includes('bot v')) {
+        if (ll.includes('server') || ll.includes('engine') || ll.includes('mode') || ll.includes('bot v') || ll.includes('ny prediction') || ll.includes('prediction bot') || ll.includes('badsha') || ll.includes('v10') || ll.includes('v10.0')) {
           return `<div class="msg-header-line">${escapeHtml(l)}</div>`;
         }
         if (ll.includes('period') || ll.includes('round')) {
