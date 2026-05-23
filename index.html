@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#020008" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Nexus Hub" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>Nexus Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --gold: #FFD700; --gold2: #FFA500; --neon: #00f5ff;
+      --red: #FF2D55; --green: #00FF88; --dark: #020008;
+      --purple: #7B2FFF; --credit: #FFD700;
+    }
+    body { background: var(--dark); min-height: 100vh; font-family: 'Rajdhani', sans-serif; color: #fff; overflow-x: hidden; }
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0;
+      background-image: linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px; pointer-events: none;
+    }
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(123,47,255,0.18) 0%, transparent 70%), radial-gradient(ellipse 40% 30% at 80% 80%, rgba(0,245,255,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 90px; }
+
+    /* HEADER */
+    .header { padding: 32px 20px 14px; text-align: center; }
+    .header-logo { font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 6px; color: var(--gold); opacity: 0.6; margin-bottom: 6px; }
+    .header-title { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 50%, #fff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: 2px; line-height: 1.1; }
+    .header-sub { font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 3px; margin-top: 4px; text-transform: uppercase; }
+    .live-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.25); border-radius: 20px; padding: 5px 14px; font-size: 11px; font-weight: 700; color: var(--green); letter-spacing: 2px; margin-top: 10px; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.7); } }
+
+    /* CREDIT BAR */
+    .credit-bar {
+      margin: 12px 16px 0;
+      background: linear-gradient(135deg, rgba(255,215,0,0.07), rgba(255,165,0,0.04));
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .credit-left { display: flex; align-items: center; gap: 10px; }
+    .credit-coin { font-size: 24px; line-height: 1; }
+    .credit-info { }
+    .credit-amount { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; color: var(--gold); line-height: 1; }
+    .credit-label { font-size: 10px; color: rgba(255,215,0,0.5); letter-spacing: 2px; margin-top: 2px; }
+    .credit-actions { display: flex; gap: 6px; }
+    .credit-btn { padding: 6px 12px; border-radius: 10px; border: none; font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: all 0.2s; }
+    .earn-btn { background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3); color: var(--gold); }
+    .earn-btn:active { background: rgba(255,215,0,0.25); transform: scale(0.95); }
+    .share-btn { background: rgba(0,245,255,0.1); border: 1px solid rgba(0,245,255,0.25); color: var(--neon); }
+    .share-btn:active { background: rgba(0,245,255,0.2); transform: scale(0.95); }
+
+    /* TOP STATS */
+    .stats-bar { display: flex; gap: 10px; padding: 12px 16px 0; }
+    .stat-box { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 12px 8px; text-align: center; }
+    .stat-val { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 700; color: var(--gold); }
+    .stat-label { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+
+    /* ADMIN CONTROLS */
+    .admin-bar {
+      margin: 12px 16px 0;
+      background: rgba(123,47,255,0.07);
+      border: 1px solid rgba(123,47,255,0.2);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .admin-label { font-size: 12px; color: rgba(255,255,255,0.4); letter-spacing: 1px; }
+    .admin-label span { display: block; font-family: 'Orbitron', sans-serif; font-size: 10px; color: rgba(123,47,255,0.8); letter-spacing: 2px; margin-bottom: 2px; }
+    .start-stop-btn {
+      padding: 8px 20px;
+      border-radius: 12px;
+      border: none;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .start-stop-btn.running {
+      background: linear-gradient(135deg, rgba(255,45,85,0.2), rgba(255,45,85,0.1));
+      border: 1px solid rgba(255,45,85,0.4);
+      color: var(--red);
+    }
+    .start-stop-btn.stopped {
+      background: linear-gradient(135deg, rgba(0,255,136,0.2), rgba(0,255,136,0.1));
+      border: 1px solid rgba(0,255,136,0.4);
+      color: var(--green);
+    }
+    .start-stop-btn:active { transform: scale(0.95); }
+
+    /* AD BANNER */
+    .ad-banner {
+      margin: 12px 16px 0;
+      background: linear-gradient(135deg, rgba(123,47,255,0.08), rgba(0,245,255,0.05));
+      border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .ad-banner:active { transform: scale(0.98); }
+    .ad-tag { font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+    .ad-content { font-size: 14px; color: rgba(255,255,255,0.65); font-weight: 500; }
+    .ad-reward { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.25); border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
+    .ad-timer { font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 6px; }
+
+    /* SECTION TITLE */
+    .section-title { padding: 18px 16px 10px; font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.25); letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent); }
+
+    /* CARDS */
+    .card-list { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
+    .pred-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; padding: 18px; position: relative; overflow: hidden; animation: slideIn 0.4s ease both; transition: border-color 0.3s, transform 0.2s; }
+    .pred-card:active { transform: scale(0.98); }
+    .pred-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0.4; }
+    .pred-card.is-new { border-color: rgba(0,245,255,0.2); }
+    .pred-card.is-new::before { background: linear-gradient(90deg, transparent, var(--neon), transparent); opacity: 0.8; animation: shimmer 2s ease infinite; }
+    .pred-card.result-win { border-color: rgba(0,255,136,0.3); }
+    .pred-card.result-win::before { background: linear-gradient(90deg, transparent, var(--green), transparent); opacity: 0.6; }
+    .pred-card.result-loss { border-color: rgba(255,45,85,0.3); }
+    .pred-card.result-loss::before { background: linear-gradient(90deg, transparent, var(--red), transparent); opacity: 0.6; }
+    @keyframes shimmer { 0%, 100% { opacity: 0.8; } 50% { opacity: 0.2; } }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .card-id { font-family: 'Orbitron', sans-serif; font-size: 10px; color: rgba(255,255,255,0.2); letter-spacing: 2px; }
+    .card-time { font-size: 11px; color: rgba(255,255,255,0.28); }
+    .card-body { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.88); line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .signal-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+    .signal-hot { background: rgba(255,45,85,0.1); border: 1px solid rgba(255,45,85,0.25); color: var(--red); }
+    .signal-safe { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.22); color: var(--green); }
+    .signal-active { background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.22); color: var(--gold); }
+
+    /* AUTO RESULT TAGS */
+    .result-tag { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 8px; }
+    .result-tag.auto-win { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+    .result-tag.auto-loss { background: rgba(255,45,85,0.1); color: var(--red); border: 1px solid rgba(255,45,85,0.3); }
+    .result-tag.pending { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.3); border: 1px dashed rgba(255,255,255,0.1); font-size: 10px; }
+
+    /* PREDICTION CARD BODY - styled message */
+    .pred-body-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .pred-brand {
+      font-family: 'Orbitron', sans-serif; font-size: 9px; font-weight: 700;
+      letter-spacing: 3px; color: var(--gold); opacity: 0.7;
+    }
+    .pred-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); opacity: 0.4; }
+    .pred-line {
+      display: flex; align-items: baseline; gap: 8px;
+      padding: 4px 0;
+    }
+    .pred-key {
+      font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1.5px;
+      text-transform: uppercase; min-width: 64px; font-weight: 600;
+    }
+    .pred-val {
+      font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.9); flex: 1;
+    }
+    .pred-val.highlight { color: var(--gold); font-family: 'Orbitron', sans-serif; font-size: 13px; }
+    .pred-val.big-val { color: var(--red); font-weight: 700; }
+    .pred-val.small-val { color: var(--green); font-weight: 700; }
+    .pred-raw { font-size: 14px; color: rgba(255,255,255,0.82); line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
+
+    /* STATES */
+    .center-state { text-align: center; padding: 60px 20px; }
+    .state-icon { font-size: 52px; opacity: 0.35; margin-bottom: 16px; }
+    .state-title { font-family: 'Orbitron', sans-serif; font-size: 12px; color: rgba(255,255,255,0.2); letter-spacing: 3px; }
+    .state-sub { font-size: 13px; color: rgba(255,255,255,0.15); margin-top: 8px; }
+    .loader { width: 44px; height: 44px; border: 2px solid rgba(255,215,0,0.1); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 18px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box { margin: 0 16px; padding: 14px 16px; background: rgba(255,45,85,0.07); border: 1px solid rgba(255,45,85,0.18); border-radius: 14px; font-size: 13px; color: rgba(255,80,100,0.85); text-align: center; }
+
+    /* STATS PAGE */
+    .stats-page { padding: 0 16px; display: none; }
+    .accuracy-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; padding: 20px; margin-bottom: 14px; }
+    .accuracy-title { font-family: 'Orbitron', sans-serif; font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 3px; margin-bottom: 14px; }
+    .accuracy-big { font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; text-align: center; line-height: 1; }
+    .accuracy-sub { text-align: center; font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 2px; margin-top: 4px; }
+    .acc-bar-wrap { background: rgba(255,255,255,0.05); border-radius: 10px; height: 10px; margin: 16px 0 8px; overflow: hidden; }
+    .acc-bar { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--green), var(--gold)); transition: width 0.8s ease; }
+    .wl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .wl-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 16px; text-align: center; }
+    .wl-num { font-family: 'Orbitron', sans-serif; font-size: 32px; font-weight: 900; }
+    .wl-label { font-size: 11px; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; opacity: 0.6; }
+    .streak-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+    .streak-label { font-size: 13px; color: rgba(255,255,255,0.5); letter-spacing: 1px; }
+    .streak-val { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 700; color: var(--gold); }
+
+    /* CREDIT PAGE */
+    .credit-history { padding: 0 16px; }
+    .credit-summary-card {
+      background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,165,0,0.04));
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 18px; padding: 20px; margin-bottom: 14px; text-align: center;
+    }
+    .credit-big { font-family: 'Orbitron', sans-serif; font-size: 56px; font-weight: 900; color: var(--gold); line-height: 1; }
+    .credit-big-label { font-size: 11px; color: rgba(255,215,0,0.5); letter-spacing: 3px; margin-top: 6px; }
+    .earn-ways { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .earn-card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; padding: 14px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .earn-info { display: flex; align-items: center; gap: 12px; }
+    .earn-icon { font-size: 22px; }
+    .earn-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); }
+    .earn-desc { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+    .earn-amount { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 700; color: var(--gold); }
+    .earn-amount.minus { color: var(--red); }
+    .do-earn-btn {
+      padding: 8px 16px; border-radius: 10px; border: none; cursor: pointer;
+      font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+      letter-spacing: 1px; transition: all 0.2s;
+      background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3); color: var(--gold);
+    }
+    .do-earn-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .do-earn-btn:not(:disabled):active { background: rgba(255,215,0,0.25); transform: scale(0.95); }
+    .txn-list { display: flex; flex-direction: column; gap: 8px; }
+    .txn-item { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; }
+    .txn-desc { font-size: 13px; color: rgba(255,255,255,0.65); }
+    .txn-time { font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 2px; }
+    .txn-amount { font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 700; }
+    .txn-amount.plus { color: var(--green); }
+    .txn-amount.minus { color: var(--red); }
+    .empty-txn { text-align: center; padding: 30px; color: rgba(255,255,255,0.2); font-size: 13px; }
+
+    /* ALERTS PAGE */
+    .alerts-page { padding: 0 16px; display: none; }
+    .alerts-page.active { display: block; }
+    .alert-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+    .alert-row { display: flex; align-items: center; justify-content: space-between; }
+    .alert-info { flex: 1; }
+    .alert-name { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.85); }
+    .alert-desc { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 3px; }
+    .toggle { position: relative; width: 46px; height: 26px; cursor: pointer; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: rgba(255,255,255,0.1); border-radius: 20px; transition: 0.3s; }
+    .toggle-slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: rgba(255,255,255,0.5); border-radius: 50%; transition: 0.3s; }
+    .toggle input:checked + .toggle-slider { background: rgba(0,255,136,0.3); border: 1px solid rgba(0,255,136,0.5); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); background: var(--green); }
+    .divider { height: 1px; background: rgba(255,255,255,0.05); margin: 14px 0; }
+    .conf-filter-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .conf-chip { padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.2s; }
+    .conf-chip.active { background: rgba(255,215,0,0.12); border-color: rgba(255,215,0,0.4); color: var(--gold); }
+    .notif-log { margin-top: 4px; }
+    .notif-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .notif-icon { font-size: 20px; line-height: 1; margin-top: 2px; }
+    .notif-text { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.4; }
+    .notif-time { font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 3px; }
+    .empty-alerts { text-align: center; padding: 30px 0; color: rgba(255,255,255,0.2); font-size: 13px; letter-spacing: 1px; }
+
+    /* BOTTOM NAV */
+    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(2,0,8,0.95); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid rgba(255,255,255,0.06); display: flex; padding: 10px 0 24px; z-index: 100; }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.25); font-family: 'Rajdhani', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; transition: color 0.2s; padding: 4px 0; }
+    .nav-btn.active { color: var(--gold); }
+    .nav-icon { font-size: 20px; line-height: 1; }
+    .nav-badge { background: var(--red); color: #fff; font-size: 8px; font-family: 'Orbitron', sans-serif; border-radius: 8px; padding: 1px 4px; margin-left: 2px; display: none; }
+
+    /* FAB */
+    .fab { position: fixed; bottom: 88px; right: 18px; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--gold2)); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 24px rgba(255,165,0,0.35); font-size: 20px; transition: transform 0.2s, box-shadow 0.2s; z-index: 50; }
+    .fab:active { transform: scale(0.93); }
+    .fab.spinning .fab-icon { animation: spin 0.5s linear; }
+    .fab-new { position: absolute; top: -3px; right: -3px; background: var(--red); color: #fff; font-family: 'Orbitron', sans-serif; font-size: 8px; font-weight: 700; border-radius: 10px; padding: 2px 5px; min-width: 16px; text-align: center; display: none; }
+    .last-updated { text-align: center; font-size: 11px; color: rgba(255,255,255,0.15); padding: 16px; letter-spacing: 1px; }
+
+    /* PAGE TABS */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+      background: rgba(20,10,40,0.95); border: 1px solid rgba(255,215,0,0.3);
+      border-radius: 14px; padding: 12px 22px;
+      font-family: 'Orbitron', sans-serif; font-size: 12px; color: var(--gold);
+      letter-spacing: 1px; z-index: 999; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.red { border-color: rgba(255,45,85,0.4); color: var(--red); }
+    .toast.green { border-color: rgba(0,255,136,0.4); color: var(--green); }
+
+    /* MODAL */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px); z-index: 200;
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+    .modal-sheet {
+      width: 100%; max-width: 480px;
+      background: #0d0818; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px 24px 0 0; padding: 24px 20px 40px;
+      transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.34,1.2,0.64,1);
+    }
+    .modal-backdrop.open .modal-sheet { transform: translateY(0); }
+    .modal-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 0 auto 20px; }
+    .modal-title { font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 700; color: var(--gold); letter-spacing: 2px; text-align: center; margin-bottom: 20px; }
+    .modal-ad-box {
+      background: linear-gradient(135deg, rgba(123,47,255,0.1), rgba(0,245,255,0.05));
+      border: 1px solid rgba(123,47,255,0.25);
+      border-radius: 16px; padding: 30px 20px;
+      text-align: center; margin-bottom: 20px;
+    }
+    .modal-ad-icon { font-size: 40px; margin-bottom: 10px; }
+    .modal-ad-text { font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+    .modal-progress { background: rgba(255,255,255,0.05); border-radius: 10px; height: 6px; overflow: hidden; margin: 16px 0 8px; }
+    .modal-progress-bar { height: 100%; background: linear-gradient(90deg, var(--purple), var(--neon)); border-radius: 10px; transition: width 0.1s linear; }
+    .modal-progress-label { text-align: center; font-size: 11px; color: rgba(255,255,255,0.3); }
+    .modal-close-btn {
+      width: 100%; padding: 14px; border-radius: 14px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.1));
+      border: 1px solid rgba(255,215,0,0.3); color: var(--gold);
+      font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700;
+      letter-spacing: 2px; transition: all 0.2s;
+    }
+    .modal-close-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .modal-close-btn:not(:disabled):active { background: rgba(255,215,0,0.25); }
+
+    /* MESSAGE BODY STYLES */
+    .pred-msg-body { display: flex; flex-direction: column; gap: 6px; }
+    .msg-header-line { font-size: 11px; color: rgba(255,215,0,0.45); letter-spacing: 1px; font-family: 'Orbitron', sans-serif; margin-bottom: 4px; }
+    .msg-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 0; }
+    .msg-key { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1.5px; white-space: nowrap; font-family: 'Orbitron', sans-serif; }
+    .msg-val { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); text-align: right; flex: 1; }
+    .lucky-val { color: var(--gold) !important; font-family: 'Orbitron', sans-serif; font-size: 15px !important; letter-spacing: 2px; }
+    .msg-predict { text-align: center; font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 900; letter-spacing: 6px; padding: 14px 0; border-radius: 12px; margin: 6px 0; }
+    .big-predict { color: #FF2D55; background: rgba(255,45,85,0.08); border: 1px solid rgba(255,45,85,0.2); text-shadow: 0 0 20px rgba(255,45,85,0.4); }
+    .small-predict { color: #00FF88; background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.2); text-shadow: 0 0 20px rgba(0,255,136,0.4); }
+    .msg-result { text-align: center; font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; letter-spacing: 4px; padding: 12px 0; border-radius: 12px; margin: 6px 0; }
+    .win-result { color: var(--green); background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.25); }
+    .loss-result { color: var(--red); background: rgba(255,45,85,0.08); border: 1px solid rgba(255,45,85,0.25); }
+    .msg-plain { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+  <div class="app">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-logo">NEXUS INTELLIGENCE</div>
+      <div class="header-title">PREDICTION<br/>HUB</div>
+      <div class="header-sub">Signal Analysis System</div>
+      <div style="display:flex;justify-content:center">
+        <div class="live-badge"><div class="live-dot"></div>LIVE FEED</div>
+      </div>
+    </div>
+
+    <!-- CREDIT BAR -->
+    <div class="credit-bar">
+      <div class="credit-left">
+        <div class="credit-coin">🪙</div>
+        <div class="credit-info">
+          <div class="credit-amount" id="header-credits">—</div>
+          <div class="credit-label">CREDITS</div>
+        </div>
+      </div>
+      <div class="credit-actions">
+        <button class="credit-btn earn-btn" onclick="openAdModal()">▶ Watch Ad</button>
+        <button class="credit-btn share-btn" id="share-earn-btn" onclick="doShare()">↗ Share</button>
+      </div>
+    </div>
+
+    <!-- ADMIN BAR -->
+    <div class="admin-bar" id="admin-bar">
+      <div class="admin-label">
+        <span>⚙ ADMIN</span>
+        <span id="prediction-status-text">Predictions: Running</span>
+      </div>
+      <button class="start-stop-btn running" id="start-stop-btn" onclick="togglePredictions()">⏹ STOP</button>
+    </div>
+
+    <!-- TOP STATS -->
+    <div class="stats-bar">
+      <div class="stat-box"><div class="stat-val" id="stat-total">—</div><div class="stat-label">Total</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-today">—</div><div class="stat-label">Today</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--green);font-size:13px" id="stat-status">LIVE</div><div class="stat-label">Status</div></div>
+    </div>
+
+    <!-- SIGNALS PAGE -->
+    <div id="page-signals" class="page active">
+      <div class="section-title">Latest Signals</div>
+      <div id="content"></div>
+      <div class="last-updated" id="last-updated"></div>
+    </div>
+
+    <!-- STATS PAGE -->
+    <div id="page-stats" class="page">
+      <div class="section-title" style="padding-top:22px">Performance</div>
+      <div style="padding:0 16px">
+        <div class="accuracy-card">
+          <div class="accuracy-title">OVERALL ACCURACY</div>
+          <div class="accuracy-big" id="acc-pct" style="color:var(--gold)">—%</div>
+          <div class="accuracy-sub" id="acc-sub">No results yet</div>
+          <div class="acc-bar-wrap"><div class="acc-bar" id="acc-bar" style="width:0%"></div></div>
+        </div>
+        <div class="wl-grid">
+          <div class="wl-card">
+            <div class="wl-num" style="color:var(--green)" id="win-count">0</div>
+            <div class="wl-label" style="color:var(--green)">✅ Win</div>
+          </div>
+          <div class="wl-card">
+            <div class="wl-num" style="color:var(--red)" id="loss-count">0</div>
+            <div class="wl-label" style="color:var(--red)">❌ Loss</div>
+          </div>
+        </div>
+        <div class="streak-card">
+          <div><div class="streak-label">🔥 Current Streak</div></div>
+          <div class="streak-val" id="streak-val">—</div>
+        </div>
+        <div class="streak-card">
+          <div><div class="streak-label">📅 Today's Predictions</div></div>
+          <div class="streak-val" id="today-count-s">—</div>
+        </div>
+        <div class="streak-card">
+          <div><div class="streak-label">🎯 Today's Accuracy</div></div>
+          <div class="streak-val" id="today-acc">—%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CREDITS PAGE -->
+    <div id="page-credits" class="page">
+      <div class="section-title" style="padding-top:22px">My Credits</div>
+      <div class="credit-history">
+        <div class="credit-summary-card">
+          <div class="credit-big" id="credit-big">—</div>
+          <div class="credit-big-label">AVAILABLE CREDITS</div>
+        </div>
+
+        <div class="section-title" style="padding:0 0 10px">Ways to Earn</div>
+        <div class="earn-ways">
+          <div class="earn-card">
+            <div class="earn-info">
+              <div class="earn-icon">📺</div>
+              <div>
+                <div class="earn-name">Watch Ad</div>
+                <div class="earn-desc">Ek ad dekho aur credit pao</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="earn-amount">+10</div>
+              <button class="do-earn-btn" id="ad-earn-btn" onclick="openAdModal()">Watch</button>
+            </div>
+          </div>
+          <div class="earn-card">
+            <div class="earn-info">
+              <div class="earn-icon">🌅</div>
+              <div>
+                <div class="earn-name">Daily Login</div>
+                <div class="earn-desc">Roz app kholo aur pao</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="earn-amount">+2</div>
+              <button class="do-earn-btn" id="daily-earn-btn" onclick="claimDailyBonus()">Claim</button>
+            </div>
+          </div>
+          <div class="earn-card">
+            <div class="earn-info">
+              <div class="earn-icon">🔗</div>
+              <div>
+                <div class="earn-name">Share App</div>
+                <div class="earn-desc">Dosto ke saath share karo</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="earn-amount">+50</div>
+              <button class="do-earn-btn" onclick="doShare()">Share</button>
+            </div>
+          </div>
+          <div class="earn-card" style="border-color:rgba(255,45,85,0.15)">
+            <div class="earn-info">
+              <div class="earn-icon">📡</div>
+              <div>
+                <div class="earn-name">New Prediction</div>
+                <div class="earn-desc">Har naya signal aane par auto deduct</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="earn-amount minus">-1</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title" style="padding:14px 0 10px">Transaction History</div>
+        <div class="txn-list" id="txn-list">
+          <div class="empty-txn">📭 Koi transaction abhi tak nahi</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALERTS PAGE -->
+    <div id="page-alerts" class="page">
+      <div class="section-title" style="padding-top:22px">Alert Settings</div>
+      <div style="padding:0 16px">
+        <div class="alert-card">
+          <div class="alert-row">
+            <div class="alert-info">
+              <div class="alert-name">🔔 New Signal Alert</div>
+              <div class="alert-desc">Vibration + sound jab naya signal aaye</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="toggle-sound" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="divider"></div>
+          <div class="alert-row">
+            <div class="alert-info">
+              <div class="alert-name">🌙 Quiet Hours</div>
+              <div class="alert-desc">Raat 11pm – Subah 7am alerts band</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="toggle-quiet" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="divider"></div>
+          <div class="alert-row">
+            <div class="alert-info">
+              <div class="alert-name">📊 High Confidence Only</div>
+              <div class="alert-desc">Sirf is confidence se upar dikhao</div>
+            </div>
+          </div>
+          <div class="conf-filter-row" id="conf-chips">
+            <div class="conf-chip active" onclick="setConf(0,this)">All</div>
+            <div class="conf-chip" onclick="setConf(70,this)">70%+</div>
+            <div class="conf-chip" onclick="setConf(80,this)">80%+</div>
+            <div class="conf-chip" onclick="setConf(90,this)">90%+</div>
+          </div>
+        </div>
+        <div class="section-title">Recent Notifications</div>
+        <div class="notif-log" id="notif-log">
+          <div class="empty-alerts">📭 Koi notification abhi tak nahi</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .app -->
+
+  <!-- FAB -->
+  <button class="fab" id="fab-btn" onclick="doRefresh()">
+    <span class="fab-icon">🔄</span>
+    <span class="fab-new" id="fab-new">0</span>
+  </button>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-signals" onclick="setTab('signals')">
+      <span class="nav-icon">📡</span>Signals
+    </button>
+    <button class="nav-btn" id="nav-stats" onclick="setTab('stats')">
+      <span class="nav-icon">📊</span>Stats
+    </button>
+    <button class="nav-btn" id="nav-credits" onclick="setTab('credits')">
+      <span class="nav-icon">🪙</span>Credits
+    </button>
+    <button class="nav-btn" id="nav-alerts" onclick="setTab('alerts')">
+      <span class="nav-icon">🔔</span>Alerts
+      <span class="nav-badge" id="alert-badge"></span>
+    </button>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- AD MODAL -->
+  <div class="modal-backdrop" id="ad-modal" onclick="closeAdModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">📺 WATCH AD · EARN +10 CREDITS</div>
+      <div class="modal-ad-box">
+        <div class="modal-ad-icon">🎯</div>
+        <div class="modal-ad-text">Yahan aapka ad dikhega<br/><small style="opacity:0.5">(AdSense / AdMob code yahan lagao)</small></div>
+      </div>
+      <div class="modal-progress">
+        <div class="modal-progress-bar" id="modal-prog-bar" style="width:0%"></div>
+      </div>
+      <div class="modal-progress-label" id="modal-prog-label">Ad load ho raha hai... 0s</div>
+      <button class="modal-close-btn" id="modal-close-btn" disabled onclick="claimAdReward()">Pehle poora dekho...</button>
+    </div>
+  </div>
+
+  <script>
+    // ==================== CONFIG ====================
+    const BOT_TOKEN = "8832791200:AAH04nOTrPDbeSAinaHtX7oersZhjMz0sr4";
+    const CHANNEL = "@tgvilenxedit";
+    const AD_DURATION = 15; // seconds for ad timer
+
+    // ==================== STATE ====================
+    let allPredictions = [];
+    let results = {};
+    let updateOffset = null;
+    let isFirstLoad = true;
+    let newCount = 0;
+    let confFilter = 0;
+    let notifLog = [];
+    let currentTab = 'signals';
+    let predictionsRunning = true;
+    let unlockedCards = new Set();
+    let credits = 10; // starting credits
+    let transactions = [];
+    let adTimer = null;
+    let adEligible = true;
+    let lastAdTime = 0;
+    const AD_COOLDOWN = 60 * 1000; // 1 min cooldown between ads
+
+    // ==================== LOAD SAVED ====================
+    try { results = JSON.parse(localStorage.getItem('nx_results') || '{}'); } catch(e) {}
+    try { notifLog = JSON.parse(localStorage.getItem('nx_notifs') || '[]'); } catch(e) {}
+    try { confFilter = parseInt(localStorage.getItem('nx_conf') || '0'); } catch(e) {}
+    try { credits = parseInt(localStorage.getItem('nx_credits') || '10'); } catch(e) {}
+    try { transactions = JSON.parse(localStorage.getItem('nx_txns') || '[]'); } catch(e) {}
+    try { unlockedCards = new Set(JSON.parse(localStorage.getItem('nx_unlocked') || '[]')); } catch(e) {}
+    try { predictionsRunning = JSON.parse(localStorage.getItem('nx_pred_running') !== null ? localStorage.getItem('nx_pred_running') : 'true'); } catch(e) {}
+    try { lastAdTime = parseInt(localStorage.getItem('nx_last_ad') || '0'); } catch(e) {}
+    try {
+      const s = JSON.parse(localStorage.getItem('nx_settings') || '{}');
+      if (s.sound !== undefined) document.getElementById('toggle-sound').checked = s.sound;
+      if (s.quiet !== undefined) document.getElementById('toggle-quiet').checked = s.quiet;
+    } catch(e) {}
+
+    if (confFilter > 0) {
+      document.querySelectorAll('.conf-chip').forEach(c => {
+        c.classList.remove('active');
+        if (c.textContent === confFilter+'%+') c.classList.add('active');
+      });
+    }
+
+    // ==================== CREDITS ====================
+    function saveCredits() {
+      localStorage.setItem('nx_credits', credits);
+      localStorage.setItem('nx_txns', JSON.stringify(transactions.slice(0, 50)));
+      updateCreditUI();
+    }
+
+    function addCredit(amount, desc) {
+      credits += amount;
+      const txn = {
+        amount, desc,
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+      };
+      transactions.unshift(txn);
+      saveCredits();
+      showToast((amount > 0 ? '+' + amount : amount) + ' Credit ' + (amount > 0 ? '💰' : ''), amount > 0 ? 'green' : 'red');
+    }
+
+    function deductCreditForNewPrediction(msgId, idStr) {
+      // Only deduct once per prediction message
+      if (unlockedCards.has(msgId)) return;
+      if (credits < 1) return; // auto-stop will handle this
+      credits -= 1;
+      const txn = {
+        amount: -1, desc: '📡 Prediction SIG-' + idStr,
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+      };
+      transactions.unshift(txn);
+      unlockedCards.add(msgId);
+      localStorage.setItem('nx_unlocked', JSON.stringify([...unlockedCards]));
+      saveCredits();
+      checkCreditAutoStop();
+    }
+
+    function updateCreditUI() {
+      document.getElementById('header-credits').textContent = credits;
+      document.getElementById('credit-big').textContent = credits;
+      renderTxnList();
+    }
+
+    function renderTxnList() {
+      const el = document.getElementById('txn-list');
+      if (!transactions.length) { el.innerHTML = '<div class="empty-txn">📭 Koi transaction abhi tak nahi</div>'; return; }
+      el.innerHTML = transactions.slice(0, 30).map(t => `
+        <div class="txn-item">
+          <div>
+            <div class="txn-desc">${escapeHtml(t.desc)}</div>
+            <div class="txn-time">${t.date} · ${t.time}</div>
+          </div>
+          <div class="txn-amount ${t.amount > 0 ? 'plus' : 'minus'}">${t.amount > 0 ? '+' : ''}${t.amount}</div>
+        </div>`).join('');
+    }
+
+    // ==================== DAILY BONUS ====================
+    function checkDailyBonus() {
+      const today = new Date().toDateString();
+      const lastLogin = localStorage.getItem('nx_last_login');
+      if (lastLogin !== today) {
+        localStorage.setItem('nx_last_login', today);
+        setTimeout(() => addCredit(2, '🌅 Daily Login Bonus'), 800);
+      }
+      // Update claim button state
+      const btn = document.getElementById('daily-earn-btn');
+      if (btn) btn.disabled = (lastLogin === today);
+    }
+
+    function claimDailyBonus() {
+      const today = new Date().toDateString();
+      const lastLogin = localStorage.getItem('nx_last_login');
+      if (lastLogin === today) {
+        showToast('Aaj ka bonus le chuke ho! Kal aana 😊', 'red');
+        return;
+      }
+      localStorage.setItem('nx_last_login', today);
+      addCredit(2, '🌅 Daily Login Bonus');
+      document.getElementById('daily-earn-btn').disabled = true;
+    }
+
+    // ==================== AD MODAL ====================
+    function openAdModal() {
+      const now = Date.now();
+      if (now - lastAdTime < AD_COOLDOWN) {
+        const wait = Math.ceil((AD_COOLDOWN - (now - lastAdTime)) / 1000);
+        showToast(`${wait}s baad phir try karo ⏳`, 'red');
+        return;
+      }
+      document.getElementById('ad-modal').classList.add('open');
+      document.getElementById('modal-close-btn').disabled = true;
+      document.getElementById('modal-close-btn').textContent = `Pehle poora dekho...`;
+      document.getElementById('modal-prog-bar').style.width = '0%';
+      document.getElementById('modal-prog-label').textContent = `Ad load ho raha hai... 0s`;
+
+      let elapsed = 0;
+      if (adTimer) clearInterval(adTimer);
+      adTimer = setInterval(() => {
+        elapsed++;
+        const pct = Math.min((elapsed / AD_DURATION) * 100, 100);
+        document.getElementById('modal-prog-bar').style.width = pct + '%';
+        document.getElementById('modal-prog-label').textContent = `${elapsed}s / ${AD_DURATION}s dekha`;
+        if (elapsed >= AD_DURATION) {
+          clearInterval(adTimer);
+          document.getElementById('modal-close-btn').disabled = false;
+          document.getElementById('modal-close-btn').textContent = '🎉 Claim +10 Credits!';
+        }
+      }, 1000);
+    }
+
+    function closeAdModal(event) {
+      if (event && event.target !== document.getElementById('ad-modal')) return;
+      if (adTimer) clearInterval(adTimer);
+      document.getElementById('ad-modal').classList.remove('open');
+    }
+
+    function claimAdReward() {
+      if (adTimer) clearInterval(adTimer);
+      document.getElementById('ad-modal').classList.remove('open');
+      lastAdTime = Date.now();
+      localStorage.setItem('nx_last_ad', lastAdTime);
+      addCredit(10, '📺 Ad Watch Reward');
+    }
+
+    // ==================== SHARE ====================
+    function doShare() {
+      const todayStr = new Date().toDateString();
+      const lastShare = localStorage.getItem('nx_last_share');
+      if (lastShare === todayStr) {
+        showToast('Aaj share ho chuka hai! Kal dobara karo 📅', 'red');
+        return;
+      }
+      const text = '🔥 Nexus Hub - Free Prediction App dekho! Live signals, high accuracy.\nhttps://nexushub.app';
+      if (navigator.share) {
+        navigator.share({ title: 'Nexus Hub', text: text }).then(() => {
+          localStorage.setItem('nx_last_share', todayStr);
+          addCredit(50, '🔗 App Share Reward');
+          updateShareBtnState();
+          showToast('Shared! +50 Credits 🎉 (Kal dobara milega)', 'green');
+        }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(text).then(() => {
+          localStorage.setItem('nx_last_share', todayStr);
+          addCredit(50, '🔗 App Share Reward');
+          updateShareBtnState();
+          showToast('Link copy ho gaya! +50 Credits 🎉 (1 baar/din)', 'green');
+        }).catch(() => showToast('Share nahi ho paya 😅', 'red'));
+      }
+    }
+
+    function updateShareBtnState() {
+      const btn = document.getElementById('share-earn-btn');
+      if (!btn) return;
+      const todayStr = new Date().toDateString();
+      const lastShare = localStorage.getItem('nx_last_share');
+      if (lastShare === todayStr) {
+        btn.disabled = true;
+        btn.style.opacity = '0.35';
+        btn.style.cursor = 'not-allowed';
+        btn.textContent = '✓ Shared';
+      } else {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.textContent = '↗ Share';
+      }
+    }
+
+    // ==================== TOAST ====================
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast' + (type ? ' ' + type : '');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    // ==================== ADMIN ====================
+    function togglePredictions() {
+      if (!predictionsRunning) {
+        // Trying to START — need credits
+        if (credits < 1) {
+          showToast('Credit nahi hai! Ad dekho ya share karo 💸', 'red');
+          setTab('credits');
+          return;
+        }
+      }
+      predictionsRunning = !predictionsRunning;
+      localStorage.setItem('nx_pred_running', JSON.stringify(predictionsRunning));
+      updateAdminUI();
+      renderCards(allPredictions);
+      showToast(predictionsRunning ? '▶ Predictions STARTED' : '⏹ Predictions STOPPED', predictionsRunning ? 'green' : 'red');
+    }
+
+    function checkCreditAutoStop() {
+      if (credits <= 0 && predictionsRunning) {
+        predictionsRunning = false;
+        localStorage.setItem('nx_pred_running', JSON.stringify(false));
+        updateAdminUI();
+        renderCards(allPredictions);
+        showToast('Credit khatam! Predictions band ho gayi 💸', 'red');
+      }
+    }
+
+    function updateAdminUI() {
+      const btn = document.getElementById('start-stop-btn');
+      const txt = document.getElementById('prediction-status-text');
+      if (predictionsRunning) {
+        btn.textContent = '⏹ STOP';
+        btn.className = 'start-stop-btn running';
+        txt.textContent = 'Predictions: Running ▶';
+      } else {
+        btn.textContent = '▶ START';
+        btn.className = 'start-stop-btn stopped';
+        txt.textContent = 'Predictions: Stopped ⏹';
+      }
+    }
+
+    // ==================== SETTINGS ====================
+    function saveSettings() {
+      localStorage.setItem('nx_settings', JSON.stringify({
+        sound: document.getElementById('toggle-sound').checked,
+        quiet: document.getElementById('toggle-quiet').checked
+      }));
+    }
+
+    function setConf(val, el) {
+      confFilter = val;
+      localStorage.setItem('nx_conf', val);
+      document.querySelectorAll('.conf-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      renderCards(allPredictions);
+    }
+
+    function setTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + tab).classList.add('active');
+      document.getElementById('nav-' + tab).classList.add('active');
+      if (tab === 'stats') updateStats();
+      if (tab === 'alerts') renderNotifLog();
+      if (tab === 'credits') { updateCreditUI(); updateDailyBtnState(); updateShareBtnState(); }
+    }
+
+    function updateDailyBtnState() {
+      const today = new Date().toDateString();
+      const lastLogin = localStorage.getItem('nx_last_login');
+      const btn = document.getElementById('daily-earn-btn');
+      if (btn) btn.disabled = (lastLogin === today);
+    }
+
+    // ==================== HELPERS ====================
+    function formatTime(ts) {
+      return new Date(ts * 1000).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    function formatDate(ts) {
+      const d = new Date(ts * 1000), today = new Date();
+      if (d.toDateString() === today.toDateString()) return 'Today';
+      const y = new Date(today); y.setDate(today.getDate()-1);
+      if (d.toDateString() === y.toDateString()) return 'Yesterday';
+      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    }
+
+    function autoDetectResult(text) {
+      const t = text.toLowerCase();
+      // Sirf RESULT messages se detect karo (prediction messages se nahi)
+      const isResultMsg = t.includes('result') || t.includes('l o s s') || t.includes('w i n');
+      if (!isResultMsg) return null;
+      // Loss
+      if (t.includes('❌') && (t.includes('loss') || t.includes('l o s s'))) return 'auto-loss';
+      if (t.includes('agli baar') || t.includes('gli baar')) return 'auto-loss';
+      if (t.includes('loss') && t.includes('result')) return 'auto-loss';
+      // Win
+      if (t.includes('✅') && (t.includes('win') || t.includes('w i n'))) return 'auto-win';
+      if (t.includes('win') && t.includes('result') && !t.includes('wingo')) return 'auto-win';
+      return null;
+    }
+
+    function extractConfidence(text) {
+      const m = text.match(/confidence[:\s]+(\d+)%/i) || text.match(/(\d+)%/);
+      return m ? parseInt(m[1]) : 0;
+    }
+
+    function getSignal(text) {
+      const t = text.toLowerCase();
+      if (t.includes('big') || t.includes('🔴')) return 'hot';
+      if (t.includes('small') || t.includes('🟢')) return 'safe';
+      return 'active';
+    }
+
+    function signalHTML(type) {
+      const map = { hot: ['signal-hot','🔥','HIGH SIGNAL'], safe: ['signal-safe','✅','SAFE ZONE'], active: ['signal-active','⚡','ACTIVE'] };
+      const [cls, icon, label] = map[type] || map.active;
+      return `<span class="signal-badge ${cls}">${icon} ${label}</span>`;
+    }
+
+    function isPromoMessage(text) {
+      const t = text.toLowerCase();
+      // Skip server update / promo messages that have no prediction value
+      const promoSignals = ['tri-server','server update','server 1','server 2','sod 5-algorithm','diversity engine','badsha engine (new','bot v10 tri','update!'];
+      const hasPromo = promoSignals.some(k => t.includes(k));
+      const hasNoPrediction = !t.includes('period') && !t.includes('result') && !t.includes('big') && !t.includes('small') && !t.includes('confidence');
+      return hasPromo && hasNoPrediction;
+    }
+
+    function cleanPrediction(text) {
+      const blocked = [
+        'open game link','t.me','http','join now','join karo','@auto_predict','telegram.me',
+        'subscribe','channel join','free mein','earning','ny_hack','help desk','vip tips',
+        'daily free','win rate','latest updates','next level','premium bot','automation','hack bot',
+        'click to join','click here','join here','join us','abhi join','channel ko join',
+        'tap to join','press to join','visit','follow us','@','whatsapp','invite'
+      ];
+      const lines = text.split('\n').filter(line => {
+        const l = line.toLowerCase().trim();
+        if (!l) return false;
+        return !blocked.some(kw => l.includes(kw));
+      });
+      while (lines.length && !lines[lines.length-1].trim()) lines.pop();
+      return lines.join('\n').trim();
+    }
+
+    function escapeHtml(t) {
+      return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // (unlock per-card removed — credit deducts automatically per new prediction)
+
+    // ==================== STATS ====================
+    function updateStats() {
+      const total = allPredictions.length;
+      const today = new Date().toDateString();
+      const todayPreds = allPredictions.filter(p => new Date(p.date*1000).toDateString() === today);
+
+      let wins = 0, losses = 0;
+      allPredictions.forEach(p => {
+        const r = autoDetectResult(p.text || '');
+        if (r === 'auto-win') wins++;
+        else if (r === 'auto-loss') losses++;
+      });
+
+      const rated = wins + losses;
+      const acc = rated > 0 ? Math.round((wins / rated) * 100) : 0;
+
+      document.getElementById('acc-pct').textContent = rated > 0 ? acc + '%' : '—%';
+      document.getElementById('acc-pct').style.color = acc >= 70 ? 'var(--green)' : acc >= 50 ? 'var(--gold)' : 'var(--red)';
+      document.getElementById('acc-sub').textContent = rated > 0 ? `${wins} wins · ${losses} losses · ${rated} rated` : 'Auto-detecting from signals...';
+      document.getElementById('acc-bar').style.width = acc + '%';
+      document.getElementById('win-count').textContent = wins;
+      document.getElementById('loss-count').textContent = losses;
+
+      let streak = 0, streakType = '';
+      for (let p of allPredictions) {
+        const r = autoDetectResult(p.text || '');
+        if (!r) break;
+        const isWin = r === 'auto-win';
+        if (streak === 0) { streakType = isWin ? 'W' : 'L'; streak = 1; }
+        else if ((isWin && streakType === 'W') || (!isWin && streakType === 'L')) streak++;
+        else break;
+      }
+      document.getElementById('streak-val').textContent = streak > 0 ? `${streak} ${streakType === 'W' ? '✅' : '❌'}` : '—';
+
+      let tWins = 0, tLoss = 0;
+      todayPreds.forEach(p => {
+        const r = autoDetectResult(p.text || '');
+        if (r === 'auto-win') tWins++;
+        else if (r === 'auto-loss') tLoss++;
+      });
+      document.getElementById('today-count-s').textContent = todayPreds.length;
+      const tRated = tWins + tLoss;
+      document.getElementById('today-acc').textContent = tRated > 0 ? Math.round((tWins/tRated)*100) + '%' : '—%';
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-today').textContent = todayPreds.length;
+    }
+
+    // ==================== NOTIF LOG ====================
+    function renderNotifLog() {
+      const el = document.getElementById('notif-log');
+      if (!notifLog.length) { el.innerHTML = '<div class="empty-alerts">📭 Koi notification abhi tak nahi</div>'; return; }
+      el.innerHTML = notifLog.slice(0,20).map(n => `
+        <div class="notif-item">
+          <div class="notif-icon">${n.icon || '🔔'}</div>
+          <div><div class="notif-text">${escapeHtml(n.text)}</div><div class="notif-time">${n.time}</div></div>
+        </div>`).join('');
+    }
+
+    function addNotif(text, icon) {
+      const now = new Date();
+      notifLog.unshift({ text: text.substring(0,80), icon, time: formatDate(now.getTime()/1000) + ' · ' + formatTime(now.getTime()/1000) });
+      notifLog = notifLog.slice(0,50);
+      localStorage.setItem('nx_notifs', JSON.stringify(notifLog));
+      const badge = document.getElementById('alert-badge');
+      badge.textContent = notifLog.length;
+      badge.style.display = 'inline';
+    }
+
+    function playAlert() {
+      const soundOn = document.getElementById('toggle-sound').checked;
+      const quietOn = document.getElementById('toggle-quiet').checked;
+      const hr = new Date().getHours();
+      if (quietOn && (hr >= 23 || hr < 7)) return;
+      if (soundOn) {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          [600, 800, 1000].forEach((freq, i) => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.frequency.value = freq; o.type = 'sine';
+            g.gain.setValueAtTime(0.15, ctx.currentTime + i*0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.1 + 0.2);
+            o.start(ctx.currentTime + i*0.1);
+            o.stop(ctx.currentTime + i*0.1 + 0.2);
+          });
+        } catch(e) {}
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      }
+    }
+
+    // ==================== STYLED PREDICTION BODY ====================
+    function formatPredictionBody(rawText) {
+      const cleaned = cleanPrediction(rawText);
+      const text = cleaned.replace(/NY\s*PREDICTION\s*(BOT)?\s*(V[\d.]+)?/gi, '').trim();
+      const lines = text.split('\n').filter(l => l.trim());
+      const fullLower = text.toLowerCase();
+      const isResult = fullLower.includes('result');
+
+      let shownResult = false;
+      const styledLines = lines.map(line => {
+        const l = line.trim();
+        if (!l) return '';
+        const ll = l.toLowerCase();
+        if (ll.includes('server') || ll.includes('engine') || ll.includes('mode') || ll.includes('bot v')) {
+          return `<div class="msg-header-line">${escapeHtml(l)}</div>`;
+        }
+        if (ll.includes('period') || ll.includes('round')) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">📍 PERIOD</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        if (ll.includes('time') && !ll.includes('real')) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">⏱ TIME</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        if (!isResult && (ll.includes('b i g') || (ll.includes('big') && (l.includes('🔴') || l.includes('>>>'))))) {
+          return `<div class="msg-predict big-predict">🔴 &nbsp; B I G</div>`;
+        }
+        if (!isResult && (ll.includes('s m a l l') || (ll.includes('small') && (l.includes('🟢') || l.includes('>>>'))))) {
+          return `<div class="msg-predict small-predict">🟢 &nbsp; S M A L L</div>`;
+        }
+        if (ll.includes('lucky') || (ll.includes('number') && !isResult)) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">🍀 LUCKY</span><span class="msg-val lucky-val">${escapeHtml(val)}</span></div>`;
+        }
+        if (ll.includes('confidence')) {
+          const m = l.match(/(\d+)%/);
+          const pct = m ? parseInt(m[1]) : 0;
+          const color = pct >= 90 ? 'var(--green)' : pct >= 70 ? 'var(--gold)' : 'var(--red)';
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">📊 CONF</span><span class="msg-val" style="color:${color};font-weight:800;font-size:16px">${escapeHtml(val)}</span></div>`;
+        }
+        if (isResult && (ll.includes('win') || ll.includes('w i n')) && !ll.includes('wingo')) {
+          if (shownResult) return ''; // Sirf ek baar dikhao
+          shownResult = true;
+          return `<div class="msg-result win-result">✅ &nbsp; W I N</div>`;
+        }
+        if (isResult && (ll.includes('loss') || ll.includes('l o s s') || ll.includes('agli baar'))) {
+          if (shownResult) return ''; // Sirf ek baar dikhao
+          shownResult = true;
+          return `<div class="msg-result loss-result">❌ &nbsp; L O S S</div>`;
+        }
+        if ((ll.includes('colour') || ll.includes('color')) && isResult) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">🎨 COLOR</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        if (ll.includes('size') && isResult) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          const isBig = val.toLowerCase().includes('big');
+          return `<div class="msg-row"><span class="msg-key">📐 SIZE</span><span class="msg-val" style="color:${isBig?'var(--red)':'var(--green)'}">${escapeHtml(val)}</span></div>`;
+        }
+        if (ll.includes('predict') && isResult) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">🎯 PREDICTED</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        if (ll.includes('number') && isResult) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">🔢 NUMBER</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        return `<div class="msg-plain">${escapeHtml(l)}</div>`;
+      }).filter(Boolean);
+
+      return '<div class="pred-msg-body">' + styledLines.join('') + '</div>';
+    }
+
+    // ==================== RENDER CARDS ====================
+    function renderCards(predictions) {
+      if (currentTab !== 'signals') { updateStats(); return; }
+      const content = document.getElementById('content');
+
+      if (!predictionsRunning) {
+        content.innerHTML = `<div class="center-state">
+          <div class="state-icon">⏸</div>
+          <div class="state-title">PREDICTIONS PAUSED</div>
+          <div class="state-sub" style="margin-top:16px">
+            ${credits < 1
+              ? 'Credit khatam ho gaya. Earn karo aur dobara shuru karo.'
+              : 'Start button dabao predictions shuru karne ke liye.'
+            }
+          </div>
+          ${credits < 1 ? `<button onclick="setTab('credits')" style="margin-top:18px;padding:10px 24px;border-radius:12px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;">🪙 EARN CREDITS</button>` : ''}
+        </div>`;
+        return;
+      }
+
+      if (!predictions.length) {
+        content.innerHTML = `<div class="center-state"><div class="state-icon">📡</div><div class="state-title">NO SIGNALS YET</div><div class="state-sub">Waiting for predictions...</div></div>`;
+        return;
+      }
+
+      let filtered = predictions.filter(p => !isPromoMessage(p.text || ''));
+      if (confFilter > 0) {
+        filtered = predictions.filter(p => extractConfidence(p.text || '') >= confFilter);
+      }
+
+      updateStats();
+
+      if (!filtered.length) {
+        content.innerHTML = `<div class="center-state"><div class="state-icon">🔍</div><div class="state-title">NO SIGNALS</div><div class="state-sub">${confFilter}%+ confidence filter active</div></div>`;
+        return;
+      }
+
+      const html = `<div class="card-list">` + filtered.map((p, i) => {
+        const msgId = p.message_id;
+        const autoRes = autoDetectResult(p.text || '');
+        const sig = getSignal(p.text || '');
+        const isNew = i === 0;
+        const cardClass = autoRes === 'auto-win' ? 'result-win' : autoRes === 'auto-loss' ? 'result-loss' : '';
+        const idStr = String(msgId).slice(-4).padStart(4, '0');
+        const conf = extractConfidence(p.text || '');
+
+        // Auto-deduct credit for each new prediction shown (silently)
+        deductCreditForNewPrediction(msgId, idStr);
+
+        let resultHTML = '';
+        const isResultCard = (p.text || '').toLowerCase().includes('result');
+        if (isResultCard) {
+          // Result message — WIN/LOSS already shown inside card body, no footer tag needed
+          resultHTML = '';
+        } else if (autoRes === 'auto-win') {
+          resultHTML = `<span class="result-tag auto-win">✅ WIN</span>`;
+        } else if (autoRes === 'auto-loss') {
+          resultHTML = `<span class="result-tag auto-loss">❌ LOSS</span>`;
+        } else {
+          resultHTML = `<span class="result-tag pending">⏳ PENDING</span>`;
+        }
+
+        return `
+          <div class="pred-card ${isNew ? 'is-new' : ''} ${cardClass}" style="animation-delay:${i*0.04}s">
+            <div class="card-header">
+              <div class="card-id">SIG-${idStr}${conf ? ` · ${conf}%` : ''}</div>
+              <div class="card-time">${formatDate(p.date)} · ${formatTime(p.date)}</div>
+            </div>
+            <div class="card-body">${formatPredictionBody(p.text || '')}</div>
+            <div class="card-footer">
+              ${signalHTML(sig)}
+              ${resultHTML}
+            </div>
+          </div>`;
+      }).join('') + `</div>`;
+
+      content.innerHTML = html;
+    }
+
+    // ==================== FETCH ====================
+    async function fetchPredictions(isRefresh = false) {
+      if (!predictionsRunning && !isFirstLoad) return;
+      const content = document.getElementById('content');
+      const fab = document.getElementById('fab-btn');
+      if (isFirstLoad) content.innerHTML = `<div class="center-state"><div class="loader"></div><div class="state-title">LOADING SIGNALS...</div></div>`;
+      if (isRefresh) fab.classList.add('spinning');
+
+      try {
+        if (isFirstLoad) await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=-1`);
+        const offsetParam = updateOffset ? `&offset=${updateOffset}` : '';
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100&allowed_updates=%5B%22channel_post%22%5D${offsetParam}`);
+        const data = await res.json();
+
+        if (data.ok && data.result && data.result.length > 0) {
+          const newPosts = data.result.filter(u => u.channel_post && u.channel_post.text).map(u => u.channel_post);
+          updateOffset = data.result[data.result.length - 1].update_id + 1;
+          const existingIds = new Set(allPredictions.map(p => p.message_id));
+          const brandNew = newPosts.filter(p => !existingIds.has(p.message_id));
+          if (brandNew.length > 0) {
+            allPredictions = [...brandNew, ...allPredictions].slice(0, 100);
+            if (!isFirstLoad) {
+              brandNew.forEach(p => addNotif(cleanPrediction(p.text || ''), '📡'));
+              playAlert();
+              newCount += brandNew.length;
+              const badge = document.getElementById('fab-new');
+              badge.textContent = newCount;
+              badge.style.display = 'block';
+            }
+          }
+        }
+
+        if (allPredictions.length > 0) renderCards(allPredictions);
+        else if (isFirstLoad) {
+          if (predictionsRunning) {
+            content.innerHTML = `<div class="center-state"><div class="state-icon">⏳</div><div class="state-title">WAITING FOR SIGNALS</div><div class="state-sub">Jab channel par naya message aayega tab dikhega</div></div>`;
+          }
+        }
+
+        document.getElementById('stat-status').textContent = 'LIVE';
+        document.getElementById('stat-status').style.color = 'var(--green)';
+        const now = new Date();
+        document.getElementById('last-updated').textContent = `Last updated: ${now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+      } catch(e) {
+        document.getElementById('stat-status').textContent = 'ERR';
+        document.getElementById('stat-status').style.color = 'var(--red)';
+        if (isFirstLoad) content.innerHTML = `<div class="error-box">⚠️ Connection error. Retry karo.<br><small style="opacity:0.6">${e.message}</small></div>`;
+      }
+
+      isFirstLoad = false;
+      setTimeout(() => fab.classList.remove('spinning'), 500);
+    }
+
+    function doRefresh() {
+      document.getElementById('fab-new').style.display = 'none';
+      newCount = 0;
+      fetchPredictions(true);
+    }
+
+    async function longPoll() {
+      if (!predictionsRunning) { setTimeout(longPoll, 5000); return; }
+      try {
+        const offsetParam = updateOffset ? `&offset=${updateOffset}` : '';
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?timeout=20&limit=10&allowed_updates=%5B%22channel_post%22%5D${offsetParam}`);
+        const data = await res.json();
+        if (data.ok && data.result && data.result.length > 0) {
+          const newPosts = data.result.filter(u => u.channel_post && u.channel_post.text).map(u => u.channel_post);
+          updateOffset = data.result[data.result.length - 1].update_id + 1;
+          const existingIds = new Set(allPredictions.map(p => p.message_id));
+          const brandNew = newPosts.filter(p => !existingIds.has(p.message_id));
+          if (brandNew.length > 0) {
+            allPredictions = [...brandNew, ...allPredictions].slice(0, 100);
+            renderCards(allPredictions);
+            brandNew.forEach(p => addNotif(cleanPrediction(p.text || ''), '📡'));
+            playAlert();
+            document.getElementById('fab-btn').classList.add('spinning');
+            setTimeout(() => document.getElementById('fab-btn').classList.remove('spinning'), 500);
+            const now = new Date();
+            document.getElementById('last-updated').textContent = `Last updated: ${now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+          }
+        }
+      } catch(e) {}
+      longPoll();
+    }
+
+    // ==================== INIT ====================
+    updateCreditUI();
+    updateAdminUI();
+    checkDailyBonus();
+    fetchPredictions();
+    setTimeout(longPoll, 2000);
+    setInterval(() => fetchPredictions(true), 10000);
+
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  </script>
+</body>
+</html>
