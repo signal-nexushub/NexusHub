@@ -682,10 +682,17 @@
       showToast((amount > 0 ? '+' + amount : amount) + ' Credit ' + (amount > 0 ? '💰' : ''), amount > 0 ? 'green' : 'red');
     }
 
-    function deductCreditForNewPrediction(msgId, idStr) {
+    function deductCreditForNewPrediction(msgId, idStr, msgText) {
       // Only deduct once per prediction message
       if (unlockedCards.has(msgId)) return;
-      if (credits < 1) return; // auto-stop will handle this
+      if (credits < 1) return;
+      // Result messages pe credit deduct nahi hoga - sirf predictions pe
+      const isResult = (msgText || '').toLowerCase().includes('result');
+      if (isResult) {
+        unlockedCards.add(msgId); // mark as seen but no deduct
+        localStorage.setItem('nx_unlocked', JSON.stringify([...unlockedCards]));
+        return;
+      }
       credits -= 1;
       const txn = {
         amount: -1, desc: '📡 Prediction SIG-' + idStr,
@@ -1214,7 +1221,7 @@
         const conf = extractConfidence(p.text || '');
 
         // Auto-deduct credit for each new prediction shown (silently)
-        deductCreditForNewPrediction(msgId, idStr);
+        deductCreditForNewPrediction(msgId, idStr, p.text || '');
 
         let resultHTML = '';
         const isResultCard = (p.text || '').toLowerCase().includes('result');
