@@ -1,23 +1,28 @@
-const CACHE = 'nexus-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json'];
+const CACHE = 'nexus-v4';
+const ASSETS = ['/NexusHub/', '/NexusHub/index.html', '/NexusHub/manifest.json'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(() => {})));
   self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ));
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
+  );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('api.telegram.org') || e.request.url.includes('fonts.googleapis')) {
-    return; // Don't cache API calls
+  // Always network first - never cache API calls
+  if (e.request.url.includes('api.telegram') || 
+      e.request.url.includes('fonts.google') ||
+      e.request.url.includes('omg10.com')) {
+    return;
   }
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    fetch(e.request).catch(() => caches.match(e.request))
   );
 });
