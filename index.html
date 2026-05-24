@@ -927,17 +927,8 @@
     try { results = JSON.parse(localStorage.getItem('nx_results') || '{}'); } catch(e) {}
     try { notifLog = JSON.parse(localStorage.getItem('nx_notifs') || '[]'); } catch(e) {}
     try { confFilter = parseInt(localStorage.getItem('nx_conf') || '0'); } catch(e) {}
-    try { 
-      const savedCredits = localStorage.getItem('nx_credits');
-      if (savedCredits === null) {
-        // Pehli baar app khul raha hai
-        credits = 10;
-        localStorage.setItem('nx_credits', '5');
-        localStorage.setItem('nx_first_open', new Date().toDateString());
-      } else {
-        credits = parseInt(savedCredits);
-      }
-    } catch(e) {}
+    // Credits loaded from Firestore only - localStorage not trusted
+    credits = 0;
     try { transactions = JSON.parse(localStorage.getItem('nx_txns') || '[]'); } catch(e) {}
     try { unlockedCards = new Set(JSON.parse(localStorage.getItem('nx_unlocked') || '[]')); } catch(e) {}
     try { predictionsRunning = JSON.parse(localStorage.getItem('nx_pred_running') !== null ? localStorage.getItem('nx_pred_running') : 'true'); } catch(e) {}
@@ -1008,6 +999,7 @@
         const snap = await window.fbGetDoc(userRef);
         if (snap.exists()) {
           const data = snap.data();
+          // Always use server value - localStorage is not trusted
           credits = data.credits ?? 5;
           transactions = data.transactions ?? [];
           results = data.results ?? {};
@@ -1028,8 +1020,9 @@
         }
       } catch(e) {
         console.error('Firestore load error:', e);
-        // Fallback to localStorage
-        try { credits = parseInt(localStorage.getItem('nx_credits') || '5'); } catch(e2) {}
+        // Fallback - show 0, will retry
+        credits = 0;
+        showToast('Connection error - credits may not load', 'red');
       }
     }
 
@@ -1056,15 +1049,19 @@
 
     // ==================== CREDITS ====================
     function saveCredits() {
-      localStorage.setItem('nx_credits', credits);
-      localStorage.setItem('nx_txns', JSON.stringify(transactions.slice(0, 50)));
-      updateCreditUI();
-      // Also save to Firestore
+      // Save to Firestore (server) - this is source of truth
       saveToFirestore();
+      // localStorage only for UI speed - NOT trusted on login
+      localStorage.setItem('nx_credits_cache', credits);
+      updateCreditUI();
     }
 
     function addCredit(amount, desc) {
+      // Validate - prevent manipulation
+      if (typeof amount !== 'number' || isNaN(amount)) return;
+      if (amount > 1000) return; // Max single credit add
       credits += amount;
+      if (credits < 0) credits = 0; // Never go below 0
       const txn = {
         amount, desc,
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
@@ -1546,11 +1543,12 @@
     // Format: NEXUS-{CREDITS}-{RANDOM4}
     // Codes are stored in localStorage after use (to prevent reuse)
 
-    const ADMIN_SECRET = 'NX2024'; // Secret key for generating valid codes
+    // Code validation - secret is split and obfuscated
+    const _k = ['N','X','2','0','2','4','J','A','L','W','A'];
+    function _ks() { return _k.slice(0,6).join('') + _k.slice(6).join(''); }
 
     function generateCodeHash(credits, random4) {
-      // Simple hash: credits + random + secret
-      const str = credits + '-' + random4 + '-' + ADMIN_SECRET;
+      const str = credits + '-' + random4 + '-' + _ks();
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
         hash = ((hash << 5) - hash) + str.charCodeAt(i);
