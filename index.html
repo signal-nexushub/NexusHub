@@ -403,7 +403,10 @@
         <div class="credit-left">
           <div class="credit-coin">🪙</div>
           <div class="credit-info">
-            <div class="credit-amount" id="header-credits">—</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="credit-amount" id="header-credits">—</div>
+              <button onclick="showBuySheet()" style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#000;line-height:1;box-shadow:0 2px 10px rgba(255,215,0,0.35);transition:transform 0.15s;flex-shrink:0;" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">+</button>
+            </div>
             <div class="credit-label">CREDITS</div>
           </div>
         </div>
@@ -484,7 +487,71 @@
           <div class="credit-big-label">AVAILABLE CREDITS</div>
         </div>
 
-        <div class="section-title" style="padding:0 0 10px">Ways to Earn</div>
+        <!-- BUY CREDITS - right below available credits -->
+        <div style="margin-bottom:6px;">
+          <div class="section-title" style="padding:10px 0 14px;">
+            🛒 Buy Credits
+            <span style="margin-left:6px;background:var(--red);color:#fff;font-size:9px;font-family:'Orbitron',sans-serif;padding:2px 8px;border-radius:20px;letter-spacing:1px;font-weight:700;">LIMITED OFFER</span>
+          </div>
+
+          <!-- Pack 1: ₹19 — 55% OFF → original ₹42 -->
+          <div onclick="showBuyPopup(100,19)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:16px;margin-bottom:10px;cursor:pointer;transition:transform 0.15s;position:relative;overflow:visible;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🪙</div>
+                <div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:var(--gold);">100 Credits</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;">Starter Pack · Best for Beginners</div>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;min-width:70px;">
+                <div style="font-size:12px;color:rgba(255,255,255,0.35);text-decoration:line-through;letter-spacing:0.5px;">₹42</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--green);line-height:1.1;">₹19</div>
+                <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.35);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:4px;display:inline-block;letter-spacing:0.5px;">55% OFF</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pack 2: ₹49 — 70% OFF → original ₹163 · POPULAR -->
+          <div onclick="showBuyPopup(400,49)" style="background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.22);border-radius:18px;padding:16px;margin-bottom:10px;cursor:pointer;transition:transform 0.15s;position:relative;overflow:visible;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+            <div style="position:absolute;top:-10px;left:14px;background:linear-gradient(135deg,var(--neon),#0088ff);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 12px;border-radius:20px;letter-spacing:1.5px;box-shadow:0 2px 14px rgba(0,245,255,0.4);">🔥 POPULAR</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">💎</div>
+                <div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:var(--neon);">400 Credits</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;">Popular Pack · Most Chosen</div>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;min-width:70px;">
+                <div style="font-size:12px;color:rgba(255,255,255,0.35);text-decoration:line-through;letter-spacing:0.5px;">₹163</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--green);line-height:1.1;">₹49</div>
+                <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.35);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:4px;display:inline-block;letter-spacing:0.5px;">70% OFF</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pack 3: ₹99 — 85% OFF → original ₹660 · BEST VALUE -->
+          <div onclick="showBuyPopup(1000,99)" style="background:linear-gradient(135deg,rgba(255,215,0,0.06),rgba(255,165,0,0.03));border:1px solid rgba(255,215,0,0.28);border-radius:18px;padding:16px;margin-bottom:4px;cursor:pointer;transition:transform 0.15s;position:relative;overflow:visible;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
+            <div style="position:absolute;top:-10px;left:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 12px;border-radius:20px;letter-spacing:1.5px;box-shadow:0 2px 14px rgba(255,215,0,0.4);">👑 BEST VALUE</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👑</div>
+                <div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:var(--gold);">1000 Credits</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;">VIP Pack · Maximum Value</div>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;min-width:70px;">
+                <div style="font-size:12px;color:rgba(255,255,255,0.35);text-decoration:line-through;letter-spacing:0.5px;">₹660</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--green);line-height:1.1;">₹99</div>
+                <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.35);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:4px;display:inline-block;letter-spacing:0.5px;">85% OFF</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title" style="padding:10px 0 10px">Ways to Earn</div>
         <div class="earn-ways">
           <div class="earn-card">
             <div class="earn-info">
@@ -542,58 +609,6 @@
         <div class="section-title" style="padding:14px 0 10px">Transaction History</div>
         <div class="txn-list" id="txn-list">
           <div class="empty-txn">📭 Koi transaction abhi tak nahi</div>
-        </div>
-
-        <!-- BUY CREDITS -->
-        <div style="margin-bottom:14px;">
-          <div class="section-title" style="padding:16px 0 12px;">Buy Credits</div>
-
-          <!-- Package 1 -->
-          <div onclick="showBuyPopup(100, 19)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.07)'">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;">🪙</div>
-              <div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--gold);">100 Credits</div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:2px;">Starter Pack</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹19</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">₹0.19/credit</div>
-            </div>
-          </div>
-
-          <!-- Package 2 -->
-          <div onclick="showBuyPopup(400, 49)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(0,245,255,0.2);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(0,245,255,0.4)'" onmouseout="this.style.borderColor='rgba(0,245,255,0.2)'">
-            <div style="position:absolute;top:-8px;left:16px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;">POPULAR</div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:44px;height:44px;border-radius:12px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;">💎</div>
-              <div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--neon);">400 Credits</div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:2px;">Popular Pack</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹49</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">₹0.12/credit</div>
-            </div>
-          </div>
-
-          <!-- Package 3 -->
-          <div onclick="showBuyPopup(1000, 99)" style="background:linear-gradient(135deg,rgba(255,215,0,0.06),rgba(255,165,0,0.03));border:1px solid rgba(255,215,0,0.25);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.5)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.25)'">
-            <div style="position:absolute;top:-8px;left:16px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;">BEST VALUE</div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">👑</div>
-              <div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--gold);">1000 Credits</div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:2px;">VIP Pack</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹99</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">₹0.09/credit</div>
-            </div>
-          </div>
         </div>
 
         <!-- DEVELOPER CONTACT -->
@@ -1043,7 +1058,7 @@
         return;
       }
       const text = '🔥 Nexus Hub - Free Prediction App dekho! Live signals, high accuracy.\nhttps://signal-nexushub.github.io/NexusHub/';
-      const MIN_SHARE_TIME = 10000; // 10 seconds minimum
+      const MIN_SHARE_TIME = 5000; // 5 seconds minimum
 
       function showShareConfirm() {
         const overlay = document.createElement('div');
@@ -1148,6 +1163,71 @@
         btn.style.cursor = 'pointer';
         btn.textContent = '↗ Share';
       }
+    }
+
+    // ==================== BUY SHEET (+ button on home) ====================
+    function showBuySheet() {
+      const overlay = document.createElement('div');
+      overlay.id = 'buy-sheet-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+      overlay.innerHTML = `
+        <div style="width:100%;max-width:480px;background:#0d0818;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:24px 20px 40px;">
+          <div style="width:40px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 20px;"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:2px;">🛒 BUY CREDITS</div>
+            <span style="background:var(--red);color:#fff;font-size:9px;font-family:'Orbitron',sans-serif;padding:3px 10px;border-radius:20px;font-weight:700;letter-spacing:1px;">LIMITED OFFER</span>
+          </div>
+          <!-- Pack 1 -->
+          <div onclick="document.getElementById('buy-sheet-overlay').remove();showBuyPopup(100,19);" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onmousedown="this.style.background='rgba(255,215,0,0.07)'" onmouseup="this.style.background='rgba(255,255,255,0.03)'">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="font-size:26px;">🪙</div>
+              <div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">100 Credits</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.3);">Starter Pack</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;">₹42</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);line-height:1.1;">₹19</div>
+              <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.3);border-radius:20px;padding:1px 8px;font-size:9px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:3px;display:inline-block;">55% OFF</div>
+            </div>
+          </div>
+          <!-- Pack 2 -->
+          <div onclick="document.getElementById('buy-sheet-overlay').remove();showBuyPopup(400,49);" style="background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.22);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;position:relative;" onmousedown="this.style.background='rgba(0,245,255,0.09)'" onmouseup="this.style.background='rgba(0,245,255,0.04)'">
+            <div style="position:absolute;top:-9px;left:12px;background:linear-gradient(135deg,var(--neon),#0088ff);color:#000;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:2px 10px;border-radius:20px;letter-spacing:1px;">🔥 POPULAR</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="font-size:26px;">💎</div>
+              <div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--neon);">400 Credits</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.3);">Popular Pack</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;">₹163</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);line-height:1.1;">₹49</div>
+              <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.3);border-radius:20px;padding:1px 8px;font-size:9px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:3px;display:inline-block;">70% OFF</div>
+            </div>
+          </div>
+          <!-- Pack 3 -->
+          <div onclick="document.getElementById('buy-sheet-overlay').remove();showBuyPopup(1000,99);" style="background:linear-gradient(135deg,rgba(255,215,0,0.06),rgba(255,165,0,0.03));border:1px solid rgba(255,215,0,0.28);border-radius:16px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;position:relative;" onmousedown="this.style.background='rgba(255,215,0,0.1)'" onmouseup="this.style.background='rgba(255,255,255,0.03)'">
+            <div style="position:absolute;top:-9px;left:12px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:2px 10px;border-radius:20px;letter-spacing:1px;">👑 BEST VALUE</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="font-size:26px;">👑</div>
+              <div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1000 Credits</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.3);">VIP Pack</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;">₹660</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);line-height:1.1;">₹99</div>
+              <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.3);border-radius:20px;padding:1px 8px;font-size:9px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:3px;display:inline-block;">85% OFF</div>
+            </div>
+          </div>
+          <button onclick="document.getElementById('buy-sheet-overlay').remove()" style="width:100%;padding:13px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Cancel</button>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
     }
 
     // ==================== BUY CREDITS ====================
