@@ -1258,16 +1258,70 @@
     function renderNotifLog() {
       const el = document.getElementById('notif-log');
       if (!notifLog.length) { el.innerHTML = '<div class="empty-alerts">📭 Koi notification abhi tak nahi</div>'; return; }
-      el.innerHTML = notifLog.slice(0,20).map(n => `
+      el.innerHTML = notifLog.slice(0,30).map(n => {
+        const isWin = n.icon === '✅';
+        const isLoss = n.icon === '❌';
+        const isBig = n.icon === '🔴';
+        const isSmall = n.icon === '🟢';
+        let titleColor = 'rgba(255,255,255,0.85)';
+        if (isWin || isSmall) titleColor = 'var(--green)';
+        else if (isLoss || isBig) titleColor = 'var(--red)';
+        return `
         <div class="notif-item">
-          <div class="notif-icon">${n.icon || '🔔'}</div>
-          <div><div class="notif-text">${escapeHtml(n.text)}</div><div class="notif-time">${n.time}</div></div>
-        </div>`).join('');
+          <div class="notif-icon">${n.icon || '📡'}</div>
+          <div style="flex:1">
+            <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:${titleColor};">${escapeHtml(n.title || '')}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:2px;">${escapeHtml(n.sub || '')}</div>
+            <div class="notif-time">${n.time}</div>
+          </div>
+        </div>`;
+      }).join('');
     }
 
-    function addNotif(text, icon) {
+    function extractNotifInfo(rawText) {
+      const t = rawText || '';
+      const tl = t.toLowerCase();
+      const isResult = tl.includes('result');
+
+      // Period number extract karo
+      const periodMatch = t.match(/period\s*[:\s]+[.]*(\d+)/i) || t.match(/\.\.\.(\d+)/);
+      const period = periodMatch ? periodMatch[1] : '';
+
+      if (isResult) {
+        // Result msg: WIN/LOSS + Period
+        const isWin = (tl.includes('win') || tl.includes('w i n')) && !tl.includes('wingo');
+        const isLoss = tl.includes('loss') || tl.includes('l o s s') || tl.includes('agli baar');
+        const result = isWin ? '✅ WIN' : isLoss ? '❌ LOSS' : '📋 RESULT';
+        return {
+          icon: isWin ? '✅' : isLoss ? '❌' : '📋',
+          title: result,
+          sub: period ? `Period: ...${period}` : 'Result aaya'
+        };
+      } else {
+        // Prediction msg: BIG/SMALL + Period
+        const isBig = tl.includes('b i g') || (tl.includes('big') && !tl.includes('result'));
+        const isSmall = tl.includes('s m a l l') || (tl.includes('small') && !tl.includes('result'));
+        const call = isBig ? '🔴 BIG' : isSmall ? '🟢 SMALL' : '📡 Signal';
+        // Confidence
+        const confMatch = t.match(/(\d+)%/);
+        const conf = confMatch ? ` · ${confMatch[1]}% conf` : '';
+        return {
+          icon: isBig ? '🔴' : isSmall ? '🟢' : '📡',
+          title: call,
+          sub: (period ? `Period: ...${period}` : 'Naya signal') + conf
+        };
+      }
+    }
+
+    function addNotif(rawText, icon) {
       const now = new Date();
-      notifLog.unshift({ text: text.substring(0,80), icon, time: formatDate(now.getTime()/1000) + ' · ' + formatTime(now.getTime()/1000) });
+      const info = extractNotifInfo(rawText);
+      notifLog.unshift({
+        icon: info.icon,
+        title: info.title,
+        sub: info.sub,
+        time: formatDate(now.getTime()/1000) + ' · ' + formatTime(now.getTime()/1000)
+      });
       notifLog = notifLog.slice(0,50);
       localStorage.setItem('nx_notifs', JSON.stringify(notifLog));
       const badge = document.getElementById('alert-badge');
