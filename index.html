@@ -15,7 +15,7 @@
   <script type="module">
     // Firebase Config
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -40,8 +40,20 @@
     window.fbIncrement = increment;
     window.fbGoogleProvider = new GoogleAuthProvider();
     window.fbSignInWithPopup = signInWithPopup;
+    window.fbSignInWithRedirect = signInWithRedirect;
+    window.fbGetRedirectResult = getRedirectResult;
     window.fbSignOut = signOut;
     window.fbOnAuthStateChanged = onAuthStateChanged;
+
+    // Handle redirect result on page load
+    getRedirectResult(auth).then(async (result) => {
+      if (result && result.user) {
+        window.currentUser = result.user;
+        await window.onUserLoggedIn(result.user);
+      }
+    }).catch((e) => {
+      console.error('Redirect error:', e);
+    });
 
     // Auth state listener
     onAuthStateChanged(auth, async (user) => {
@@ -942,10 +954,11 @@
     async function googleLogin() {
       const btn = document.getElementById('google-login-btn');
       const msg = document.getElementById('login-msg');
-      btn.textContent = 'Signing in...';
+      btn.textContent = 'Redirecting...';
       btn.disabled = true;
       try {
-        await window.fbSignInWithPopup(window.fbAuth, window.fbGoogleProvider);
+        // Use redirect - works on all domains without authorization
+        await window.fbSignInWithRedirect(window.fbAuth, window.fbGoogleProvider);
       } catch(e) {
         msg.style.display = 'block';
         msg.textContent = 'Login failed! Try again.';
