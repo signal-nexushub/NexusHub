@@ -869,14 +869,35 @@
     function openAdModal() {
       // Open Monetag Direct Link ad
       window.open('https://omg10.com/4/11048781', '_blank');
-      // Start 15 second timer then give credit
+
+      const WAIT_SEC = 20; // 20 second minimum ad view
       const btn1 = document.getElementById('ad-earn-btn');
-      if (btn1) { btn1.disabled = true; btn1.textContent = 'Loading...'; }
-      setTimeout(() => {
-        addCredit(10, '📺 Ad Watch Reward');
-        showToast('Ad dekha! +10 Credits 🎉', 'green');
-        if (btn1) { btn1.disabled = false; btn1.textContent = 'Watch'; }
-      }, 15000);
+      const btn2 = document.querySelector('.do-earn-btn#ad-earn-btn');
+
+      // Disable both buttons and show countdown
+      [btn1, btn2].forEach(btn => { if (btn) { btn.disabled = true; } });
+
+      let remaining = WAIT_SEC;
+      function updateBtns() {
+        [btn1, btn2].forEach(btn => {
+          if (btn) btn.textContent = `⏱ ${remaining}s`;
+        });
+      }
+      updateBtns();
+
+      const ticker = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(ticker);
+          addCredit(10, '📺 Ad Watch Reward');
+          showToast('Ad dekha! +10 Credits 🎉', 'green');
+          [btn1, btn2].forEach(btn => {
+            if (btn) { btn.disabled = false; btn.textContent = btn === btn1 ? '▶ Watch Ad' : 'Watch'; }
+          });
+        } else {
+          updateBtns();
+        }
+      }, 1000);
       return;
       // OLD modal below (unused):
       const now = Date.now();
