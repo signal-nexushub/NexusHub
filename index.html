@@ -867,37 +867,77 @@
 
     // ==================== AD MODAL ====================
     function openAdModal() {
-      // Open Monetag Direct Link ad
-      window.open('https://omg10.com/4/11048781', '_blank');
-
-      const WAIT_SEC = 20; // 20 second minimum ad view
+      const WAIT_SEC = 20;
       const btn1 = document.getElementById('ad-earn-btn');
-      const btn2 = document.querySelector('.do-earn-btn#ad-earn-btn');
 
-      // Disable both buttons and show countdown
-      [btn1, btn2].forEach(btn => { if (btn) { btn.disabled = true; } });
+      // Disable button
+      if (btn1) { btn1.disabled = true; btn1.textContent = '⏱ Ad kholo...'; }
+      showToast('Ad tab mein khula hai — wahan 20 sec dekho! ⏱', 'gold');
 
-      let remaining = WAIT_SEC;
-      function updateBtns() {
-        [btn1, btn2].forEach(btn => {
-          if (btn) btn.textContent = `⏱ ${remaining}s`;
-        });
+      let adViewed = 0; // seconds user spent on ad tab
+      let adOpened = false;
+      let ticker = null;
+
+      function updateBtn() {
+        const left = Math.max(0, WAIT_SEC - adViewed);
+        if (btn1) btn1.textContent = left > 0 ? `⏱ Ad dekho: ${left}s` : '✅ Credit aa raha...';
       }
-      updateBtns();
 
-      const ticker = setInterval(() => {
-        remaining--;
-        if (remaining <= 0) {
-          clearInterval(ticker);
-          addCredit(10, '📺 Ad Watch Reward');
-          showToast('Ad dekha! +10 Credits 🎉', 'green');
-          [btn1, btn2].forEach(btn => {
-            if (btn) { btn.disabled = false; btn.textContent = btn === btn1 ? '▶ Watch Ad' : 'Watch'; }
-          });
+      function startTicking() {
+        if (ticker) return;
+        ticker = setInterval(() => {
+          if (!document.hidden) {
+            // App visible = user is back, pause timer
+            clearInterval(ticker);
+            ticker = null;
+            if (btn1) btn1.textContent = `⚠️ Wapas ad dekho: ${WAIT_SEC - adViewed}s`;
+            return;
+          }
+          // App hidden = user on ad tab, count time
+          adViewed++;
+          updateBtn();
+          if (adViewed >= WAIT_SEC) {
+            clearInterval(ticker);
+            ticker = null;
+            document.removeEventListener('visibilitychange', onVisibility);
+            addCredit(10, '📺 Ad Watch Reward');
+            showToast('Ad dekha! +10 Credits 🎉', 'green');
+            if (btn1) { btn1.disabled = false; btn1.textContent = '▶ Watch Ad'; }
+          }
+        }, 1000);
+      }
+
+      function onVisibility() {
+        if (document.hidden) {
+          // User went to ad tab - start/resume timer
+          if (!adOpened) {
+            adOpened = true;
+            window.open('https://omg10.com/4/11048781', '_blank');
+          }
+          startTicking();
         } else {
-          updateBtns();
+          // User came back to app - pause timer
+          clearInterval(ticker);
+          ticker = null;
+          const left = WAIT_SEC - adViewed;
+          if (left > 0 && btn1) {
+            btn1.textContent = `⚠️ Wapas ad dekho: ${left}s`;
+            showToast(`Ad tab pe wapas jao — ${left}s baaki hai ⏱`, 'red');
+          }
         }
-      }, 1000);
+      }
+
+      // Open ad immediately and start listening
+      window.open('https://omg10.com/4/11048781', '_blank');
+      adOpened = true;
+      document.addEventListener('visibilitychange', onVisibility);
+
+      // Start timer only when app goes to background
+      // Give 1 sec for tab switch
+      setTimeout(() => {
+        if (document.hidden) startTicking();
+      }, 500);
+
       return;
       // OLD modal below (unused):
       const now = Date.now();
