@@ -1409,8 +1409,6 @@
       }
 
       // Silent update - sirf naye cards add karo, screen flash nahi hoga
-      const existingList = content.querySelector('.card-list');
-
       const html = `<div class="card-list">` + filtered.map((p, i) => {
         const msgId = p.message_id;
         const autoRes = autoDetectResult(p.text || '');
