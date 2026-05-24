@@ -12,6 +12,48 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
   <title>Nexus Hub</title>
+  <script type="module">
+    // Firebase Config
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC9c7Mnbeq_jiKxSJhvvpkF-MAEr32IRT0",
+      authDomain: "nexushub-c3647.firebaseapp.com",
+      projectId: "nexushub-c3647",
+      storageBucket: "nexushub-c3647.firebasestorage.app",
+      messagingSenderId: "787252674435",
+      appId: "1:787252674435:web:9ee624e8455f2dff2140b6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.fbAuth = auth;
+    window.fbDb = db;
+    window.fbDoc = doc;
+    window.fbGetDoc = getDoc;
+    window.fbSetDoc = setDoc;
+    window.fbUpdateDoc = updateDoc;
+    window.fbIncrement = increment;
+    window.fbGoogleProvider = new GoogleAuthProvider();
+    window.fbSignInWithPopup = signInWithPopup;
+    window.fbSignOut = signOut;
+    window.fbOnAuthStateChanged = onAuthStateChanged;
+
+    // Auth state listener
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        window.currentUser = user;
+        await window.onUserLoggedIn(user);
+      } else {
+        window.currentUser = null;
+        window.onUserLoggedOut();
+      }
+    });
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -93,7 +135,8 @@
     .stat-label { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
 
     /* ADMIN CONTROLS */
-    .admin-bar {
+    .admin-bar { display: none; }
+    .admin-bar.visible {
       margin: 12px 16px 0;
       background: rgba(123,47,255,0.07);
       border: 1px solid rgba(123,47,255,0.2);
@@ -383,96 +426,54 @@
   </style>
 </head>
 <body>
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" style="position:fixed;inset:0;background:#020008;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="text-align:center;max-width:320px;width:100%;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:6px;color:#FFD700;opacity:0.6;margin-bottom:8px;">NEXUS INTELLIGENCE</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:36px;font-weight:900;background:linear-gradient(135deg,#FFD700,#FFA500,#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;margin-bottom:6px;">PREDICTION<br/>HUB</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:3px;margin-bottom:40px;">SIGNAL ANALYSIS SYSTEM</div>
 
-  <!-- ===== SPLASH SCREEN ===== -->
-  <div id="splash-screen" style="
-    position:fixed;inset:0;z-index:9999;
-    background:radial-gradient(ellipse 80% 60% at 50% 40%, #0a0520 0%, #020008 100%);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:0;
-    transition:opacity 0.7s ease, transform 0.7s ease;
-  ">
-    <!-- Outer glow ring effect -->
-    <div style="position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;">
-      <!-- Animated rings -->
-      <div style="position:absolute;width:200px;height:200px;border-radius:50%;border:1px solid rgba(255,215,0,0.08);animation:splashRing 2.5s ease-in-out infinite;"></div>
-      <div style="position:absolute;width:178px;height:178px;border-radius:50%;border:1px solid rgba(255,215,0,0.12);animation:splashRing 2.5s ease-in-out infinite 0.3s;"></div>
-      <div style="position:absolute;width:156px;height:156px;border-radius:50%;border:1px solid rgba(255,215,0,0.16);animation:splashRing 2.5s ease-in-out infinite 0.6s;"></div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px 24px;">
+        <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:24px;line-height:1.6;">
+          Live casino predictions.<br>Sign in to continue.
+        </div>
 
-      <!-- Main SVG Logo -->
-      <svg width="132" height="132" viewBox="0 0 132 132" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:relative;z-index:2;filter:drop-shadow(0 0 28px rgba(255,200,0,0.55)) drop-shadow(0 0 8px rgba(255,165,0,0.4));">
-        <defs>
-          <radialGradient id="bgGrad" cx="50%" cy="40%" r="55%">
-            <stop offset="0%" stop-color="#2a1800"/>
-            <stop offset="100%" stop-color="#0d0800"/>
-          </radialGradient>
-          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#FFE040"/>
-            <stop offset="40%" stop-color="#FFD700"/>
-            <stop offset="100%" stop-color="#FF8C00"/>
-          </linearGradient>
-          <linearGradient id="nGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#FFE550"/>
-            <stop offset="100%" stop-color="#FFA500"/>
-          </linearGradient>
-          <filter id="innerGlow">
-            <feGaussianBlur stdDeviation="1.5" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-          </filter>
-        </defs>
-        <!-- Circle background -->
-        <circle cx="66" cy="66" r="63" fill="url(#bgGrad)"/>
-        <!-- Outer ring -->
-        <circle cx="66" cy="66" r="63" fill="none" stroke="url(#ringGrad)" stroke-width="3.5"/>
-        <!-- Inner ring subtle -->
-        <circle cx="66" cy="66" r="57" fill="none" stroke="rgba(255,215,0,0.15)" stroke-width="1"/>
-        <!-- N letter - bold, clean -->
-        <text x="66" y="88" text-anchor="middle" font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif" font-size="62" font-weight="900" fill="url(#nGrad)" filter="url(#innerGlow)" letter-spacing="-2">N</text>
-        <!-- Top highlight arc -->
-        <path d="M 28 40 A 45 45 0 0 1 104 40" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </div>
+        <button id="google-login-btn" onclick="googleLogin()"
+          style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:white;border:none;border-radius:14px;padding:14px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:#333;letter-spacing:0.5px;transition:all 0.2s;">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Sign in with Google
+        </button>
 
-    <!-- NEXUS HUB text -->
-    <div style="margin-top:22px;text-align:center;">
-      <div style="
-        font-family:'Orbitron',sans-serif;
-        font-size:26px;font-weight:900;
-        letter-spacing:6px;
-        background:linear-gradient(135deg,#FFE040 0%,#FFD700 40%,#FFA500 100%);
-        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-        background-clip:text;
-        text-shadow:none;
-        filter:drop-shadow(0 0 12px rgba(255,200,0,0.5));
-      ">NEXUS HUB</div>
-      <div style="
-        font-family:'Rajdhani',sans-serif;
-        font-size:11px;font-weight:500;
-        letter-spacing:4px;color:rgba(255,215,0,0.4);
-        margin-top:6px;text-transform:uppercase;
-      ">Signal Analysis System</div>
-    </div>
+        <div id="login-msg" style="font-size:12px;color:rgba(255,45,85,0.8);margin-top:12px;display:none;"></div>
+      </div>
 
-    <!-- Loading bar -->
-    <div style="margin-top:40px;width:120px;height:2px;background:rgba(255,215,0,0.1);border-radius:2px;overflow:hidden;">
-      <div id="splash-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width 2s ease;"></div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.15);margin-top:20px;">
+        By signing in, you agree to our terms of service.
+      </div>
     </div>
   </div>
 
-  <style>
-    @keyframes splashRing {
-      0%,100% { transform:scale(1); opacity:0.6; }
-      50% { transform:scale(1.04); opacity:1; }
-    }
-  </style>
-
   <div class="bg-grid"></div>
   <div class="bg-glow"></div>
-  <div class="app">
+  <div class="app" id="main-app" style="display:none;">
 
     <!-- HEADER -->
+    <!-- USER BAR -->
+    <div id="user-bar" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img id="user-avatar" src="" style="width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,215,0,0.3);display:none;"/>
+        <div>
+          <div id="user-name" style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:1px;"></div>
+          <div id="user-email" style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px;"></div>
+        </div>
+      </div>
+      <button onclick="logoutUser()" style="padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;cursor:pointer;">
+        Logout
+      </button>
+    </div>
+
     <div class="header">
-      <div class="header-logo">NEXUS INTELLIGENCE</div>
+      <div class="header-logo" id="header-logo-tap" onclick="adminTap()" style="cursor:default;">NEXUS INTELLIGENCE</div>
       <div class="header-title">PREDICTION<br/>HUB</div>
       <div class="header-sub">Signal Analysis System</div>
       <div style="display:flex;justify-content:center">
@@ -486,10 +487,7 @@
         <div class="credit-left">
           <div class="credit-coin">🪙</div>
           <div class="credit-info">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <div class="credit-amount" id="header-credits">—</div>
-              <button onclick="showBuySheet()" style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#000;line-height:1;box-shadow:0 2px 8px rgba(255,215,0,0.3);transition:transform 0.15s;flex-shrink:0;margin-bottom:2px;" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">+</button>
-            </div>
+            <div class="credit-amount" id="header-credits">—</div>
             <div class="credit-label">CREDITS</div>
           </div>
         </div>
@@ -509,7 +507,10 @@
         <span>⚙ ADMIN</span>
         <span id="prediction-status-text">Predictions: Running</span>
       </div>
-      <button class="start-stop-btn running" id="start-stop-btn" onclick="togglePredictions()">⏹ STOP</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="showCodeGenerator()" style="padding:7px 12px;border-radius:10px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;">🎟️ CODE</button>
+        <button class="start-stop-btn running" id="start-stop-btn" onclick="togglePredictions()">⏹ STOP</button>
+      </div>
     </div>
 
     <!-- TOP STATS -->
@@ -570,71 +571,7 @@
           <div class="credit-big-label">AVAILABLE CREDITS</div>
         </div>
 
-        <!-- BUY CREDITS - right below available credits -->
-        <div style="margin-bottom:6px;">
-          <div class="section-title" style="padding:10px 0 14px;">
-            🛒 Buy Credits
-            <span style="margin-left:6px;background:var(--red);color:#fff;font-size:9px;font-family:'Orbitron',sans-serif;padding:2px 8px;border-radius:20px;letter-spacing:1px;font-weight:700;">LIMITED OFFER</span>
-          </div>
-
-          <!-- Pack 1: ₹19 — 55% OFF → original ₹42 -->
-          <div onclick="showBuyPopup(100,19)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:16px;margin-bottom:10px;cursor:pointer;transition:transform 0.15s;position:relative;overflow:visible;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:12px;">
-                <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🪙</div>
-                <div>
-                  <div style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:var(--gold);">100 Credits</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;">Starter Pack · Best for Beginners</div>
-                </div>
-              </div>
-              <div style="text-align:right;flex-shrink:0;min-width:70px;">
-                <div style="font-size:12px;color:rgba(255,255,255,0.35);text-decoration:line-through;letter-spacing:0.5px;">₹42</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--green);line-height:1.1;">₹19</div>
-                <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.35);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:4px;display:inline-block;letter-spacing:0.5px;">55% OFF</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Pack 2: ₹49 — 70% OFF → original ₹163 · POPULAR -->
-          <div onclick="showBuyPopup(400,49)" style="background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.22);border-radius:18px;padding:16px;margin-bottom:10px;cursor:pointer;transition:transform 0.15s;position:relative;overflow:visible;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
-            <div style="position:absolute;top:-10px;left:14px;background:linear-gradient(135deg,var(--neon),#0088ff);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 12px;border-radius:20px;letter-spacing:1.5px;box-shadow:0 2px 14px rgba(0,245,255,0.4);">🔥 POPULAR</div>
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:12px;">
-                <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">💎</div>
-                <div>
-                  <div style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:var(--neon);">400 Credits</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;">Popular Pack · Most Chosen</div>
-                </div>
-              </div>
-              <div style="text-align:right;flex-shrink:0;min-width:70px;">
-                <div style="font-size:12px;color:rgba(255,255,255,0.35);text-decoration:line-through;letter-spacing:0.5px;">₹163</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--green);line-height:1.1;">₹49</div>
-                <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.35);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:4px;display:inline-block;letter-spacing:0.5px;">70% OFF</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Pack 3: ₹99 — 85% OFF → original ₹660 · BEST VALUE -->
-          <div onclick="showBuyPopup(1000,99)" style="background:linear-gradient(135deg,rgba(255,215,0,0.06),rgba(255,165,0,0.03));border:1px solid rgba(255,215,0,0.28);border-radius:18px;padding:16px;margin-bottom:4px;cursor:pointer;transition:transform 0.15s;position:relative;overflow:visible;" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
-            <div style="position:absolute;top:-10px;left:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 12px;border-radius:20px;letter-spacing:1.5px;box-shadow:0 2px 14px rgba(255,215,0,0.4);">👑 BEST VALUE</div>
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:12px;">
-                <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👑</div>
-                <div>
-                  <div style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:var(--gold);">1000 Credits</div>
-                  <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;">VIP Pack · Maximum Value</div>
-                </div>
-              </div>
-              <div style="text-align:right;flex-shrink:0;min-width:70px;">
-                <div style="font-size:12px;color:rgba(255,255,255,0.35);text-decoration:line-through;letter-spacing:0.5px;">₹660</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--green);line-height:1.1;">₹99</div>
-                <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.35);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:4px;display:inline-block;letter-spacing:0.5px;">85% OFF</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-title" style="padding:10px 0 10px">Ways to Earn</div>
+        <div class="section-title" style="padding:0 0 10px">Ways to Earn</div>
         <div class="earn-ways">
           <div class="earn-card">
             <div class="earn-info">
@@ -692,6 +629,76 @@
         <div class="section-title" style="padding:14px 0 10px">Transaction History</div>
         <div class="txn-list" id="txn-list">
           <div class="empty-txn">📭 Koi transaction abhi tak nahi</div>
+        </div>
+
+        <!-- BUY CREDITS -->
+        <div style="margin-bottom:14px;">
+          <!-- REDEEM CODE -->
+          <div style="margin-bottom:16px;">
+            <div class="section-title" style="padding:16px 0 12px;">Redeem Code</div>
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.2);border-radius:16px;padding:16px;">
+              <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:12px;">Payment ke baad mila code yahan enter karo:</div>
+              <div style="display:flex;gap:8px;">
+                <input id="redeem-input" type="text" placeholder="NEXUS-100-XXXX" maxlength="20"
+                  style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:12px 14px;color:white;font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:1px;outline:none;"
+                  oninput="this.value=this.value.toUpperCase()"/>
+                <button onclick="redeemCode()" 
+                  style="padding:12px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;white-space:nowrap;">
+                  REDEEM
+                </button>
+              </div>
+              <div id="redeem-msg" style="font-size:12px;margin-top:8px;display:none;"></div>
+            </div>
+          </div>
+
+          <div class="section-title" style="padding:0 0 12px;">Buy Credits</div>
+
+          <!-- Package 1 -->
+          <div onclick="showBuyPopup(100, 19)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.07)'">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;">🪙</div>
+              <div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--gold);">100 Credits</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:2px;">Starter Pack</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹19</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">₹0.19/credit</div>
+            </div>
+          </div>
+
+          <!-- Package 2 -->
+          <div onclick="showBuyPopup(400, 49)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(0,245,255,0.2);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(0,245,255,0.4)'" onmouseout="this.style.borderColor='rgba(0,245,255,0.2)'">
+            <div style="position:absolute;top:-8px;left:16px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;">POPULAR</div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:44px;height:44px;border-radius:12px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;">💎</div>
+              <div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--neon);">400 Credits</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:2px;">Popular Pack</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹49</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">₹0.12/credit</div>
+            </div>
+          </div>
+
+          <!-- Package 3 -->
+          <div onclick="showBuyPopup(1000, 99)" style="background:linear-gradient(135deg,rgba(255,215,0,0.06),rgba(255,165,0,0.03));border:1px solid rgba(255,215,0,0.25);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.5)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.25)'">
+            <div style="position:absolute;top:-8px;left:16px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;">BEST VALUE</div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">👑</div>
+              <div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--gold);">1000 Credits</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:2px;">VIP Pack</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹99</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">₹0.09/credit</div>
+            </div>
+          </div>
         </div>
 
         <!-- DEVELOPER CONTACT -->
@@ -931,11 +938,112 @@
       });
     }
 
+    // ==================== FIREBASE AUTH & FIRESTORE ====================
+    async function googleLogin() {
+      const btn = document.getElementById('google-login-btn');
+      const msg = document.getElementById('login-msg');
+      btn.textContent = 'Signing in...';
+      btn.disabled = true;
+      try {
+        await window.fbSignInWithPopup(window.fbAuth, window.fbGoogleProvider);
+      } catch(e) {
+        msg.style.display = 'block';
+        msg.textContent = 'Login failed! Try again.';
+        btn.textContent = 'Sign in with Google';
+        btn.disabled = false;
+      }
+    }
+
+    async function logoutUser() {
+      await window.fbSignOut(window.fbAuth);
+    }
+
+    window.onUserLoggedIn = async function(user) {
+      // Show main app, hide login
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+
+      // Set user info in UI
+      document.getElementById('user-name').textContent = user.displayName || 'User';
+      document.getElementById('user-email').textContent = user.email || '';
+      const avatar = document.getElementById('user-avatar');
+      if (user.photoURL) { avatar.src = user.photoURL; avatar.style.display = 'block'; }
+
+      // Load user data from Firestore
+      await loadUserFromFirestore(user.uid);
+
+      // Init app
+      initAdmin();
+      checkDailyBonus();
+      fetchPredictions();
+      setTimeout(longPoll, 2000);
+      setInterval(() => fetchPredictions(true), 10000);
+    };
+
+    window.onUserLoggedOut = function() {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('main-app').style.display = 'none';
+    };
+
+    async function loadUserFromFirestore(uid) {
+      try {
+        const userRef = window.fbDoc(window.fbDb, 'users', uid);
+        const snap = await window.fbGetDoc(userRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          credits = data.credits ?? 5;
+          transactions = data.transactions ?? [];
+          results = data.results ?? {};
+          const today = new Date().toDateString();
+          if (data.lastLogin) localStorage.setItem('nx_last_login', data.lastLogin);
+          if (data.lastShare) localStorage.setItem('nx_last_share', data.lastShare);
+          if (data.usedCodes) localStorage.setItem('nx_used_codes', JSON.stringify(data.usedCodes));
+          if (data.unlockedCards) unlockedCards = new Set(data.unlockedCards);
+          updateCreditUI();
+          updateDailyBtnState();
+          updateShareBtnState();
+        } else {
+          // New user - give 5 credits
+          credits = 5;
+          transactions = [];
+          await saveToFirestore();
+          addCredit(0, '🎉 Welcome to Nexus Hub!');
+        }
+      } catch(e) {
+        console.error('Firestore load error:', e);
+        // Fallback to localStorage
+        try { credits = parseInt(localStorage.getItem('nx_credits') || '5'); } catch(e2) {}
+      }
+    }
+
+    async function saveToFirestore() {
+      if (!window.currentUser) return;
+      try {
+        const userRef = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
+        await window.fbSetDoc(userRef, {
+          credits: credits,
+          transactions: transactions.slice(0, 50),
+          results: results,
+          lastLogin: localStorage.getItem('nx_last_login') || '',
+          lastShare: localStorage.getItem('nx_last_share') || '',
+          usedCodes: JSON.parse(localStorage.getItem('nx_used_codes') || '[]'),
+          unlockedCards: [...unlockedCards],
+          displayName: window.currentUser.displayName || '',
+          email: window.currentUser.email || '',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch(e) {
+        console.error('Firestore save error:', e);
+      }
+    }
+
     // ==================== CREDITS ====================
     function saveCredits() {
       localStorage.setItem('nx_credits', credits);
       localStorage.setItem('nx_txns', JSON.stringify(transactions.slice(0, 50)));
       updateCreditUI();
+      // Also save to Firestore
+      saveToFirestore();
     }
 
     function addCredit(amount, desc) {
@@ -1141,7 +1249,7 @@
         return;
       }
       const text = '🔥 Nexus Hub - Free Prediction App dekho! Live signals, high accuracy.\nhttps://signal-nexushub.github.io/NexusHub/';
-      const MIN_SHARE_TIME = 5000; // 5 seconds minimum
+      const MIN_SHARE_TIME = 10000; // 10 seconds minimum
 
       function showShareConfirm() {
         const overlay = document.createElement('div');
@@ -1248,71 +1356,6 @@
       }
     }
 
-    // ==================== BUY SHEET (+ button on home) ====================
-    function showBuySheet() {
-      const overlay = document.createElement('div');
-      overlay.id = 'buy-sheet-overlay';
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
-      overlay.innerHTML = `
-        <div style="width:100%;max-width:480px;background:#0d0818;border:1px solid rgba(255,255,255,0.08);border-radius:24px 24px 0 0;padding:24px 20px 40px;">
-          <div style="width:40px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 20px;"></div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-            <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:2px;">🛒 BUY CREDITS</div>
-            <span style="background:var(--red);color:#fff;font-size:9px;font-family:'Orbitron',sans-serif;padding:3px 10px;border-radius:20px;font-weight:700;letter-spacing:1px;">LIMITED OFFER</span>
-          </div>
-          <!-- Pack 1 -->
-          <div onclick="document.getElementById('buy-sheet-overlay').remove();showBuyPopup(100,19);" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onmousedown="this.style.background='rgba(255,215,0,0.07)'" onmouseup="this.style.background='rgba(255,255,255,0.03)'">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="font-size:26px;">🪙</div>
-              <div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">100 Credits</div>
-                <div style="font-size:11px;color:rgba(255,255,255,0.3);">Starter Pack</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;">₹42</div>
-              <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);line-height:1.1;">₹19</div>
-              <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.3);border-radius:20px;padding:1px 8px;font-size:9px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:3px;display:inline-block;">55% OFF</div>
-            </div>
-          </div>
-          <!-- Pack 2 -->
-          <div onclick="document.getElementById('buy-sheet-overlay').remove();showBuyPopup(400,49);" style="background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.22);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;position:relative;" onmousedown="this.style.background='rgba(0,245,255,0.09)'" onmouseup="this.style.background='rgba(0,245,255,0.04)'">
-            <div style="position:absolute;top:-9px;left:12px;background:linear-gradient(135deg,var(--neon),#0088ff);color:#000;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:2px 10px;border-radius:20px;letter-spacing:1px;">🔥 POPULAR</div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="font-size:26px;">💎</div>
-              <div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--neon);">400 Credits</div>
-                <div style="font-size:11px;color:rgba(255,255,255,0.3);">Popular Pack</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;">₹163</div>
-              <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);line-height:1.1;">₹49</div>
-              <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.3);border-radius:20px;padding:1px 8px;font-size:9px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:3px;display:inline-block;">70% OFF</div>
-            </div>
-          </div>
-          <!-- Pack 3 -->
-          <div onclick="document.getElementById('buy-sheet-overlay').remove();showBuyPopup(1000,99);" style="background:linear-gradient(135deg,rgba(255,215,0,0.06),rgba(255,165,0,0.03));border:1px solid rgba(255,215,0,0.28);border-radius:16px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;position:relative;" onmousedown="this.style.background='rgba(255,215,0,0.1)'" onmouseup="this.style.background='rgba(255,255,255,0.03)'">
-            <div style="position:absolute;top:-9px;left:12px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:2px 10px;border-radius:20px;letter-spacing:1px;">👑 BEST VALUE</div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="font-size:26px;">👑</div>
-              <div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1000 Credits</div>
-                <div style="font-size:11px;color:rgba(255,255,255,0.3);">VIP Pack</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;">₹660</div>
-              <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);line-height:1.1;">₹99</div>
-              <div style="background:rgba(255,45,85,0.15);border:1px solid rgba(255,45,85,0.3);border-radius:20px;padding:1px 8px;font-size:9px;font-weight:700;color:var(--red);font-family:'Orbitron',sans-serif;margin-top:3px;display:inline-block;">85% OFF</div>
-            </div>
-          </div>
-          <button onclick="document.getElementById('buy-sheet-overlay').remove()" style="width:100%;padding:13px;border-radius:14px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Cancel</button>
-        </div>`;
-      document.body.appendChild(overlay);
-      overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
-    }
-
     // ==================== BUY CREDITS ====================
     function showBuyPopup(credits, price) {
       const upi = 'preregisterbgmi-1@oksbi';
@@ -1356,6 +1399,207 @@
         </div>`;
       document.body.appendChild(overlay);
       overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+    }
+
+    // ==================== ADMIN UNLOCK ====================
+    let adminTapCount = 0;
+    let adminTapTimer = null;
+    let adminUnlocked = localStorage.getItem('nx_admin') === 'true';
+
+    function initAdmin() {
+      if (adminUnlocked) {
+        const bar = document.getElementById('admin-bar');
+        if (bar) bar.classList.add('visible');
+      }
+    }
+
+    function adminTap() {
+      adminTapCount++;
+      clearTimeout(adminTapTimer);
+      if (adminTapCount >= 5) {
+        adminTapCount = 0;
+        showAdminLogin();
+      } else {
+        adminTapTimer = setTimeout(() => { adminTapCount = 0; }, 2000);
+      }
+    }
+
+    function showAdminLogin() {
+      if (adminUnlocked) {
+        // Already unlocked - toggle bar
+        const bar = document.getElementById('admin-bar');
+        bar.classList.toggle('visible');
+        return;
+      }
+      const overlay = document.createElement('div');
+      overlay.id = 'admin-login-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+      overlay.innerHTML = `
+        <div style="background:#0d0d1a;border:1px solid rgba(123,47,255,0.4);border-radius:20px;padding:28px 24px;max-width:300px;width:100%;text-align:center;">
+          <div style="font-size:32px;margin-bottom:12px;">🔐</div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#7B2FFF;letter-spacing:2px;margin-bottom:20px;">ADMIN ACCESS</div>
+          <input id="admin-pass-input" type="password" placeholder="Password enter karo"
+            style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(123,47,255,0.3);border-radius:12px;padding:12px 14px;color:white;font-size:14px;outline:none;margin-bottom:16px;text-align:center;"/>
+          <div style="display:flex;gap:10px;">
+            <button onclick="document.getElementById('admin-login-overlay').remove()"
+              style="flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
+              Cancel
+            </button>
+            <button onclick="checkAdminPass()"
+              style="flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#7B2FFF,#5500cc);color:white;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
+              Enter
+            </button>
+          </div>
+          <div id="admin-pass-msg" style="font-size:12px;color:var(--red);margin-top:10px;display:none;">❌ Wrong password!</div>
+        </div>`;
+      document.body.appendChild(overlay);
+      document.getElementById('admin-pass-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') checkAdminPass();
+      });
+    }
+
+    function checkAdminPass() {
+      const pass = document.getElementById('admin-pass-input').value;
+      if (pass === 'jalwa@admin') {
+        document.getElementById('admin-login-overlay').remove();
+        adminUnlocked = true;
+        localStorage.setItem('nx_admin', 'true');
+        const bar = document.getElementById('admin-bar');
+        bar.classList.add('visible');
+        showToast('✅ Admin mode ON!', 'green');
+      } else {
+        document.getElementById('admin-pass-msg').style.display = 'block';
+      }
+    }
+
+    // ==================== CODE GENERATOR (ADMIN ONLY) ====================
+    function showCodeGenerator() {
+      const overlay = document.createElement('div');
+      overlay.id = 'code-gen-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+      overlay.innerHTML = `
+        <div style="background:#0d0d1a;border:1px solid rgba(255,215,0,0.35);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;margin-bottom:20px;text-align:center;">🎟️ GENERATE CODE</div>
+
+          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:8px;">Credits amount select karo:</div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button onclick="genCode(100)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.08);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">100</button>
+            <button onclick="genCode(400)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">400</button>
+            <button onclick="genCode(1000)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,215,0,0.5);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">1000</button>
+          </div>
+
+          <div id="gen-result" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;display:none;">
+            <div style="font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:8px;">GENERATED CODE</div>
+            <div id="gen-code-text" style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;color:var(--gold);letter-spacing:2px;"></div>
+            <button id="gen-copy-btn" onclick="copyGenCode()" style="margin-top:12px;padding:8px 20px;border-radius:10px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.1);color:var(--gold);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📋 Copy</button>
+          </div>
+
+          <button onclick="document.getElementById('code-gen-overlay').remove()"
+            style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
+            Close
+          </button>
+        </div>`;
+      document.body.appendChild(overlay);
+    }
+
+    function genCode(credits) {
+      const code = generateAdminCode(credits);
+      document.getElementById('gen-result').style.display = 'block';
+      document.getElementById('gen-code-text').textContent = code;
+      document.getElementById('gen-copy-btn').textContent = '📋 Copy';
+    }
+
+    function copyGenCode() {
+      const code = document.getElementById('gen-code-text').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        document.getElementById('gen-copy-btn').textContent = '✅ Copied!';
+      });
+    }
+
+    // ==================== REDEEM CODE SYSTEM ====================
+    // Secret codes — admin generates these
+    // Format: NEXUS-{CREDITS}-{RANDOM4}
+    // Codes are stored in localStorage after use (to prevent reuse)
+
+    const ADMIN_SECRET = 'NX2024'; // Secret key for generating valid codes
+
+    function generateCodeHash(credits, random4) {
+      // Simple hash: credits + random + secret
+      const str = credits + '-' + random4 + '-' + ADMIN_SECRET;
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash).toString(36).toUpperCase().substring(0, 4);
+    }
+
+    function redeemCode() {
+      const input = document.getElementById('redeem-input');
+      const msgEl = document.getElementById('redeem-msg');
+      const code = (input.value || '').trim().toUpperCase();
+
+      function showMsg(text, color) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = color === 'green' ? 'var(--green)' : color === 'red' ? 'var(--red)' : 'var(--gold)';
+        msgEl.textContent = text;
+      }
+
+      if (!code) { showMsg('Code enter karo!', 'red'); return; }
+
+      // Check format: NEXUS-{credits}-{random4}
+      const parts = code.split('-');
+      if (parts.length !== 3 || parts[0] !== 'NEXUS') {
+        showMsg('❌ Invalid code format!', 'red'); return;
+      }
+
+      const credits = parseInt(parts[1]);
+      const random4 = parts[2];
+
+      if (isNaN(credits) || credits <= 0) {
+        showMsg('❌ Invalid code!', 'red'); return;
+      }
+
+      // Check if already used
+      const usedCodes = JSON.parse(localStorage.getItem('nx_used_codes') || '[]');
+      if (usedCodes.includes(code)) {
+        showMsg('❌ Yeh code pehle use ho chuka hai!', 'red'); return;
+      }
+
+      // Validate code using hash
+      const expectedHash = generateCodeHash(credits, random4);
+      if (random4.length !== 4 || !isValidCode(credits, random4)) {
+        showMsg('❌ Invalid ya expired code!', 'red'); return;
+      }
+
+      // Code valid! Apply credits
+      usedCodes.push(code);
+      localStorage.setItem('nx_used_codes', JSON.stringify(usedCodes));
+      addCredit(credits, '🎟️ Code Redeemed: ' + code);
+      input.value = '';
+      showMsg('✅ ' + credits + ' Credits mil gaye!', 'green');
+      setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+    }
+
+    function isValidCode(credits, random4) {
+      // Validate: hash of credits+random4+secret must equal last 4 chars of random4... 
+      // Actually we use a simpler system: admin generates codes using generateAdminCode()
+      const expectedHash = generateCodeHash(credits, random4.substring(0, 4));
+      // random4 is actually random(2) + hash(2)
+      const r2 = random4.substring(0, 2);
+      const h2 = random4.substring(2, 4);
+      const checkHash = generateCodeHash(credits, r2).substring(0, 2);
+      return h2 === checkHash;
+    }
+
+    // Admin panel mein yeh function code generate karta hai
+    function generateAdminCode(credits) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let r2 = '';
+      for (let i = 0; i < 2; i++) r2 += chars[Math.floor(Math.random() * chars.length)];
+      const hash = generateCodeHash(credits, r2);
+      const h2 = hash.substring(0, 2);
+      return 'NEXUS-' + credits + '-' + r2 + h2;
     }
 
     // ==================== TOAST ====================
@@ -1941,27 +2185,9 @@
     }
 
     // ==================== INIT ====================
-    // Splash screen
-    (function() {
-      const splash = document.getElementById('splash-screen');
-      const bar = document.getElementById('splash-bar');
-      if (bar) setTimeout(() => bar.style.width = '100%', 80);
-      setTimeout(() => {
-        if (splash) {
-          splash.style.opacity = '0';
-          splash.style.transform = 'scale(1.04)';
-          setTimeout(() => { splash.style.display = 'none'; }, 700);
-        }
-      }, 2400);
-    })();
-
     updateCreditUI();
     updateAdminUI();
     checkDailyBonus();
-    fetchPredictions();
-    setTimeout(longPoll, 2000);
-    setInterval(() => fetchPredictions(true), 10000);
-
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   </script>
 </body>
