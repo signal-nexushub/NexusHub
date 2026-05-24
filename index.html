@@ -1173,11 +1173,14 @@
 
     function isPromoMessage(text) {
       const t = text.toLowerCase();
-      // Skip server update / promo messages that have no prediction value
-      const promoSignals = ['tri-server','server update','server 1','server 2','sod 5-algorithm','diversity engine','badsha engine (new','bot v10 tri','update!'];
-      const hasPromo = promoSignals.some(k => t.includes(k));
-      const hasNoPrediction = !t.includes('period') && !t.includes('result') && !t.includes('big') && !t.includes('small') && !t.includes('confidence');
-      return hasPromo && hasNoPrediction;
+      // WHITELIST approach - sirf prediction aur result messages allow karo
+      // Prediction message: period + (big/small/confidence) hona chahiye
+      const isPrediction = (t.includes('period') || t.includes('round')) &&
+                           (t.includes('big') || t.includes('small') || t.includes('confidence') || t.includes('lucky') || t.includes('wingo'));
+      // Result message: result keyword hona chahiye
+      const isResult = t.includes('result') && (t.includes('period') || t.includes('number') || t.includes('colour') || t.includes('color') || t.includes('size'));
+      // Agar dono mein se kuch bhi nahi - promo hai, block karo
+      return !isPrediction && !isResult;
     }
 
     function cleanPrediction(text) {
@@ -1405,6 +1408,9 @@
         return;
       }
 
+      // Silent update - sirf naye cards add karo, screen flash nahi hoga
+      const existingList = content.querySelector('.card-list');
+
       const html = `<div class="card-list">` + filtered.map((p, i) => {
         const msgId = p.message_id;
         const autoRes = autoDetectResult(p.text || '');
@@ -1431,7 +1437,7 @@
         }
 
         return `
-          <div class="pred-card ${isNew ? 'is-new' : ''} ${cardClass}" style="animation-delay:${i*0.04}s">
+          <div class="pred-card ${isNew ? 'is-new' : ''} ${cardClass}" data-msgid="${msgId}" style="animation-delay:${i*0.04}s">
             <div class="card-header">
               <div class="card-id">SIG-${idStr}${conf ? ` · ${conf}%` : ''}</div>
               <div class="card-time">${formatDate(p.date)} · ${formatTime(p.date)}</div>
@@ -1444,7 +1450,40 @@
           </div>`;
       }).join('') + `</div>`;
 
-      content.innerHTML = html;
+      // Smooth silent update
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const newList = tempDiv.querySelector('.card-list');
+      const existingList = content.querySelector('.card-list');
+
+      if (!existingList) {
+        content.innerHTML = html;
+      } else {
+        const existingIds = new Set([...existingList.querySelectorAll('.pred-card')].map(c => c.dataset.msgid));
+        const newCards = [...newList.querySelectorAll('.pred-card')];
+        let added = 0;
+        [...newCards].reverse().forEach(card => {
+          if (!existingIds.has(card.dataset.msgid)) {
+            card.style.animationDelay = '0s';
+            existingList.prepend(card);
+            added++;
+          }
+        });
+        // Update existing cards (win/loss result update)
+        newCards.forEach(card => {
+          const existing = existingList.querySelector(`[data-msgid="${card.dataset.msgid}"]`);
+          if (existing) {
+            const newFooter = card.querySelector('.card-footer');
+            const existFooter = existing.querySelector('.card-footer');
+            if (newFooter && existFooter && newFooter.innerHTML !== existFooter.innerHTML) {
+              existFooter.innerHTML = newFooter.innerHTML;
+            }
+          }
+        });
+        // Max 50 cards
+        const allCards = existingList.querySelectorAll('.pred-card');
+        if (allCards.length > 50) [...allCards].slice(50).forEach(c => c.remove());
+      }
     }
 
     // ==================== FETCH ====================
@@ -1453,7 +1492,7 @@
       const content = document.getElementById('content');
       const fab = document.getElementById('fab-btn');
       if (isFirstLoad) content.innerHTML = `<div class="center-state"><div class="loader"></div><div class="state-title">LOADING SIGNALS...</div></div>`;
-      if (isRefresh) fab.classList.add('spinning');
+      // Silent refresh - no spinning animation
 
       try {
         if (isFirstLoad) await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=-1`);
@@ -1497,7 +1536,7 @@
       }
 
       isFirstLoad = false;
-      setTimeout(() => fab.classList.remove('spinning'), 500);
+      // Silent - no spinner
     }
 
     function doRefresh() {
