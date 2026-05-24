@@ -495,7 +495,7 @@
               </div>
             </div>
             <div style="text-align:right">
-              <div class="earn-amount">+10</div>
+              <div class="earn-amount">+5</div>
               <button class="do-earn-btn" id="ad-earn-btn" onclick="openAdModal()">Watch</button>
             </div>
           </div>
@@ -521,7 +521,7 @@
               </div>
             </div>
             <div style="text-align:right">
-              <div class="earn-amount">+50</div>
+              <div class="earn-amount">+20</div>
               <button class="do-earn-btn" onclick="doShare()">Share</button>
             </div>
           </div>
@@ -742,7 +742,7 @@
     let currentTab = 'signals';
     let predictionsRunning = true;
     let unlockedCards = new Set();
-    let credits = 10; // starting credits
+    let credits = 5; // starting credits
     let transactions = [];
     let adTimer = null;
     let adEligible = true;
@@ -758,7 +758,7 @@
       if (savedCredits === null) {
         // Pehli baar app khul raha hai
         credits = 10;
-        localStorage.setItem('nx_credits', '10');
+        localStorage.setItem('nx_credits', '5');
         localStorage.setItem('nx_first_open', new Date().toDateString());
       } else {
         credits = parseInt(savedCredits);
@@ -900,7 +900,7 @@
             clearInterval(ticker);
             ticker = null;
             document.removeEventListener('visibilitychange', onVisibility);
-            addCredit(10, '📺 Ad Watch Reward');
+            addCredit(5, '📺 Ad Watch Reward');
             showToast('Ad dekha! +10 Credits 🎉', 'green');
             if (btn1) { btn1.disabled = false; btn1.textContent = '▶ Watch Ad'; }
           }
@@ -979,7 +979,7 @@
       document.getElementById('ad-modal').classList.remove('open');
       lastAdTime = Date.now();
       localStorage.setItem('nx_last_ad', lastAdTime);
-      addCredit(10, '📺 Ad Watch Reward');
+      addCredit(5, '📺 Ad Watch Reward');
     }
 
     // ==================== SHARE ====================
@@ -994,14 +994,14 @@
       if (navigator.share) {
         navigator.share({ title: 'Nexus Hub', text: text }).then(() => {
           localStorage.setItem('nx_last_share', todayStr);
-          addCredit(50, '🔗 App Share Reward');
+          addCredit(20, '🔗 App Share Reward');
           updateShareBtnState();
           showToast('Shared! +50 Credits 🎉 (Kal dobara milega)', 'green');
         }).catch(() => {});
       } else {
         navigator.clipboard.writeText(text).then(() => {
           localStorage.setItem('nx_last_share', todayStr);
-          addCredit(50, '🔗 App Share Reward');
+          addCredit(20, '🔗 App Share Reward');
           updateShareBtnState();
           showToast('Link copy ho gaya! +50 Credits 🎉 (1 baar/din)', 'green');
         }).catch(() => showToast('Share nahi ho paya 😅', 'red'));
