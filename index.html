@@ -994,36 +994,47 @@
     };
 
     async function loadUserFromFirestore(uid) {
-      try {
-        const userRef = window.fbDoc(window.fbDb, 'users', uid);
-        const snap = await window.fbGetDoc(userRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          // Always use server value - localStorage is not trusted
-          credits = data.credits ?? 5;
-          transactions = data.transactions ?? [];
-          results = data.results ?? {};
-          const today = new Date().toDateString();
-          if (data.lastLogin) localStorage.setItem('nx_last_login', data.lastLogin);
-          if (data.lastShare) localStorage.setItem('nx_last_share', data.lastShare);
-          if (data.usedCodes) localStorage.setItem('nx_used_codes', JSON.stringify(data.usedCodes));
-          if (data.unlockedCards) unlockedCards = new Set(data.unlockedCards);
+      // Show loading dots while fetching
+      document.getElementById('header-credits').textContent = '···';
+      if (document.getElementById('credit-big')) document.getElementById('credit-big').textContent = '···';
+
+      let lastError = null;
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        try {
+          const userRef = window.fbDoc(window.fbDb, 'users', uid);
+          const snap = await window.fbGetDoc(userRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            credits = data.credits ?? 5;
+            transactions = data.transactions ?? [];
+            results = data.results ?? {};
+            if (data.lastLogin) localStorage.setItem('nx_last_login', data.lastLogin);
+            if (data.lastShare) localStorage.setItem('nx_last_share', data.lastShare);
+            if (data.usedCodes) localStorage.setItem('nx_used_codes', JSON.stringify(data.usedCodes));
+            if (data.unlockedCards) unlockedCards = new Set(data.unlockedCards);
+          } else {
+            // New user
+            credits = 5;
+            transactions = [];
+            await saveToFirestore();
+            setTimeout(() => addCredit(0, '🎉 Welcome to Nexus Hub!'), 500);
+          }
           updateCreditUI();
           updateDailyBtnState();
           updateShareBtnState();
-        } else {
-          // New user - give 5 credits
-          credits = 5;
-          transactions = [];
-          await saveToFirestore();
-          addCredit(0, '🎉 Welcome to Nexus Hub!');
+          return; // ✅ success
+        } catch(e) {
+          lastError = e;
+          console.error(`Firestore load attempt ${attempt} failed:`, e.message);
+          if (attempt < 4) await new Promise(r => setTimeout(r, attempt * 1500));
         }
-      } catch(e) {
-        console.error('Firestore load error:', e);
-        // Fallback - show 0, will retry
-        credits = 0;
-        showToast('Connection error - credits may not load', 'red');
       }
+      // All 4 attempts failed
+      credits = 5; // Give default so app is usable
+      updateCreditUI();
+      showToast('Server se connect nahi ho paya. Dobara try kar raha hai... ⚠️', 'red');
+      // Retry after 10 seconds
+      setTimeout(() => loadUserFromFirestore(uid), 10000);
     }
 
     async function saveToFirestore() {
@@ -1049,10 +1060,8 @@
 
     // ==================== CREDITS ====================
     function saveCredits() {
-      // Save to Firestore (server) - this is source of truth
+      // Only save to Firestore - NO localStorage for credits (hack prevention)
       saveToFirestore();
-      // localStorage only for UI speed - NOT trusted on login
-      localStorage.setItem('nx_credits_cache', credits);
       updateCreditUI();
     }
 
