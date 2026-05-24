@@ -1475,9 +1475,17 @@
       });
     }
 
+    function hashPass(str) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) {
+        h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+      }
+      return (h >>> 0).toString(16).toUpperCase().padStart(8, '0');
+    }
+
     function checkAdminPass() {
       const pass = document.getElementById('admin-pass-input').value;
-      if (pass === 'jalwa@admin') {
+      if (hashPass(pass) === '51A79B76') {
         document.getElementById('admin-login-overlay').remove();
         adminUnlocked = true;
         localStorage.setItem('nx_admin', 'true');
