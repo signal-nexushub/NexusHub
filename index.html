@@ -992,19 +992,34 @@
       }
       const text = '🔥 Nexus Hub - Free Prediction App dekho! Live signals, high accuracy.\nhttps://signal-nexushub.github.io/NexusHub/';
       if (navigator.share) {
-        navigator.share({ title: 'Nexus Hub', text: text }).then(() => {
-          localStorage.setItem('nx_last_share', todayStr);
-          addCredit(20, '🔗 App Share Reward');
-          updateShareBtnState();
-          showToast('Shared! +50 Credits 🎉 (Kal dobara milega)', 'green');
-        }).catch(() => {});
+        // Credit sirf tab milega jab user actually share kare
+        // .then() sirf tab call hota hai jab user share complete kare
+        // .catch() tab call hota hai jab user cancel kare — credit nahi milega
+        navigator.share({ title: 'Nexus Hub', text: text })
+          .then(() => {
+            // User ne share kiya ✅
+            localStorage.setItem('nx_last_share', todayStr);
+            addCredit(20, '🔗 App Share Reward');
+            updateShareBtnState();
+            showToast('Shared! +20 Credits 🎉 (Kal dobara milega)', 'green');
+          })
+          .catch((err) => {
+            // User ne cancel kiya ❌ — credit nahi
+            if (err.name !== 'AbortError') {
+              showToast('Share nahi hua 😅', 'red');
+            }
+            // AbortError = user ne cancel kiya, koi message nahi
+          });
       } else {
-        navigator.clipboard.writeText(text).then(() => {
-          localStorage.setItem('nx_last_share', todayStr);
-          addCredit(20, '🔗 App Share Reward');
-          updateShareBtnState();
-          showToast('Link copy ho gaya! +50 Credits 🎉 (1 baar/din)', 'green');
-        }).catch(() => showToast('Share nahi ho paya 😅', 'red'));
+        // Fallback: clipboard copy — yahan bhi copy hone ke baad hi credit
+        navigator.clipboard.writeText(text)
+          .then(() => {
+            localStorage.setItem('nx_last_share', todayStr);
+            addCredit(20, '🔗 App Share Reward');
+            updateShareBtnState();
+            showToast('Link copy ho gaya! +20 Credits 🎉 (1 baar/din)', 'green');
+          })
+          .catch(() => showToast('Share nahi ho paya 😅', 'red'));
       }
     }
 
