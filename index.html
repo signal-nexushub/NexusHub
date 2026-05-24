@@ -1421,9 +1421,21 @@
     let adminUnlocked = localStorage.getItem('nx_admin') === 'true';
 
     function initAdmin() {
-      if (adminUnlocked) {
+      // Admin sirf specific UID ke liye - hardcoded admin UID
+      // Pehli baar aap login karo, apna UID console mein dikhega
+      const ADMIN_UID = localStorage.getItem('nx_admin_uid') || '';
+      const currentUID = window.currentUser ? window.currentUser.uid : '';
+      
+      if (currentUID && ADMIN_UID && currentUID === ADMIN_UID) {
+        adminUnlocked = true;
         const bar = document.getElementById('admin-bar');
         if (bar) bar.classList.add('visible');
+      } else {
+        // Reset - doosre user ke liye admin band
+        adminUnlocked = false;
+        localStorage.removeItem('nx_admin');
+        const bar = document.getElementById('admin-bar');
+        if (bar) bar.classList.remove('visible');
       }
     }
 
@@ -1485,7 +1497,10 @@
       if (hashPass(pass) === '51A79B76') {
         document.getElementById('admin-login-overlay').remove();
         adminUnlocked = true;
+        // Save admin UID - sirf is Google account ke liye admin access
+        const uid = window.currentUser ? window.currentUser.uid : '';
         localStorage.setItem('nx_admin', 'true');
+        localStorage.setItem('nx_admin_uid', uid);
         const bar = document.getElementById('admin-bar');
         bar.classList.add('visible');
         showToast('✅ Admin mode ON!', 'green');
