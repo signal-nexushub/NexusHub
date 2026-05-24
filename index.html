@@ -107,14 +107,14 @@
       flex-direction: column;
       gap: 12px;
     }
-    .credit-top-row { display: flex; align-items: center; justify-content: space-between; }
-    .credit-left { display: flex; align-items: center; gap: 10px; }
-    .credit-coin { font-size: 28px; line-height: 1; }
-    .credit-info { }
-    .credit-amount { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 900; color: var(--gold); line-height: 1; }
+    .credit-top-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .credit-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .credit-coin { font-size: 26px; line-height: 1; flex-shrink: 0; }
+    .credit-info { min-width: 0; }
+    .credit-amount { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; color: var(--gold); line-height: 1; white-space: nowrap; }
     .credit-label { font-size: 10px; color: rgba(255,215,0,0.5); letter-spacing: 2px; margin-top: 2px; }
-    .credit-actions { display: flex; gap: 8px; }
-    .credit-btn { padding: 7px 14px; border-radius: 10px; border: none; font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: all 0.2s; }
+    .credit-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .credit-btn { padding: 8px 12px; border-radius: 10px; border: none; font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
     .earn-btn { background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3); color: var(--gold); }
     .earn-btn:active { background: rgba(255,215,0,0.25); transform: scale(0.95); }
     .share-btn { background: rgba(0,245,255,0.1); border: 1px solid rgba(0,245,255,0.25); color: var(--neon); }
@@ -994,47 +994,36 @@
     };
 
     async function loadUserFromFirestore(uid) {
-      // Show loading dots while fetching
-      document.getElementById('header-credits').textContent = '···';
-      if (document.getElementById('credit-big')) document.getElementById('credit-big').textContent = '···';
-
-      let lastError = null;
-      for (let attempt = 1; attempt <= 4; attempt++) {
-        try {
-          const userRef = window.fbDoc(window.fbDb, 'users', uid);
-          const snap = await window.fbGetDoc(userRef);
-          if (snap.exists()) {
-            const data = snap.data();
-            credits = data.credits ?? 5;
-            transactions = data.transactions ?? [];
-            results = data.results ?? {};
-            if (data.lastLogin) localStorage.setItem('nx_last_login', data.lastLogin);
-            if (data.lastShare) localStorage.setItem('nx_last_share', data.lastShare);
-            if (data.usedCodes) localStorage.setItem('nx_used_codes', JSON.stringify(data.usedCodes));
-            if (data.unlockedCards) unlockedCards = new Set(data.unlockedCards);
-          } else {
-            // New user
-            credits = 5;
-            transactions = [];
-            await saveToFirestore();
-            setTimeout(() => addCredit(0, '🎉 Welcome to Nexus Hub!'), 500);
-          }
+      try {
+        const userRef = window.fbDoc(window.fbDb, 'users', uid);
+        const snap = await window.fbGetDoc(userRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          // Always use server value - localStorage is not trusted
+          credits = data.credits ?? 5;
+          transactions = data.transactions ?? [];
+          results = data.results ?? {};
+          const today = new Date().toDateString();
+          if (data.lastLogin) localStorage.setItem('nx_last_login', data.lastLogin);
+          if (data.lastShare) localStorage.setItem('nx_last_share', data.lastShare);
+          if (data.usedCodes) localStorage.setItem('nx_used_codes', JSON.stringify(data.usedCodes));
+          if (data.unlockedCards) unlockedCards = new Set(data.unlockedCards);
           updateCreditUI();
           updateDailyBtnState();
           updateShareBtnState();
-          return; // ✅ success
-        } catch(e) {
-          lastError = e;
-          console.error(`Firestore load attempt ${attempt} failed:`, e.message);
-          if (attempt < 4) await new Promise(r => setTimeout(r, attempt * 1500));
+        } else {
+          // New user - give 5 credits
+          credits = 5;
+          transactions = [];
+          await saveToFirestore();
+          addCredit(0, '🎉 Welcome to Nexus Hub!');
         }
+      } catch(e) {
+        console.error('Firestore load error:', e);
+        // Fallback - show 0, will retry
+        credits = 0;
+        showToast('Connection error - credits may not load', 'red');
       }
-      // All 4 attempts failed
-      credits = 5; // Give default so app is usable
-      updateCreditUI();
-      showToast('Server se connect nahi ho paya. Dobara try kar raha hai... ⚠️', 'red');
-      // Retry after 10 seconds
-      setTimeout(() => loadUserFromFirestore(uid), 10000);
     }
 
     async function saveToFirestore() {
@@ -1060,8 +1049,10 @@
 
     // ==================== CREDITS ====================
     function saveCredits() {
-      // Only save to Firestore - NO localStorage for credits (hack prevention)
+      // Save to Firestore (server) - this is source of truth
       saveToFirestore();
+      // localStorage only for UI speed - NOT trusted on login
+      localStorage.setItem('nx_credits_cache', credits);
       updateCreditUI();
     }
 
