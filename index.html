@@ -383,6 +383,89 @@
   </style>
 </head>
 <body>
+
+  <!-- ===== SPLASH SCREEN ===== -->
+  <div id="splash-screen" style="
+    position:fixed;inset:0;z-index:9999;
+    background:radial-gradient(ellipse 80% 60% at 50% 40%, #0a0520 0%, #020008 100%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:0;
+    transition:opacity 0.7s ease, transform 0.7s ease;
+  ">
+    <!-- Outer glow ring effect -->
+    <div style="position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center;">
+      <!-- Animated rings -->
+      <div style="position:absolute;width:200px;height:200px;border-radius:50%;border:1px solid rgba(255,215,0,0.08);animation:splashRing 2.5s ease-in-out infinite;"></div>
+      <div style="position:absolute;width:178px;height:178px;border-radius:50%;border:1px solid rgba(255,215,0,0.12);animation:splashRing 2.5s ease-in-out infinite 0.3s;"></div>
+      <div style="position:absolute;width:156px;height:156px;border-radius:50%;border:1px solid rgba(255,215,0,0.16);animation:splashRing 2.5s ease-in-out infinite 0.6s;"></div>
+
+      <!-- Main SVG Logo -->
+      <svg width="132" height="132" viewBox="0 0 132 132" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:relative;z-index:2;filter:drop-shadow(0 0 28px rgba(255,200,0,0.55)) drop-shadow(0 0 8px rgba(255,165,0,0.4));">
+        <defs>
+          <radialGradient id="bgGrad" cx="50%" cy="40%" r="55%">
+            <stop offset="0%" stop-color="#2a1800"/>
+            <stop offset="100%" stop-color="#0d0800"/>
+          </radialGradient>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FFE040"/>
+            <stop offset="40%" stop-color="#FFD700"/>
+            <stop offset="100%" stop-color="#FF8C00"/>
+          </linearGradient>
+          <linearGradient id="nGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#FFE550"/>
+            <stop offset="100%" stop-color="#FFA500"/>
+          </linearGradient>
+          <filter id="innerGlow">
+            <feGaussianBlur stdDeviation="1.5" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+          </filter>
+        </defs>
+        <!-- Circle background -->
+        <circle cx="66" cy="66" r="63" fill="url(#bgGrad)"/>
+        <!-- Outer ring -->
+        <circle cx="66" cy="66" r="63" fill="none" stroke="url(#ringGrad)" stroke-width="3.5"/>
+        <!-- Inner ring subtle -->
+        <circle cx="66" cy="66" r="57" fill="none" stroke="rgba(255,215,0,0.15)" stroke-width="1"/>
+        <!-- N letter - bold, clean -->
+        <text x="66" y="88" text-anchor="middle" font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif" font-size="62" font-weight="900" fill="url(#nGrad)" filter="url(#innerGlow)" letter-spacing="-2">N</text>
+        <!-- Top highlight arc -->
+        <path d="M 28 40 A 45 45 0 0 1 104 40" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <!-- NEXUS HUB text -->
+    <div style="margin-top:22px;text-align:center;">
+      <div style="
+        font-family:'Orbitron',sans-serif;
+        font-size:26px;font-weight:900;
+        letter-spacing:6px;
+        background:linear-gradient(135deg,#FFE040 0%,#FFD700 40%,#FFA500 100%);
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+        background-clip:text;
+        text-shadow:none;
+        filter:drop-shadow(0 0 12px rgba(255,200,0,0.5));
+      ">NEXUS HUB</div>
+      <div style="
+        font-family:'Rajdhani',sans-serif;
+        font-size:11px;font-weight:500;
+        letter-spacing:4px;color:rgba(255,215,0,0.4);
+        margin-top:6px;text-transform:uppercase;
+      ">Signal Analysis System</div>
+    </div>
+
+    <!-- Loading bar -->
+    <div style="margin-top:40px;width:120px;height:2px;background:rgba(255,215,0,0.1);border-radius:2px;overflow:hidden;">
+      <div id="splash-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width 2s ease;"></div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes splashRing {
+      0%,100% { transform:scale(1); opacity:0.6; }
+      50% { transform:scale(1.04); opacity:1; }
+    }
+  </style>
+
   <div class="bg-grid"></div>
   <div class="bg-glow"></div>
   <div class="app">
@@ -403,9 +486,11 @@
         <div class="credit-left">
           <div class="credit-coin">🪙</div>
           <div class="credit-info">
-            <div class="credit-amount" id="header-credits">—</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div class="credit-amount" id="header-credits">—</div>
+              <button onclick="showBuySheet()" style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#000;line-height:1;box-shadow:0 2px 8px rgba(255,215,0,0.3);transition:transform 0.15s;flex-shrink:0;margin-bottom:2px;" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">+</button>
+            </div>
             <div class="credit-label">CREDITS</div>
-            <button onclick="showBuySheet()" style="margin-top:6px;padding:4px 12px;border-radius:8px;background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,165,0,0.12));border:1px solid rgba(255,215,0,0.4);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:all 0.15s;" onmousedown="this.style.transform='scale(0.93)'" onmouseup="this.style.transform='scale(1)'">BUY CREDITS</button>
           </div>
         </div>
         <div class="credit-actions">
@@ -413,8 +498,8 @@
           <button class="credit-btn share-btn" id="share-earn-btn" onclick="doShare()">↗ Share</button>
         </div>
       </div>
-      <button class="earn-credits-btn" onclick="setTab('credits')" style="padding:9px;font-size:10px;letter-spacing:1.5px;gap:6px;">
-        🪙 &nbsp; EARN CREDITS
+      <button class="earn-credits-btn" onclick="setTab('credits')">
+        🪙 &nbsp; EARN MORE CREDITS
       </button>
     </div>
 
@@ -1856,6 +1941,20 @@
     }
 
     // ==================== INIT ====================
+    // Splash screen
+    (function() {
+      const splash = document.getElementById('splash-screen');
+      const bar = document.getElementById('splash-bar');
+      if (bar) setTimeout(() => bar.style.width = '100%', 80);
+      setTimeout(() => {
+        if (splash) {
+          splash.style.opacity = '0';
+          splash.style.transform = 'scale(1.04)';
+          setTimeout(() => { splash.style.display = 'none'; }, 700);
+        }
+      }, 2400);
+    })();
+
     updateCreditUI();
     updateAdminUI();
     checkDailyBonus();
