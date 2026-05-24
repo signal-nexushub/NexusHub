@@ -85,7 +85,7 @@
       background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(123,47,255,0.18) 0%, transparent 70%), radial-gradient(ellipse 40% 30% at 80% 80%, rgba(0,245,255,0.1) 0%, transparent 60%);
       pointer-events: none;
     }
-    .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 90px; }
+    .app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding-bottom: 90px; }
 
     /* HEADER */
     .header { padding: 32px 20px 14px; text-align: center; }
@@ -107,14 +107,14 @@
       flex-direction: column;
       gap: 12px;
     }
-    .credit-top-row { display: flex; align-items: center; justify-content: space-between; }
-    .credit-left { display: flex; align-items: center; gap: 10px; }
-    .credit-coin { font-size: 28px; line-height: 1; }
-    .credit-info { }
-    .credit-amount { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 900; color: var(--gold); line-height: 1; }
+    .credit-top-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .credit-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .credit-coin { font-size: 26px; line-height: 1; flex-shrink: 0; }
+    .credit-info { min-width: 0; }
+    .credit-amount { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; color: var(--gold); line-height: 1; white-space: nowrap; }
     .credit-label { font-size: 10px; color: rgba(255,215,0,0.5); letter-spacing: 2px; margin-top: 2px; }
-    .credit-actions { display: flex; gap: 8px; }
-    .credit-btn { padding: 7px 14px; border-radius: 10px; border: none; font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: all 0.2s; }
+    .credit-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .credit-btn { padding: 8px 12px; border-radius: 10px; border: none; font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s; white-space: nowrap; line-height: 1; }
     .earn-btn { background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.3); color: var(--gold); }
     .earn-btn:active { background: rgba(255,215,0,0.25); transform: scale(0.95); }
     .share-btn { background: rgba(0,245,255,0.1); border: 1px solid rgba(0,245,255,0.25); color: var(--neon); }
@@ -350,7 +350,7 @@
     .notif-icon { font-size: 20px; line-height: 1; margin-top: 2px; }
     .notif-text { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.4; }
     .notif-time { font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 3px; }
-    .empty-alerts { text-align: center; padding: 30px 0; color: rgba(255,255,255,0.2); font-size: 13px; letter-spacing: 1px; }
+    .empty-alerts { text-align: center; padding: 16px 0; color: rgba(255,255,255,0.2); font-size: 13px; letter-spacing: 1px; }
 
     /* BOTTOM NAV */
     .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(2,0,8,0.95); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid rgba(255,255,255,0.06); display: flex; padding: 10px 0 24px; z-index: 100; }
@@ -916,23 +916,19 @@
     let currentTab = 'signals';
     let predictionsRunning = true;
     let unlockedCards = new Set();
-    let credits = 5;
+    let credits = 5; // starting credits
     let transactions = [];
     let adTimer = null;
     let adEligible = true;
     let lastAdTime = 0;
-    let usedCodesServer = []; // Used codes - Firestore se load hoga, localStorage nahi
-    const AD_COOLDOWN = 60 * 1000;
+    const AD_COOLDOWN = 60 * 1000; // 1 min cooldown between ads
 
     // ==================== LOAD SAVED ====================
     try { results = JSON.parse(localStorage.getItem('nx_results') || '{}'); } catch(e) {}
     try { notifLog = JSON.parse(localStorage.getItem('nx_notifs') || '[]'); } catch(e) {}
     try { confFilter = parseInt(localStorage.getItem('nx_conf') || '0'); } catch(e) {}
-    // Credits loaded from Firestore ONLY - localStorage bilkul nahi
+    // Credits loaded from Firestore only - localStorage not trusted
     credits = 0;
-    // nx_credits_cache aur nx_used_codes hatao agar purana data ho
-    localStorage.removeItem('nx_credits_cache');
-    localStorage.removeItem('nx_used_codes');
     try { transactions = JSON.parse(localStorage.getItem('nx_txns') || '[]'); } catch(e) {}
     try { unlockedCards = new Set(JSON.parse(localStorage.getItem('nx_unlocked') || '[]')); } catch(e) {}
     try { predictionsRunning = JSON.parse(localStorage.getItem('nx_pred_running') !== null ? localStorage.getItem('nx_pred_running') : 'true'); } catch(e) {}
@@ -1003,26 +999,28 @@
         const snap = await window.fbGetDoc(userRef);
         if (snap.exists()) {
           const data = snap.data();
+          // Always use server value - localStorage is not trusted
           credits = data.credits ?? 5;
           transactions = data.transactions ?? [];
           results = data.results ?? {};
-          // Load usedCodes from Firestore into memory - NOT localStorage
-          usedCodesServer = data.usedCodes ?? [];
+          const today = new Date().toDateString();
           if (data.lastLogin) localStorage.setItem('nx_last_login', data.lastLogin);
           if (data.lastShare) localStorage.setItem('nx_last_share', data.lastShare);
+          if (data.usedCodes) localStorage.setItem('nx_used_codes', JSON.stringify(data.usedCodes));
           if (data.unlockedCards) unlockedCards = new Set(data.unlockedCards);
           updateCreditUI();
           updateDailyBtnState();
           updateShareBtnState();
         } else {
+          // New user - give 5 credits
           credits = 5;
           transactions = [];
-          usedCodesServer = [];
           await saveToFirestore();
-          _safeAddCredit(0, '🎉 Welcome to Nexus Hub!');
+          addCredit(0, '🎉 Welcome to Nexus Hub!');
         }
       } catch(e) {
         console.error('Firestore load error:', e);
+        // Fallback - show 0, will retry
         credits = 0;
         showToast('Connection error - credits may not load', 'red');
       }
@@ -1036,10 +1034,10 @@
           credits: credits,
           transactions: transactions.slice(0, 50),
           results: results,
-          usedCodes: usedCodesServer, // Firestore mein save — localStorage nahi
-          unlockedCards: [...unlockedCards],
           lastLogin: localStorage.getItem('nx_last_login') || '',
           lastShare: localStorage.getItem('nx_last_share') || '',
+          usedCodes: JSON.parse(localStorage.getItem('nx_used_codes') || '[]'),
+          unlockedCards: [...unlockedCards],
           displayName: window.currentUser.displayName || '',
           email: window.currentUser.email || '',
           updatedAt: new Date().toISOString()
@@ -1051,30 +1049,19 @@
 
     // ==================== CREDITS ====================
     function saveCredits() {
-      // ONLY Firestore - NO localStorage for credits (hack prevention)
+      // Save to Firestore (server) - this is source of truth
       saveToFirestore();
+      // localStorage only for UI speed - NOT trusted on login
+      localStorage.setItem('nx_credits_cache', credits);
       updateCreditUI();
     }
 
-    // Internal flag - direct console call se protect karta hai
-    let _internalCall = false;
-
-    function _safeAddCredit(amount, desc) {
-      _internalCall = true;
-      addCredit(amount, desc);
-      _internalCall = false;
-    }
-
     function addCredit(amount, desc) {
-      // Validate - prevent console manipulation
-      if (!_internalCall) {
-        console.warn('Direct addCredit call blocked.');
-        return;
-      }
+      // Validate - prevent manipulation
       if (typeof amount !== 'number' || isNaN(amount)) return;
-      if (amount > 1000) return;
+      if (amount > 1000) return; // Max single credit add
       credits += amount;
-      if (credits < 0) credits = 0;
+      if (credits < 0) credits = 0; // Never go below 0
       const txn = {
         amount, desc,
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
@@ -1082,7 +1069,7 @@
       };
       transactions.unshift(txn);
       saveCredits();
-      if (amount !== 0) showToast((amount > 0 ? '+' + amount : amount) + ' Credit ' + (amount > 0 ? '💰' : ''), amount > 0 ? 'green' : 'red');
+      showToast((amount > 0 ? '+' + amount : amount) + ' Credit ' + (amount > 0 ? '💰' : ''), amount > 0 ? 'green' : 'red');
     }
 
     function deductCreditForNewPrediction(msgId, idStr, msgText) {
@@ -1146,7 +1133,7 @@
         return;
       }
       localStorage.setItem('nx_last_login', today);
-      _safeAddCredit(2, '🌅 Daily Login Bonus');
+      addCredit(2, '🌅 Daily Login Bonus');
       document.getElementById('daily-earn-btn').disabled = true;
     }
 
@@ -1185,7 +1172,7 @@
             clearInterval(ticker);
             ticker = null;
             document.removeEventListener('visibilitychange', onVisibility);
-            _safeAddCredit(5, '📺 Ad Watch Reward');
+            addCredit(5, '📺 Ad Watch Reward');
             showToast('Ad dekha! +10 Credits 🎉', 'green');
             if (btn1) { btn1.disabled = false; btn1.textContent = '▶ Watch Ad'; }
           }
@@ -1264,7 +1251,7 @@
       document.getElementById('ad-modal').classList.remove('open');
       lastAdTime = Date.now();
       localStorage.setItem('nx_last_ad', lastAdTime);
-      _safeAddCredit(5, '📺 Ad Watch Reward');
+      addCredit(5, '📺 Ad Watch Reward');
     }
 
     // ==================== SHARE ====================
@@ -1305,7 +1292,7 @@
         document.getElementById('share-yes-btn').onclick = () => {
           overlay.remove();
           localStorage.setItem('nx_last_share', todayStr);
-          _safeAddCredit(20, '🔗 App Share Reward');
+          addCredit(20, '🔗 App Share Reward');
           updateShareBtnState();
           showToast('Shared! +20 Credits 🎉 (Kal dobara milega)', 'green');
         };
@@ -1598,32 +1585,37 @@
 
       if (!code) { showMsg('Code enter karo!', 'red'); return; }
 
+      // Check format: NEXUS-{credits}-{random4}
       const parts = code.split('-');
       if (parts.length !== 3 || parts[0] !== 'NEXUS') {
         showMsg('❌ Invalid code format!', 'red'); return;
       }
 
-      const codeCredits = parseInt(parts[1]);
+      const credits = parseInt(parts[1]);
       const random4 = parts[2];
 
-      if (isNaN(codeCredits) || codeCredits <= 0) {
+      if (isNaN(credits) || credits <= 0) {
         showMsg('❌ Invalid code!', 'red'); return;
       }
 
-      // Check if already used — Firestore server array se check karo
-      if (usedCodesServer.includes(code)) {
+      // Check if already used
+      const usedCodes = JSON.parse(localStorage.getItem('nx_used_codes') || '[]');
+      if (usedCodes.includes(code)) {
         showMsg('❌ Yeh code pehle use ho chuka hai!', 'red'); return;
       }
 
-      if (random4.length !== 4 || !isValidCode(codeCredits, random4)) {
+      // Validate code using hash
+      const expectedHash = generateCodeHash(credits, random4);
+      if (random4.length !== 4 || !isValidCode(credits, random4)) {
         showMsg('❌ Invalid ya expired code!', 'red'); return;
       }
 
-      // Code valid! — server array mein add karo
-      usedCodesServer.push(code);
-      _safeAddCredit(codeCredits, '🎟️ Code Redeemed: ' + code);
+      // Code valid! Apply credits
+      usedCodes.push(code);
+      localStorage.setItem('nx_used_codes', JSON.stringify(usedCodes));
+      addCredit(credits, '🎟️ Code Redeemed: ' + code);
       input.value = '';
-      showMsg('✅ ' + codeCredits + ' Credits mil gaye!', 'green');
+      showMsg('✅ ' + credits + ' Credits mil gaye!', 'green');
       setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
     }
 
