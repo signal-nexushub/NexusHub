@@ -514,8 +514,14 @@
           </div>
         </div>
         <div class="credit-actions">
-          <button class="credit-btn earn-btn" id="ad-header-btn" onclick="openAdModal()" style="display:flex;align-items:center;gap:4px;">▶ Ad</button>
-          <button class="credit-btn share-btn" id="share-earn-btn" onclick="doShare()">↗ Share</button>
+          <div style="position:relative;display:inline-flex;">
+            <span style="position:absolute;top:-7px;right:-4px;background:var(--green);color:#000;font-size:8px;font-weight:900;border-radius:6px;padding:1px 4px;z-index:2;pointer-events:none;">+5</span>
+            <button class="credit-btn earn-btn" id="ad-header-btn" onclick="openAdModal()">▶ Watch Ad</button>
+          </div>
+          <div style="position:relative;display:inline-flex;">
+            <span style="position:absolute;top:-7px;right:-4px;background:var(--gold);color:#000;font-size:8px;font-weight:900;border-radius:6px;padding:1px 4px;z-index:2;pointer-events:none;">+10</span>
+            <button class="credit-btn share-btn" id="share-earn-btn" onclick="doShare()">↗ Share</button>
+          </div>
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:2px;">
@@ -1153,9 +1159,7 @@
     }
 
     // ==================== AD MODAL ====================
-    // Ad state - function ke bahar rakha taaki reset ho sake
     let _adTicker = null;
-    let _adViewed = 0;
     let _adListener = null;
 
     function _cleanupAd() {
@@ -1163,65 +1167,63 @@
       if (_adListener) { document.removeEventListener('visibilitychange', _adListener); _adListener = null; }
     }
 
+    function _updateAdBtns(text, disabled) {
+      const b1 = document.getElementById('ad-earn-btn');
+      const b2 = document.getElementById('ad-header-btn');
+      if (b1) { b1.textContent = text; b1.disabled = disabled; }
+      if (b2) { b2.textContent = text === '▶ Watch Ad' ? '▶ Watch Ad' : text; b2.disabled = disabled; }
+    }
+
     function openAdModal() {
       const WAIT_SEC = 20;
-      const btn1 = document.getElementById('ad-earn-btn');
-      const btnH = document.getElementById('ad-header-btn');
 
-      // Pehle purana sab cleanup karo
+      // Cleanup any previous session
       _cleanupAd();
-      _adViewed = 0;
 
-      if (btn1) { btn1.disabled = true; btn1.textContent = '⏱ Ad khulo...'; }
-      if (btnH) { btnH.disabled = true; btnH.textContent = '⏱...'; }
-      showToast('Ad khul gaya — 20s left ⏱', 'gold');
+      // Timer shuru se start karo (reset)
+      let _adViewed = 0;
 
-      function updateBtn() {
-        const left = Math.max(0, WAIT_SEC - _adViewed);
-        if (btn1) btn1.textContent = left > 0 ? `⏱ ${left}s left` : '✅ Credit aa raha...';
-      }
+      _updateAdBtns('⏱ 20s left', false);
+      showToast('Ad khul gaya — 20s poore dekho ⏱', '');
 
       function startTicking() {
         if (_adTicker) return;
         _adTicker = setInterval(() => {
-          if (!document.hidden) {
-            clearInterval(_adTicker);
-            _adTicker = null;
-            if (btn1) btn1.textContent = `⏱ ${WAIT_SEC - _adViewed}s left`;
-            return;
-          }
           _adViewed++;
-          updateBtn();
+          const left = Math.max(0, WAIT_SEC - _adViewed);
+          _updateAdBtns(`⏱ ${left}s left`, false);
+
           if (_adViewed >= WAIT_SEC) {
             _cleanupAd();
             _ac(5, '📺 Ad Watch Reward');
             showToast('Ad dekha! +5 Credits 🎉', 'green');
-            if (btn1) { btn1.disabled = false; btn1.textContent = '▶ Watch Ad'; }
-            if (btnH) { btnH.disabled = false; btnH.textContent = '▶ Ad'; }
+            _updateAdBtns('▶ Watch Ad', false);
           }
         }, 1000);
       }
 
       _adListener = function() {
         if (document.hidden) {
+          // Band tab mein gaya — timer chalu
           startTicking();
         } else {
-          clearInterval(_adTicker);
-          _adTicker = null;
-          const left = WAIT_SEC - _adViewed;
-          if (left > 0 && btn1) {
-            btn1.textContent = `⏱ ${left}s left`;
-            showToast(`Ad tab pe wapas jao — ${left}s baaki hai ⏱`, 'red');
+          // Wapas aa gaya — timer rokao
+          if (_adTicker) { clearInterval(_adTicker); _adTicker = null; }
+          const left = Math.max(0, WAIT_SEC - _adViewed);
+          if (left > 0) {
+            _updateAdBtns(`⏱ ${left}s left`, false);
+            showToast(`${left}s baaki hai — wapas ad dekho ⏱`, 'red');
           }
         }
       };
 
-      window.open('https://omg10.com/4/11048781', '_blank');
       document.addEventListener('visibilitychange', _adListener);
+      window.open('https://omg10.com/4/11048781', '_blank');
 
+      // Agar tab turant band ho gaya
       setTimeout(() => {
         if (document.hidden) startTicking();
-      }, 500);
+      }, 300);
 
       return;
       // OLD modal below (unused):
@@ -1783,12 +1785,10 @@
     }
 
     function updateAdBtnState() {
-      document.querySelectorAll('#ad-earn-btn').forEach(btn => {
-        btn.disabled = false;
-        btn.textContent = '▶ Watch Ad';
-      });
-      const hBtn = document.getElementById('ad-header-btn');
-      if (hBtn) { hBtn.disabled = false; hBtn.textContent = '▶ Ad'; }
+      const b1 = document.getElementById('ad-earn-btn');
+      const b2 = document.getElementById('ad-header-btn');
+      if (b1) { b1.disabled = false; b1.textContent = '▶ Watch Ad'; }
+      if (b2) { b2.disabled = false; b2.textContent = '▶ Watch Ad'; }
     }
 
     // ==================== HELPERS ====================
