@@ -514,6 +514,7 @@
           </div>
         </div>
         <div class="credit-actions">
+          <button class="credit-btn earn-btn" id="header-ad-btn" onclick="openAdModal()">📺 Ad</button>
           <button class="credit-btn share-btn" id="share-earn-btn" onclick="doShare()">↗ Share</button>
         </div>
       </div>
@@ -1165,48 +1166,65 @@
     function openAdModal() {
       const WAIT_SEC = 20;
       const btn1 = document.getElementById('ad-earn-btn');
+      const btn2 = document.getElementById('header-ad-btn');
 
       // Pehle purana sab cleanup karo
       _cleanupAd();
       _adViewed = 0;
 
-      if (btn1) { btn1.disabled = true; btn1.textContent = '⏱ Ad khulo...'; }
+      if (btn1) { btn1.disabled = true; btn1.textContent = '⏱ 20s left'; }
+      if (btn2) { btn2.disabled = true; btn2.textContent = '⏱ 20s'; }
       showToast('Ad khul gaya — 20s left ⏱', 'gold');
 
-      function updateBtn() {
+      // Ad open time record karo
+      const adOpenTime = Date.now();
+
+      function updateBtns() {
         const left = Math.max(0, WAIT_SEC - _adViewed);
-        if (btn1) btn1.textContent = left > 0 ? `⏱ ${left}s left` : '✅ Credit aa raha...';
+        if (btn1) btn1.textContent = left > 0 ? `⏱ ${left}s left` : '✅ Credit...';
+        if (btn2) btn2.textContent = left > 0 ? `⏱ ${left}s` : '✅';
+      }
+
+      function onAdComplete() {
+        _cleanupAd();
+        _ac(5, '📺 Ad Watch Reward');
+        showToast('Ad dekha! +5 Credits 🎉', 'green');
+        if (btn1) { btn1.disabled = false; btn1.textContent = '▶ Watch'; }
+        if (btn2) { btn2.disabled = false; btn2.textContent = '📺 Ad'; }
       }
 
       function startTicking() {
         if (_adTicker) return;
         _adTicker = setInterval(() => {
-          if (!document.hidden) {
-            clearInterval(_adTicker);
-            _adTicker = null;
-            if (btn1) btn1.textContent = `⏱ ${WAIT_SEC - _adViewed}s left`;
-            return;
-          }
-          _adViewed++;
-          updateBtn();
+          // Check karo kitna time bahar gaya
+          const elapsed = Math.floor((Date.now() - adOpenTime) / 1000);
+          _adViewed = elapsed;
+          updateBtns();
           if (_adViewed >= WAIT_SEC) {
-            _cleanupAd();
-            _ac(5, '📺 Ad Watch Reward');
-            showToast('Ad dekha! +5 Credits 🎉', 'green');
-            if (btn1) { btn1.disabled = false; btn1.textContent = '▶ Watch Ad'; }
+            onAdComplete();
           }
         }, 1000);
       }
 
+      // visibilitychange listener
       _adListener = function() {
         if (document.hidden) {
+          // App background mein gayi — ticking start karo
           startTicking();
         } else {
+          // App wapas foreground — check karo complete hua ya nahi
+          const elapsed = Math.floor((Date.now() - adOpenTime) / 1000);
+          if (elapsed >= WAIT_SEC) {
+            onAdComplete();
+            return;
+          }
           clearInterval(_adTicker);
           _adTicker = null;
-          const left = WAIT_SEC - _adViewed;
-          if (left > 0 && btn1) {
-            btn1.textContent = `⏱ ${left}s left`;
+          _adViewed = elapsed;
+          const left = WAIT_SEC - elapsed;
+          if (left > 0) {
+            if (btn1) btn1.textContent = `⏱ ${left}s left`;
+            if (btn2) btn2.textContent = `⏱ ${left}s`;
             showToast(`Ad tab pe wapas jao — ${left}s baaki hai ⏱`, 'red');
           }
         }
@@ -1215,8 +1233,35 @@
       window.open('https://omg10.com/4/11048781', '_blank');
       document.addEventListener('visibilitychange', _adListener);
 
+      // Fallback: pagehide/pageshow for iOS Safari
+      const pageHideHandler = () => startTicking();
+      const pageShowHandler = () => {
+        const elapsed = Math.floor((Date.now() - adOpenTime) / 1000);
+        if (elapsed >= WAIT_SEC) { onAdComplete(); return; }
+        clearInterval(_adTicker);
+        _adTicker = null;
+      };
+      window.addEventListener('pagehide', pageHideHandler);
+      window.addEventListener('pageshow', pageShowHandler);
+
+      // Purana listener save karo cleanup ke liye
+      const origCleanup = _cleanupAd.bind({});
+      _cleanupAd = function() {
+        if (_adTicker) { clearInterval(_adTicker); _adTicker = null; }
+        if (_adListener) { document.removeEventListener('visibilitychange', _adListener); _adListener = null; }
+        window.removeEventListener('pagehide', pageHideHandler);
+        window.removeEventListener('pageshow', pageShowHandler);
+        _cleanupAd = function() {
+          if (_adTicker) { clearInterval(_adTicker); _adTicker = null; }
+          if (_adListener) { document.removeEventListener('visibilitychange', _adListener); _adListener = null; }
+        };
+      };
+
+      // 500ms baad bhi check karo (agar page immediately hide ho gaya)
       setTimeout(() => {
+        const elapsed = Math.floor((Date.now() - adOpenTime) / 1000);
         if (document.hidden) startTicking();
+        else if (elapsed >= WAIT_SEC) onAdComplete();
       }, 500);
 
       return;
@@ -1779,10 +1824,10 @@
     }
 
     function updateAdBtnState() {
-      document.querySelectorAll('#ad-earn-btn').forEach(btn => {
-        btn.disabled = false;
-        btn.textContent = '▶ Watch Ad';
-      });
+      const btn1 = document.getElementById('ad-earn-btn');
+      const btn2 = document.getElementById('header-ad-btn');
+      if (btn1) { btn1.disabled = false; btn1.textContent = '▶ Watch'; }
+      if (btn2) { btn2.disabled = false; btn2.textContent = '📺 Ad'; }
     }
 
     // ==================== HELPERS ====================
