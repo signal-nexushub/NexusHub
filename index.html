@@ -1983,17 +1983,23 @@
       function startSpinTicking() {
         if (spinAdTimer) return;
         spinAdTimer = setInterval(() => {
-          // Sirf tab count karo jab user ad tab pe ho (app hidden)
           if (!document.hidden) {
+            // User app pe wapas aaya - timer roko
             clearInterval(spinAdTimer);
             spinAdTimer = null;
             const left = SPIN_AD_DURATION - _spinElapsed;
             const label = document.getElementById('spin-ad-label');
-            if (label && left > 0) label.textContent = `Ad pe wapas jao — ${left}s baaki`;
+            if (left > 0 && label) label.textContent = `Ad pe wapas jao — ${left}s baaki`;
+            // Agar 20s complete ho chuke hain toh button enable karo
+            if (_spinElapsed >= SPIN_AD_DURATION) updateSpinAdUI();
             return;
           }
           _spinElapsed++;
           updateSpinAdUI();
+          // 20s complete hone par listener hata do
+          if (_spinElapsed >= SPIN_AD_DURATION) {
+            if (_spinAdListener) { document.removeEventListener('visibilitychange', _spinAdListener); _spinAdListener = null; }
+          }
         }, 1000);
       }
 
@@ -2006,7 +2012,34 @@
           if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
           const left = SPIN_AD_DURATION - _spinElapsed;
           const label = document.getElementById('spin-ad-label');
-          if (label && left > 0) label.textContent = `Ad pe wapas jao — ${left}s baaki`;
+          const claimBtn = document.getElementById('spin-ad-claim-btn');
+          if (left > 0) {
+            // Abhi baaki hai - button re-enable karo taaki dobara ad dekh sake
+            if (label) label.textContent = `⏱ ${left}s baaki — Dobara ad tab pe jao`;
+            if (claimBtn) {
+              claimBtn.disabled = false;
+              claimBtn.style.opacity = '1';
+              claimBtn.style.cursor = 'pointer';
+              claimBtn.textContent = '📺 Dobara Ad Dekho';
+              claimBtn.style.background = 'rgba(255,165,0,0.15)';
+              claimBtn.style.borderColor = 'rgba(255,165,0,0.4)';
+              claimBtn.style.color = 'var(--gold)';
+              claimBtn.onclick = function() {
+                // Reset button state
+                claimBtn.disabled = true;
+                claimBtn.style.opacity = '0.4';
+                claimBtn.style.cursor = 'not-allowed';
+                claimBtn.textContent = 'Pehle poora dekho...';
+                claimBtn.style.background = 'rgba(0,245,255,0.08)';
+                claimBtn.style.borderColor = 'rgba(0,245,255,0.3)';
+                claimBtn.style.color = 'var(--neon)';
+                claimBtn.onclick = claimSpinAd;
+                // Timer reset karo - dobara 20s se shuru
+                _spinElapsed = 0;
+                window.open('https://omg10.com', '_blank');
+              };
+            }
+          }
         }
       };
 
