@@ -848,64 +848,58 @@
       <div style="padding:0 16px">
 
         <!-- SPIN TOKENS -->
-        <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:16px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
           <div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:4px;">SPIN TOKENS</div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;color:var(--green);" id="spin-token-display">0</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:4px;">SPIN TOKENS</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:32px;font-weight:900;color:var(--green);" id="spin-token-display">0</div>
           </div>
-          <div style="font-size:36px;">🎰</div>
+          <div style="text-align:right;">
+            <div style="font-size:32px;line-height:1;">🎰</div>
+            <div id="spin-token-sub" style="font-size:10px;color:rgba(0,255,136,0.5);letter-spacing:1px;margin-top:4px;font-family:'Orbitron',sans-serif;"></div>
+          </div>
         </div>
 
-        <!-- SPIN WHEEL -->
-        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:24px;margin-bottom:16px;text-align:center;">
-          <!-- Wheel visual -->
-          <div id="spin-wheel" style="width:240px;height:240px;border-radius:50%;margin:0 auto 20px;position:relative;border:4px solid rgba(255,215,0,0.3);background:conic-gradient(
-            #FF2D55 0% 42.9%,
-            #FF6B35 42.9% 72.9%,
-            #FFD700 72.9% 90.9%,
-            #00F5FF 90.9% 97.9%,
-            #7B2FFF 97.9% 99.9%,
-            #00FF88 99.9% 100%
-          );transition:transform 3s cubic-bezier(0.17,0.67,0.12,0.99);display:flex;align-items:center;justify-content:center;">
-            <div style="width:60px;height:60px;border-radius:50%;background:#020008;border:3px solid rgba(255,215,0,0.5);display:flex;align-items:center;justify-content:center;font-size:24px;z-index:2;">🎯</div>
-          </div>
-          <!-- Pointer -->
-          <div style="margin-top:-14px;font-size:24px;line-height:1;">▼</div>
+        <!-- SPIN WHEEL - Canvas -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:24px 16px;margin-bottom:16px;text-align:center;position:relative;">
 
-          <!-- Prize labels -->
-          <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:16px 0;">
-            <div style="padding:4px 10px;border-radius:20px;background:rgba(255,45,85,0.1);border:1px solid rgba(255,45,85,0.3);font-size:11px;font-family:'Orbitron',sans-serif;color:#FF2D55;">5 <span style="opacity:0.5">42.9%</span></div>
-            <div style="padding:4px 10px;border-radius:20px;background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.3);font-size:11px;font-family:'Orbitron',sans-serif;color:#FF6B35;">10 <span style="opacity:0.5">30%</span></div>
-            <div style="padding:4px 10px;border-radius:20px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);font-size:11px;font-family:'Orbitron',sans-serif;color:var(--gold);">20 <span style="opacity:0.5">18%</span></div>
-            <div style="padding:4px 10px;border-radius:20px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);font-size:11px;font-family:'Orbitron',sans-serif;color:var(--neon);">50 <span style="opacity:0.5">7%</span></div>
-            <div style="padding:4px 10px;border-radius:20px;background:rgba(123,47,255,0.1);border:1px solid rgba(123,47,255,0.3);font-size:11px;font-family:'Orbitron',sans-serif;color:#7B2FFF;">100 <span style="opacity:0.5">2%</span></div>
-            <div style="padding:4px 10px;border-radius:20px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);font-size:11px;font-family:'Orbitron',sans-serif;color:var(--green);">1000 <span style="opacity:0.5">0.1%</span></div>
+          <!-- Pointer -->
+          <div style="position:relative;display:inline-block;margin-bottom:-12px;z-index:10;">
+            <div style="width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:24px solid var(--gold);filter:drop-shadow(0 0 8px rgba(255,215,0,0.8));margin:0 auto;"></div>
+          </div>
+
+          <!-- Canvas Wheel -->
+          <div style="position:relative;display:inline-block;">
+            <canvas id="spin-canvas" width="280" height="280" style="border-radius:50%;box-shadow:0 0 40px rgba(255,215,0,0.15),0 0 0 4px rgba(255,215,0,0.25);display:block;margin:0 auto;"></canvas>
+            <!-- Center hub -->
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1a0a2e,#020008);border:3px solid rgba(255,215,0,0.6);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:5;box-shadow:0 0 20px rgba(255,215,0,0.3);">🎯</div>
           </div>
 
           <!-- Spin Button -->
-          <button id="spin-btn" onclick="doSpin()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;letter-spacing:2px;cursor:pointer;box-shadow:0 4px 20px rgba(255,215,0,0.3);">
-            🎰 SPIN NOW
-          </button>
-          <div id="spin-msg" style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:10px;letter-spacing:1px;"></div>
+          <div style="margin-top:20px;">
+            <button id="spin-btn" onclick="doSpin()" style="width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;letter-spacing:2px;cursor:pointer;box-shadow:0 4px 20px rgba(255,215,0,0.35);transition:all 0.2s;">
+              🎰 SPIN NOW
+            </button>
+
+            <!-- Watch Ad button - sirf 0 tokens par dikhega -->
+            <button id="spin-watch-ad-btn" onclick="openSpinAdModal()" style="display:none;width:100%;margin-top:10px;padding:13px;border-radius:14px;border:1px solid rgba(0,245,255,0.35);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s;">
+              📺 WATCH AD · GET SPIN TOKEN
+            </button>
+
+            <div id="spin-msg" style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:10px;letter-spacing:1px;min-height:18px;"></div>
+          </div>
         </div>
 
         <!-- HOW TO EARN SPINS -->
-        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px;">
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px;margin-bottom:16px;">
           <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:2px;margin-bottom:12px;">HOW TO EARN SPINS</div>
           <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
             <span style="font-size:20px;">🆓</span>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);">First Spin Free</div>
-              <div style="font-size:11px;color:rgba(255,255,255,0.35);">Sirf pehli baar</div>
-            </div>
-            <div style="margin-left:auto;font-family:'Orbitron',sans-serif;font-size:13px;color:var(--green);font-weight:700;">+1</div>
+            <div><div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);">First Spin Free</div><div style="font-size:11px;color:rgba(255,255,255,0.35);">Sirf pehli baar</div></div>
+            <div style="margin-left:auto;font-family:'Orbitron',sans-serif;font-size:13px;color:var(--green);font-weight:700;">+1 Spin</div>
           </div>
           <div style="display:flex;align-items:center;gap:12px;padding:8px 0;">
             <span style="font-size:20px;">📺</span>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);">Watch Ad</div>
-              <div style="font-size:11px;color:rgba(255,255,255,0.35);">20 sec ad dekhne par</div>
-            </div>
+            <div><div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);">Watch Ad</div><div style="font-size:11px;color:rgba(255,255,255,0.35);">20 sec ad dekhne par</div></div>
             <div style="margin-left:auto;font-family:'Orbitron',sans-serif;font-size:13px;color:var(--green);font-weight:700;">+1 Spin</div>
           </div>
         </div>
@@ -1751,117 +1745,250 @@
     }
 
     // ==================== LUCKY SPIN ====================
+    const SPIN_SEGMENTS = [
+      { label: '5',    credits: 5,    color: '#FF2D55', prob: 42.9 },
+      { label: '10',   credits: 10,   color: '#FF6B35', prob: 30.0 },
+      { label: '20',   credits: 20,   color: '#FFD700', prob: 18.0 },
+      { label: '50',   credits: 50,   color: '#00F5FF', prob: 7.0  },
+      { label: '100',  credits: 100,  color: '#7B2FFF', prob: 2.0  },
+      { label: '1000', credits: 1000, color: '#00FF88', prob: 0.1  },
+    ];
+    let currentWheelAngle = 0;
+
+    function drawWheel(angle) {
+      const canvas = document.getElementById('spin-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const cx = canvas.width / 2, cy = canvas.height / 2;
+      const r = cx - 4;
+      const total = SPIN_SEGMENTS.length;
+      const sliceAngle = (2 * Math.PI) / total;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      SPIN_SEGMENTS.forEach((seg, i) => {
+        const startAngle = angle + i * sliceAngle;
+        const endAngle = startAngle + sliceAngle;
+
+        // Segment fill
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = seg.color;
+        ctx.fill();
+
+        // Segment border
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, endAngle);
+        ctx.closePath();
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Text
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(startAngle + sliceAngle / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 6;
+
+        // Credit emoji
+        ctx.font = 'bold 13px Orbitron, sans-serif';
+        ctx.fillText('🪙', r - 14, 5);
+
+        // Credit number
+        const fontSize = seg.label.length > 3 ? 12 : 15;
+        ctx.font = `900 ${fontSize}px Orbitron, sans-serif`;
+        ctx.fillText(seg.label, r - 28, 5);
+
+        ctx.restore();
+      });
+
+      // Outer ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(255,215,0,0.5)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+    }
+
+    function initWheel() {
+      currentWheelAngle = -Math.PI / 2; // start from top
+      drawWheel(currentWheelAngle);
+    }
+
     function updateSpinUI() {
       const display = document.getElementById('spin-token-display');
+      const sub = document.getElementById('spin-token-sub');
       const badge = document.getElementById('spin-badge');
       const fabBadge = document.getElementById('spin-fab-badge');
       const fabBtn = document.getElementById('spin-fab-btn');
       const fabIcon = document.getElementById('spin-fab-icon');
       const btn = document.getElementById('spin-btn');
+      const watchAdBtn = document.getElementById('spin-watch-ad-btn');
       const msg = document.getElementById('spin-msg');
+
       if (display) display.textContent = spinTokens;
-      if (badge) {
-        if (spinTokens > 0) { badge.textContent = spinTokens; badge.style.display = 'inline'; }
-        else badge.style.display = 'none';
-      }
-      // FAB badge update
-      if (fabBadge) {
-        if (spinTokens > 0) { fabBadge.textContent = spinTokens; fabBadge.style.display = 'inline'; }
-        else fabBadge.style.display = 'none';
-      }
-      // FAB animation - zyada pulse karo agar tokens hain
+      if (sub) sub.textContent = spinTokens > 0 ? 'READY TO SPIN' : 'NO TOKENS';
+
+      if (badge) { badge.textContent = spinTokens; badge.style.display = spinTokens > 0 ? 'inline' : 'none'; }
+      if (fabBadge) { fabBadge.textContent = spinTokens; fabBadge.style.display = spinTokens > 0 ? 'inline' : 'none'; }
       if (fabBtn) {
-        if (spinTokens > 0) {
-          fabBtn.classList.add('has-tokens');
-          if (fabIcon) fabIcon.style.animation = 'spinFabRotate 2s linear infinite';
-        } else {
-          fabBtn.classList.remove('has-tokens');
-          if (fabIcon) fabIcon.style.animation = 'none';
-        }
+        if (spinTokens > 0) { fabBtn.classList.add('has-tokens'); if (fabIcon) fabIcon.style.animation = 'spinFabRotate 2s linear infinite'; }
+        else { fabBtn.classList.remove('has-tokens'); if (fabIcon) fabIcon.style.animation = 'none'; }
       }
-      if (btn && msg) {
-        if (spinTokens > 0) {
-          btn.disabled = false;
-          btn.style.opacity = '1';
-          btn.style.cursor = 'pointer';
-          msg.textContent = spinTokens + ' spin' + (spinTokens > 1 ? 's' : '') + ' available';
-          msg.style.color = 'rgba(0,255,136,0.6)';
-        } else {
-          btn.disabled = true;
-          btn.style.opacity = '0.4';
-          btn.style.cursor = 'not-allowed';
-          msg.textContent = 'Ad dekho → Spin token pao 🎰';
-          msg.style.color = 'rgba(255,255,255,0.3)';
-        }
+
+      if (spinTokens > 0) {
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; btn.textContent = '🎰 SPIN NOW'; }
+        if (watchAdBtn) watchAdBtn.style.display = 'none';
+        if (msg) { msg.textContent = spinTokens + ' spin' + (spinTokens > 1 ? 's' : '') + ' available'; msg.style.color = 'rgba(0,255,136,0.6)'; }
+      } else {
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.35'; btn.style.cursor = 'not-allowed'; btn.textContent = '🎰 SPIN NOW'; }
+        if (watchAdBtn) watchAdBtn.style.display = 'block';
+        if (msg) { msg.textContent = 'Ad dekho aur spin token pao! 🎯'; msg.style.color = 'rgba(255,165,0,0.6)'; }
       }
     }
 
     function getSpinResult() {
       const rand = Math.random() * 100;
-      if (rand < 42.9) return 5;
-      if (rand < 72.9) return 10;
-      if (rand < 90.9) return 20;
-      if (rand < 97.9) return 50;
-      if (rand < 99.9) return 100;
-      return 1000;
+      let cumulative = 0;
+      for (const seg of SPIN_SEGMENTS) {
+        cumulative += seg.prob;
+        if (rand < cumulative) return seg;
+      }
+      return SPIN_SEGMENTS[0];
     }
 
     function doSpin() {
-      if (spinAnimating) return;
-      if (spinTokens <= 0) {
-        showToast('Koi spin token nahi! Ad dekho 📺', 'red');
-        return;
-      }
-
+      if (spinAnimating || spinTokens <= 0) return;
       spinAnimating = true;
       spinTokens--;
       if (!freeSpinUsed) freeSpinUsed = true;
 
       const btn = document.getElementById('spin-btn');
       const msg = document.getElementById('spin-msg');
-      const wheel = document.getElementById('spin-wheel');
-
+      const canvas = document.getElementById('spin-canvas');
       if (btn) { btn.disabled = true; btn.textContent = '🎰 Spinning...'; }
       if (msg) { msg.textContent = 'Good luck! 🍀'; msg.style.color = 'var(--gold)'; }
 
-      // Spin animation
       const prize = getSpinResult();
-      const extraSpins = 5 + Math.floor(Math.random() * 5); // 5-10 full rotations
-      const totalDeg = extraSpins * 360 + Math.floor(Math.random() * 360);
+      const prizeIndex = SPIN_SEGMENTS.indexOf(prize);
+      const sliceAngle = (2 * Math.PI) / SPIN_SEGMENTS.length;
 
-      if (wheel) {
-        wheel.style.transition = 'transform 3s cubic-bezier(0.17,0.67,0.12,0.99)';
-        const currentRot = parseInt(wheel.dataset.rotation || 0);
-        const newRot = currentRot + totalDeg;
-        wheel.dataset.rotation = newRot;
-        wheel.style.transform = `rotate(${newRot}deg)`;
+      // Calculate target angle - pointer at top (angle = 0), target segment center at top
+      const extraRotations = (5 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
+      const targetSegmentCenter = prizeIndex * sliceAngle + sliceAngle / 2;
+      const targetAngle = extraRotations - targetSegmentCenter - Math.PI / 2;
+
+      // Animate with requestAnimationFrame
+      const duration = 4000;
+      const startTime = performance.now();
+      const startAngle = currentWheelAngle;
+
+      function animate(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const angle = startAngle + (targetAngle - startAngle) * eased;
+        currentWheelAngle = angle;
+        drawWheel(angle);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Done!
+          spinAnimating = false;
+          currentWheelAngle = angle;
+          _ac(prize.credits, '🎰 Lucky Spin: +' + prize.credits + ' Credits');
+          saveToFirestore();
+          updateSpinUI();
+
+          // Result popup
+          const overlay = document.createElement('div');
+          overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;';
+          overlay.innerHTML = `
+            <div style="background:linear-gradient(135deg,#1a0a2e,#0d0818);border:1px solid ${prize.color};border-radius:24px;padding:36px 28px;text-align:center;max-width:300px;width:90%;box-shadow:0 0 60px ${prize.color}40,0 20px 60px rgba(0,0,0,0.5);">
+              <div style="font-size:52px;margin-bottom:12px;">🎉</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:3px;margin-bottom:8px;">YOU WON</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:52px;font-weight:900;color:${prize.color};line-height:1;text-shadow:0 0 30px ${prize.color}80;">+${prize.credits}</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--gold);letter-spacing:2px;margin-top:6px;">CREDITS</div>
+              <div style="height:1px;background:rgba(255,255,255,0.08);margin:20px 0;"></div>
+              <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,${prize.color},${prize.color}99);color:#000;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:900;letter-spacing:2px;cursor:pointer;">
+                🎰 AWESOME!
+              </button>
+            </div>`;
+          document.body.appendChild(overlay);
+          setTimeout(() => overlay.remove(), 4000);
+        }
       }
+      requestAnimationFrame(animate);
+    }
 
-      // After animation - show result
-      setTimeout(() => {
-        spinAnimating = false;
-        addCredit(prize, '🎰 Lucky Spin: +' + prize + ' Credits');
-        saveToFirestore();
-        updateSpinUI();
+    // Spin Ad Modal
+    let spinAdTimer = null;
+    const SPIN_AD_DURATION = 20;
+    let _spinAdWatching = false;
 
-        if (btn) { btn.disabled = false; btn.textContent = '🎰 SPIN NOW'; }
+    function openSpinAdModal() {
+      _spinAdWatching = false; // reset
+      const overlay = document.createElement('div');
+      overlay.id = 'spin-ad-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+      overlay.innerHTML = `
+        <div style="width:100%;max-width:480px;background:#0d0818;border:1px solid rgba(0,245,255,0.2);border-radius:24px 24px 0 0;padding:24px 20px 40px;">
+          <div style="width:36px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 20px;"></div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--neon);letter-spacing:2px;text-align:center;margin-bottom:20px;">📺 WATCH AD · GET SPIN TOKEN</div>
+          <div style="background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.15);border-radius:16px;padding:28px;text-align:center;margin-bottom:16px;">
+            <div style="font-size:36px;margin-bottom:10px;">🎰</div>
+            <div style="font-size:14px;color:rgba(255,255,255,0.6);">Ad poora dekho aur<br/>1 Spin Token pao!</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border-radius:10px;height:6px;overflow:hidden;margin-bottom:8px;">
+            <div id="spin-ad-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--neon),#0088ff);border-radius:10px;transition:width 0.1s linear;"></div>
+          </div>
+          <div id="spin-ad-label" style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:16px;">0s / ${SPIN_AD_DURATION}s</div>
+          <button id="spin-ad-claim-btn" disabled onclick="claimSpinAd()" style="width:100%;padding:14px;border-radius:14px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:not-allowed;opacity:0.4;">Pehle poora dekho...</button>
+        </div>`;
+      document.body.appendChild(overlay);
 
-        // Result popup
-        const overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
-        const color = prize >= 1000 ? 'var(--green)' : prize >= 100 ? '#7B2FFF' : prize >= 50 ? 'var(--neon)' : prize >= 20 ? 'var(--gold)' : 'rgba(255,255,255,0.8)';
-        const emoji = prize >= 1000 ? '🎊👑🎊' : prize >= 100 ? '🎉' : prize >= 50 ? '✨' : '🎰';
-        overlay.innerHTML = `
-          <div style="background:#0d0d1a;border:2px solid ${color};border-radius:24px;padding:32px 28px;max-width:300px;width:100%;text-align:center;">
-            <div style="font-size:48px;margin-bottom:12px;">${emoji}</div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:13px;color:rgba(255,255,255,0.4);letter-spacing:3px;margin-bottom:8px;">YOU WON</div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:48px;font-weight:900;color:${color};line-height:1;">${prize}</div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:${color};margin-bottom:20px;">CREDITS</div>
-            ${spinTokens > 0 ? `<div style="font-size:12px;color:rgba(0,255,136,0.6);margin-bottom:16px;">${spinTokens} spin${spinTokens>1?'s':''} remaining!</div>` : '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-bottom:16px;">Ad dekho aur aur spins pao!</div>'}
-            <button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;cursor:pointer;letter-spacing:1px;">AWESOME! 🎉</button>
-          </div>`;
-        document.body.appendChild(overlay);
-      }, 3200);
+      let elapsed = 0;
+      if (spinAdTimer) clearInterval(spinAdTimer);
+      spinAdTimer = setInterval(() => {
+        elapsed++;
+        const pct = Math.min((elapsed / SPIN_AD_DURATION) * 100, 100);
+        const bar = document.getElementById('spin-ad-bar');
+        const label = document.getElementById('spin-ad-label');
+        const claimBtn = document.getElementById('spin-ad-claim-btn');
+        if (bar) bar.style.width = pct + '%';
+        if (label) label.textContent = elapsed + 's / ' + SPIN_AD_DURATION + 's';
+        if (elapsed >= SPIN_AD_DURATION) {
+          clearInterval(spinAdTimer);
+          _spinAdWatching = true; // Ad poora dekha tabhi true hoga
+          if (claimBtn) { claimBtn.disabled = false; claimBtn.style.opacity = '1'; claimBtn.style.cursor = 'pointer'; claimBtn.textContent = '🎰 Claim Spin Token!'; claimBtn.style.background = 'rgba(0,245,255,0.18)'; }
+        }
+      }, 1000);
+
+      // Open real ad
+      window.open('https://omg10.com', '_blank');
+    }
+
+    function claimSpinAd() {
+      if (!_spinAdWatching) {
+        console.warn('Ad poora dekho pehle!');
+        return;
+      }
+      if (spinAdTimer) clearInterval(spinAdTimer);
+      _spinAdWatching = false;
+      const overlay = document.getElementById('spin-ad-overlay');
+      if (overlay) overlay.remove();
+      spinTokens++;
+      saveToFirestore();
+      updateSpinUI();
+      showToast('+1 Spin Token mila! 🎰', 'green');
     }
 
     // ==================== TOAST ====================
@@ -1938,7 +2065,7 @@
       document.getElementById('nav-' + tab).classList.add('active');
       if (tab === 'stats') updateStats();
       if (tab === 'alerts') renderNotifLog();
-      if (tab === 'spin') updateSpinUI();
+      if (tab === 'spin') { updateSpinUI(); setTimeout(initWheel, 50); }
       if (tab === 'credits') { updateCreditUI(); updateDailyBtnState(); updateShareBtnState(); }
     }
 
@@ -2456,6 +2583,7 @@
     updateCreditUI();
     updateAdminUI();
     checkDailyBonus();
+    setTimeout(initWheel, 300); // Draw wheel on load
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   </script>
 </body>
