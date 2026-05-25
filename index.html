@@ -528,14 +528,14 @@
       </div>
     </div>
 
-    <!-- ADMIN BAR -->
-    <div class="admin-bar" id="admin-bar">
+    <!-- CONTROLS BAR - Start/Stop sabke liye, CODE sirf admin ke liye -->
+    <div class="admin-bar visible" id="admin-bar" style="background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.15);">
       <div class="admin-label">
-        <span>⚙ ADMIN</span>
+        <span style="color:rgba(0,245,255,0.7);">⚡ SIGNALS</span>
         <span id="prediction-status-text">Predictions: Running</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button onclick="showCodeGenerator()" style="padding:7px 12px;border-radius:10px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;">🎟️ CODE</button>
+        <button id="admin-code-btn" onclick="showCodeGenerator()" style="display:none;padding:7px 12px;border-radius:10px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;">🎟️ CODE</button>
         <button class="start-stop-btn running" id="start-stop-btn" onclick="togglePredictions()">⏹ STOP</button>
       </div>
     </div>
@@ -1477,14 +1477,13 @@
       
       if (currentUID && ADMIN_UID && currentUID === ADMIN_UID) {
         adminUnlocked = true;
-        const bar = document.getElementById('admin-bar');
-        if (bar) bar.classList.add('visible');
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = 'block';
       } else {
-        // Reset - doosre user ke liye admin band
         adminUnlocked = false;
         localStorage.removeItem('nx_admin');
-        const bar = document.getElementById('admin-bar');
-        if (bar) bar.classList.remove('visible');
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = 'none';
       }
     }
 
@@ -1501,9 +1500,8 @@
 
     function showAdminLogin() {
       if (adminUnlocked) {
-        // Already unlocked - toggle bar
-        const bar = document.getElementById('admin-bar');
-        bar.classList.toggle('visible');
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = codeBtn.style.display === 'none' ? 'block' : 'none';
         return;
       }
       const overlay = document.createElement('div');
@@ -1546,12 +1544,11 @@
       if (hashPass(pass) === '51A79B76') {
         document.getElementById('admin-login-overlay').remove();
         adminUnlocked = true;
-        // Save admin UID - sirf is Google account ke liye admin access
         const uid = window.currentUser ? window.currentUser.uid : '';
         localStorage.setItem('nx_admin', 'true');
         localStorage.setItem('nx_admin_uid', uid);
-        const bar = document.getElementById('admin-bar');
-        bar.classList.add('visible');
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = 'block';
         showToast('✅ Admin mode ON!', 'green');
       } else {
         document.getElementById('admin-pass-msg').style.display = 'block';
