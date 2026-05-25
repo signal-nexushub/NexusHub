@@ -266,7 +266,6 @@
 
     /* STATES */
     .center-state { text-align: center; padding: 12px 20px; }
-    #content { min-height: unset !important; }
     .state-icon { font-size: 52px; opacity: 0.35; margin-bottom: 16px; }
     .state-title { font-family: 'Orbitron', sans-serif; font-size: 12px; color: rgba(255,255,255,0.2); letter-spacing: 3px; }
     .state-sub { font-size: 13px; color: rgba(255,255,255,0.15); margin-top: 8px; }
@@ -369,7 +368,7 @@
 
     /* PAGE TABS */
     .page { display: none; }
-    .page.active { display: block; min-height: unset; }
+    .page.active { display: block; }
 
     /* TOAST */
     .toast {
@@ -421,6 +420,14 @@
     }
     .modal-close-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .modal-close-btn:not(:disabled):active { background: rgba(255,215,0,0.25); }
+
+    /* GAP FIX */
+    #page-signals, #page-stats, #page-credits, #page-alerts, #page-support {
+      min-height: 0 !important;
+      height: auto !important;
+    }
+    #content:empty { display: none; }
+    .app { height: auto !important; min-height: 0 !important; }
 
     /* MESSAGE BODY STYLES */
     .pred-msg-body { display: flex; flex-direction: column; gap: 6px; }
@@ -500,7 +507,10 @@
         <div class="credit-left">
           <div class="credit-coin">🪙</div>
           <div class="credit-info">
-            <div class="credit-amount" id="header-credits">—</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="credit-amount" id="header-credits">—</div>
+              <button onclick="setTab('credits')" style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:#000;font-size:14px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;">+</button>
+            </div>
             <div class="credit-label">CREDITS</div>
           </div>
         </div>
@@ -579,11 +589,8 @@
     <div id="page-credits" class="page">
       <div class="section-title" style="padding-top:22px">My Credits</div>
       <div class="credit-history">
-        <div class="credit-summary-card" style="position:relative;">
-          <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
-            <div class="credit-big" id="credit-big">—</div>
-            <button onclick="setTab('credits')" style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:#000;font-size:24px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(255,215,0,0.3);flex-shrink:0;">+</button>
-          </div>
+        <div class="credit-summary-card">
+          <div class="credit-big" id="credit-big">—</div>
           <div class="credit-big-label">AVAILABLE CREDITS</div>
         </div>
 
