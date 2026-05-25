@@ -1,4 +1,4 @@
-const CACHE = 'nexus-v4';
+const CACHE = 'nexus-v5';
 const ASSETS = ['/NexusHub/', '/NexusHub/index.html', '/NexusHub/manifest.json'];
 
 self.addEventListener('install', e => {
