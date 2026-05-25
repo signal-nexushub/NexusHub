@@ -1036,6 +1036,7 @@
           updateCreditUI();
           updateDailyBtnState();
           updateShareBtnState();
+          updateAdBtnState();
         } else {
           // New user - give 5 credits
           credits = 0;
@@ -1186,13 +1187,6 @@
             clearInterval(ticker);
             ticker = null;
             document.removeEventListener('visibilitychange', onVisibility);
-            const todayAd = new Date().toDateString();
-            if (serverState.lastAdClaim === todayAd) {
-              showToast('Aaj ka ad reward le chuke ho! Kal aana 😊', 'red');
-              if (btn1) { btn1.disabled = true; btn1.textContent = '✓ Done'; }
-              return;
-            }
-            serverState.lastAdClaim = todayAd;
             _ac(5, '📺 Ad Watch Reward');
             showToast('Ad dekha! +5 Credits 🎉', 'green');
             if (btn1) { btn1.disabled = false; btn1.textContent = '▶ Watch Ad'; }
@@ -1270,8 +1264,7 @@
     function claimAdReward() {
       if (adTimer) clearInterval(adTimer);
       document.getElementById('ad-modal').classList.remove('open');
-      lastAdTime = Date.now();
-      _ac(5, '📺 Ad Watch Reward');
+      // Old modal - unused, no credit given here
     }
 
     // ==================== SHARE ====================
@@ -1787,10 +1780,15 @@
     }
 
     function updateDailyBtnState() {
-      const today = new Date().toDateString();
-      const lastLogin = localStorage.getItem('nx_last_login');
       const btn = document.getElementById('daily-earn-btn');
-      if (btn) btn.disabled = (lastLogin === today);
+      if (btn) btn.disabled = (serverState.lastLogin === new Date().toDateString());
+    }
+
+    function updateAdBtnState() {
+      document.querySelectorAll('#ad-earn-btn').forEach(btn => {
+        btn.disabled = false;
+        btn.textContent = '▶ Watch Ad';
+      });
     }
 
     // ==================== HELPERS ====================
