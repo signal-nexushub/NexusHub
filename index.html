@@ -1984,7 +1984,33 @@
         }
       }
 
+
+      // Main polling timer - hamesha chalta rahega jab tak 20s complete na ho
+      function startSpinPolling() {
+        if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+        spinAdTimer = setInterval(() => {
+          const hidden = document.hidden || document.webkitHidden;
+          if (hidden) {
+            // User ad tab pe hai - count karo
+            _spinElapsed++;
+            updateSpinAdUI();
+            if (_spinElapsed >= SPIN_AD_DURATION) {
+              clearInterval(spinAdTimer);
+              spinAdTimer = null;
+            }
+          } else {
+            // User app pe wapas aa gaya - retry button dikhao
+            if (_spinElapsed > 0 && _spinElapsed < SPIN_AD_DURATION) {
+              clearInterval(spinAdTimer);
+              spinAdTimer = null;
+              enableRetryButton();
+            }
+          }
+        }, 1000);
+      }
+
       function enableRetryButton() {
+        // Pehle wali enableRetryButton override karo - ab startSpinPolling call kare
         const left = SPIN_AD_DURATION - _spinElapsed;
         const label = document.getElementById('spin-ad-label');
         const claimBtn = document.getElementById('spin-ad-claim-btn');
@@ -2008,31 +2034,13 @@
             claimBtn.style.color = 'var(--neon)';
             claimBtn.onclick = claimSpinAd;
             window.open('https://omg10.com', '_blank');
+            // Dobara polling start karo
+            setTimeout(() => startSpinPolling(), 500);
           };
         }
       }
 
-      // Main polling timer - har second check karo
-      // Mobile pe visibilitychange unreliable hai, isliye polling use karo
-      spinAdTimer = setInterval(() => {
-        const hidden = document.hidden || document.webkitHidden;
-        if (hidden) {
-          // User ad tab pe hai - count karo
-          _spinElapsed++;
-          updateSpinAdUI();
-          if (_spinElapsed >= SPIN_AD_DURATION) {
-            clearInterval(spinAdTimer);
-            spinAdTimer = null;
-          }
-        } else {
-          // User app pe wapas aa gaya
-          if (_spinElapsed > 0 && _spinElapsed < SPIN_AD_DURATION) {
-            clearInterval(spinAdTimer);
-            spinAdTimer = null;
-            enableRetryButton();
-          }
-        }
-      }, 1000);
+      startSpinPolling();
 
       // Ad kholo
       window.open('https://omg10.com', '_blank');
