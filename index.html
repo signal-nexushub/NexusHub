@@ -931,7 +931,7 @@
     let currentTab = 'signals';
     let predictionsRunning = true;
     let unlockedCards = new Set();
-    let credits = 5; // starting credits
+    let credits = 0; // starting credits
     let transactions = [];
     let adTimer = null;
     let adEligible = true;
@@ -1027,8 +1027,8 @@
           updateDailyBtnState();
           updateShareBtnState();
         } else {
-          // New user - give 5 credits
-          credits = 5;
+          // New user - give 0 credits
+          credits = 0;
           transactions = [];
           await saveToFirestore();
           addCredit(0, '🎉 Welcome to Nexus Hub!');
