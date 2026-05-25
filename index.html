@@ -514,6 +514,7 @@
           </div>
         </div>
         <div class="credit-actions">
+          <button class="credit-btn earn-btn" id="ad-header-btn" onclick="openAdModal()" style="display:flex;align-items:center;gap:4px;">▶ Ad</button>
           <button class="credit-btn share-btn" id="share-earn-btn" onclick="doShare()">↗ Share</button>
         </div>
       </div>
@@ -1165,12 +1166,14 @@
     function openAdModal() {
       const WAIT_SEC = 20;
       const btn1 = document.getElementById('ad-earn-btn');
+      const btnH = document.getElementById('ad-header-btn');
 
       // Pehle purana sab cleanup karo
       _cleanupAd();
       _adViewed = 0;
 
       if (btn1) { btn1.disabled = true; btn1.textContent = '⏱ Ad khulo...'; }
+      if (btnH) { btnH.disabled = true; btnH.textContent = '⏱...'; }
       showToast('Ad khul gaya — 20s left ⏱', 'gold');
 
       function updateBtn() {
@@ -1194,6 +1197,7 @@
             _ac(5, '📺 Ad Watch Reward');
             showToast('Ad dekha! +5 Credits 🎉', 'green');
             if (btn1) { btn1.disabled = false; btn1.textContent = '▶ Watch Ad'; }
+            if (btnH) { btnH.disabled = false; btnH.textContent = '▶ Ad'; }
           }
         }, 1000);
       }
@@ -1783,6 +1787,8 @@
         btn.disabled = false;
         btn.textContent = '▶ Watch Ad';
       });
+      const hBtn = document.getElementById('ad-header-btn');
+      if (hBtn) { hBtn.disabled = false; hBtn.textContent = '▶ Ad'; }
     }
 
     // ==================== HELPERS ====================
@@ -2287,7 +2293,7 @@
     updateCreditUI();
     updateAdminUI();
     checkDailyBonus();
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=old1').catch(() => {});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   </script>
 </body>
 </html>
