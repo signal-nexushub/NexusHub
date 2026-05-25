@@ -526,17 +526,19 @@
       </div>
     </div>
 
-    <!-- ADMIN BAR -->
-    <div class="admin-bar" id="admin-bar">
+    <!-- CONTROLS BAR (Start/Stop for all, CODE for admin only) -->
+    <div class="admin-bar visible" id="controls-bar" style="margin:12px 16px 0;background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.15);border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
       <div class="admin-label">
-        <span>⚙ ADMIN</span>
+        <span style="color:rgba(0,245,255,0.7);">⚡ SIGNALS</span>
         <span id="prediction-status-text">Predictions: Running</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button onclick="showCodeGenerator()" style="padding:7px 12px;border-radius:10px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;">🎟️ CODE</button>
+        <button id="admin-code-btn" onclick="showCodeGenerator()" style="display:none;padding:7px 12px;border-radius:10px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;">🎟️ CODE</button>
         <button class="start-stop-btn running" id="start-stop-btn" onclick="togglePredictions()">⏹ STOP</button>
       </div>
     </div>
+    <!-- ADMIN BAR (kept for compatibility) -->
+    <div class="admin-bar" id="admin-bar" style="display:none;"></div>
 
     <!-- TOP STATS -->
     <div class="stats-bar">
@@ -704,7 +706,7 @@
               </div>
             </div>
             <div style="text-align:right">
-              <div class="earn-amount">+20</div>
+              <div class="earn-amount">+10</div>
               <button class="do-earn-btn" onclick="doShare()">Share</button>
             </div>
           </div>
@@ -1276,7 +1278,7 @@
         return;
       }
       const text = '🔥 Nexus Hub - Free Prediction App dekho! Live signals, high accuracy.\nhttps://signal-nexushub.github.io/NexusHub/';
-      const MIN_SHARE_TIME = 10000; // 10 seconds minimum
+      const MIN_SHARE_TIME = 2000; // 2 seconds minimum
 
       function showShareConfirm() {
         const overlay = document.createElement('div');
@@ -1305,9 +1307,9 @@
         document.getElementById('share-yes-btn').onclick = () => {
           overlay.remove();
           localStorage.setItem('nx_last_share', todayStr);
-          addCredit(20, '🔗 App Share Reward');
+          addCredit(10, '🔗 App Share Reward');
           updateShareBtnState();
-          showToast('Shared! +20 Credits 🎉 (Kal dobara milega)', 'green');
+          showToast('Shared! +10 Credits 🎉 (Kal dobara milega)', 'green');
         };
       }
 
@@ -1359,7 +1361,7 @@
         navigator.clipboard.writeText(text)
           .then(() => {
             showToast('Link copy ho gaya! Ab paste karke share karo 📋', 'green');
-            setTimeout(() => showShareConfirm(), MIN_SHARE_TIME);
+            setTimeout(() => showShareConfirm(), 2000);
           })
           .catch(() => showToast('Share nahi ho paya 😅', 'red'));
       }
@@ -1472,14 +1474,14 @@
       
       if (currentUID && ADMIN_UID && currentUID === ADMIN_UID) {
         adminUnlocked = true;
-        const bar = document.getElementById('admin-bar');
-        if (bar) bar.classList.add('visible');
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = 'block';
       } else {
         // Reset - doosre user ke liye admin band
         adminUnlocked = false;
         localStorage.removeItem('nx_admin');
-        const bar = document.getElementById('admin-bar');
-        if (bar) bar.classList.remove('visible');
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = 'none';
       }
     }
 
@@ -1496,9 +1498,9 @@
 
     function showAdminLogin() {
       if (adminUnlocked) {
-        // Already unlocked - toggle bar
-        const bar = document.getElementById('admin-bar');
-        bar.classList.toggle('visible');
+        // Already unlocked - toggle CODE button
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = codeBtn.style.display === 'none' ? 'block' : 'none';
         return;
       }
       const overlay = document.createElement('div');
@@ -1545,8 +1547,8 @@
         const uid = window.currentUser ? window.currentUser.uid : '';
         localStorage.setItem('nx_admin', 'true');
         localStorage.setItem('nx_admin_uid', uid);
-        const bar = document.getElementById('admin-bar');
-        bar.classList.add('visible');
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = 'block';
         showToast('✅ Admin mode ON!', 'green');
       } else {
         document.getElementById('admin-pass-msg').style.display = 'block';
