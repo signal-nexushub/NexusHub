@@ -16,7 +16,7 @@
     // Firebase Config
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC9c7Mnbeq_jiKxSJhvvpkF-MAEr32IRT0",
@@ -38,6 +38,8 @@
     window.fbSetDoc = setDoc;
     window.fbUpdateDoc = updateDoc;
     window.fbIncrement = increment;
+    window.fbCollection = collection;
+    window.fbGetDocs = getDocs;
     window.fbGoogleProvider = new GoogleAuthProvider();
     window.fbSignInWithPopup = signInWithPopup;
     window.fbSignInWithRedirect = signInWithRedirect;
@@ -1619,9 +1621,10 @@
       return Math.abs(hash).toString(36).toUpperCase().substring(0, 4);
     }
 
-    function redeemCode() {
+    async function redeemCode() {
       const input = document.getElementById('redeem-input');
       const msgEl = document.getElementById('redeem-msg');
+      const redeemBtn = document.querySelector('[onclick="redeemCode()"]');
       const code = (input.value || '').trim().toUpperCase();
 
       function showMsg(text, color) {
@@ -1632,36 +1635,60 @@
 
       if (!code) { showMsg('Code enter karo!', 'red'); return; }
 
-      // Check format: NEXUS-{credits}-{random4}
+      // Format check
       const parts = code.split('-');
       if (parts.length !== 3 || parts[0] !== 'NEXUS') {
         showMsg('❌ Invalid code format!', 'red'); return;
       }
 
-      const credits = parseInt(parts[1]);
+      const codeCredits = parseInt(parts[1]);
       const random4 = parts[2];
 
-      if (isNaN(credits) || credits <= 0) {
+      if (isNaN(codeCredits) || codeCredits <= 0) {
         showMsg('❌ Invalid code!', 'red'); return;
       }
 
-      // Check if already used - serverState se (multi-device reuse band)
-      if (serverState.usedCodes.includes(code)) {
-        showMsg('❌ Yeh code pehle use ho chuka hai!', 'red'); return;
-      }
-
-      // Validate code using hash
-      const expectedHash = generateCodeHash(credits, random4);
-      if (random4.length !== 4 || !isValidCode(credits, random4)) {
+      // Hash validation
+      if (random4.length !== 4 || !isValidCode(codeCredits, random4)) {
         showMsg('❌ Invalid ya expired code!', 'red'); return;
       }
 
-      // Code valid! Apply credits - serverState mein save (Firestore tak jayega)
-      serverState.usedCodes.push(code);
-      _ac(credits, '🎟️ Code Redeemed: ' + code);
-      input.value = '';
-      showMsg('✅ ' + credits + ' Credits mil gaye!', 'green');
-      setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+      // Loading state
+      if (redeemBtn) { redeemBtn.disabled = true; redeemBtn.textContent = 'Checking...'; }
+      showMsg('⏳ Verify ho raha hai...', 'gold');
+
+      try {
+        // GLOBAL check — Firestore mein dekho koi aur account pe use hua ya nahi
+        const globalRef = window.fbDoc(window.fbDb, 'redeemedCodes', code);
+        const globalSnap = await window.fbGetDoc(globalRef);
+
+        if (globalSnap.exists()) {
+          showMsg('❌ Yeh code already use ho chuka hai!', 'red');
+          if (redeemBtn) { redeemBtn.disabled = false; redeemBtn.textContent = 'REDEEM'; }
+          return;
+        }
+
+        // Code valid aur unused — global mark karo
+        await window.fbSetDoc(globalRef, {
+          usedBy: window.currentUser.uid,
+          usedByEmail: window.currentUser.email || '',
+          usedAt: new Date().toISOString(),
+          credits: codeCredits
+        });
+
+        // User ke record mein bhi save karo
+        serverState.usedCodes.push(code);
+        _ac(codeCredits, '🎟️ Code Redeemed: ' + code);
+        input.value = '';
+        showMsg('✅ ' + codeCredits + ' Credits mil gaye!', 'green');
+        setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+
+      } catch(e) {
+        showMsg('❌ Network error, dobara try karo', 'red');
+        console.error('Redeem error:', e);
+      } finally {
+        if (redeemBtn) { redeemBtn.disabled = false; redeemBtn.textContent = 'REDEEM'; }
+      }
     }
 
     function isValidCode(credits, random4) {
