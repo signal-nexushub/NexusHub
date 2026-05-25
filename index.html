@@ -1933,9 +1933,14 @@
     let spinAdTimer = null;
     const SPIN_AD_DURATION = 20;
     let _spinAdWatching = false;
+    let _spinAdListener = null;
 
     function openSpinAdModal() {
-      _spinAdWatching = false; // reset
+      _spinAdWatching = false;
+      if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+      if (_spinAdListener) { document.removeEventListener('visibilitychange', _spinAdListener); _spinAdListener = null; }
+      let _spinElapsed = 0; // sirf ad tab pe guzra hua waqt count hoga
+
       const overlay = document.createElement('div');
       overlay.id = 'spin-ad-overlay';
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
@@ -1955,25 +1960,65 @@
         </div>`;
       document.body.appendChild(overlay);
 
-      let elapsed = 0;
-      if (spinAdTimer) clearInterval(spinAdTimer);
-      spinAdTimer = setInterval(() => {
-        elapsed++;
-        const pct = Math.min((elapsed / SPIN_AD_DURATION) * 100, 100);
+      function updateSpinAdUI() {
+        const pct = Math.min((_spinElapsed / SPIN_AD_DURATION) * 100, 100);
         const bar = document.getElementById('spin-ad-bar');
         const label = document.getElementById('spin-ad-label');
         const claimBtn = document.getElementById('spin-ad-claim-btn');
         if (bar) bar.style.width = pct + '%';
-        if (label) label.textContent = elapsed + 's / ' + SPIN_AD_DURATION + 's';
-        if (elapsed >= SPIN_AD_DURATION) {
-          clearInterval(spinAdTimer);
-          _spinAdWatching = true; // Ad poora dekha tabhi true hoga
-          if (claimBtn) { claimBtn.disabled = false; claimBtn.style.opacity = '1'; claimBtn.style.cursor = 'pointer'; claimBtn.textContent = '🎰 Claim Spin Token!'; claimBtn.style.background = 'rgba(0,245,255,0.18)'; }
+        if (label) label.textContent = _spinElapsed + 's / ' + SPIN_AD_DURATION + 's';
+        if (_spinElapsed >= SPIN_AD_DURATION) {
+          if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+          _spinAdWatching = true;
+          if (claimBtn) {
+            claimBtn.disabled = false;
+            claimBtn.style.opacity = '1';
+            claimBtn.style.cursor = 'pointer';
+            claimBtn.textContent = '🎰 Claim Spin Token!';
+            claimBtn.style.background = 'rgba(0,245,255,0.18)';
+          }
         }
-      }, 1000);
+      }
 
-      // Open real ad
+      function startSpinTicking() {
+        if (spinAdTimer) return;
+        spinAdTimer = setInterval(() => {
+          // Sirf tab count karo jab user ad tab pe ho (app hidden)
+          if (!document.hidden) {
+            clearInterval(spinAdTimer);
+            spinAdTimer = null;
+            const left = SPIN_AD_DURATION - _spinElapsed;
+            const label = document.getElementById('spin-ad-label');
+            if (label && left > 0) label.textContent = `Ad pe wapas jao — ${left}s baaki`;
+            return;
+          }
+          _spinElapsed++;
+          updateSpinAdUI();
+        }, 1000);
+      }
+
+      _spinAdListener = function() {
+        if (document.hidden) {
+          // User ad tab pe gaya - timer chalu
+          startSpinTicking();
+        } else {
+          // User wapas aaya - timer ruko
+          if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+          const left = SPIN_AD_DURATION - _spinElapsed;
+          const label = document.getElementById('spin-ad-label');
+          if (label && left > 0) label.textContent = `Ad pe wapas jao — ${left}s baaki`;
+        }
+      };
+
+      document.addEventListener('visibilitychange', _spinAdListener);
+
+      // Ad kholo
       window.open('https://omg10.com', '_blank');
+
+      // 500ms baad check karo - user ad tab pe gaya ya nahi
+      setTimeout(() => {
+        if (document.hidden) startSpinTicking();
+      }, 500);
     }
 
     function claimSpinAd() {
@@ -1981,7 +2026,8 @@
         console.warn('Ad poora dekho pehle!');
         return;
       }
-      if (spinAdTimer) clearInterval(spinAdTimer);
+      if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+      if (_spinAdListener) { document.removeEventListener('visibilitychange', _spinAdListener); _spinAdListener = null; }
       _spinAdWatching = false;
       const overlay = document.getElementById('spin-ad-overlay');
       if (overlay) overlay.remove();
