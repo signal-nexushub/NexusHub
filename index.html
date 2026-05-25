@@ -526,19 +526,17 @@
       </div>
     </div>
 
-    <!-- CONTROLS BAR (Start/Stop for all, CODE for admin only) -->
-    <div class="admin-bar visible" id="controls-bar" style="margin:12px 16px 0;background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.15);border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+    <!-- ADMIN BAR -->
+    <div class="admin-bar" id="admin-bar">
       <div class="admin-label">
-        <span style="color:rgba(0,245,255,0.7);">⚡ SIGNALS</span>
+        <span>⚙ ADMIN</span>
         <span id="prediction-status-text">Predictions: Running</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button id="admin-code-btn" onclick="showCodeGenerator()" style="display:none;padding:7px 12px;border-radius:10px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;">🎟️ CODE</button>
+        <button onclick="showCodeGenerator()" style="padding:7px 12px;border-radius:10px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;">🎟️ CODE</button>
         <button class="start-stop-btn running" id="start-stop-btn" onclick="togglePredictions()">⏹ STOP</button>
       </div>
     </div>
-    <!-- ADMIN BAR (kept for compatibility) -->
-    <div class="admin-bar" id="admin-bar" style="display:none;"></div>
 
     <!-- TOP STATS -->
     <div class="stats-bar">
@@ -938,6 +936,14 @@
     let lastAdTime = 0;
     const AD_COOLDOWN = 60 * 1000; // 1 min cooldown between ads
 
+    // Server state - Firestore se aata hai, localStorage pe depend nahi
+    let serverState = {
+      lastLogin: '',
+      lastShare: '',
+      lastAdClaim: '',
+      usedCodes: []
+    };
+
     // ==================== LOAD SAVED ====================
     try { results = JSON.parse(localStorage.getItem('nx_results') || '{}'); } catch(e) {}
     try { notifLog = JSON.parse(localStorage.getItem('nx_notifs') || '[]'); } catch(e) {}
@@ -1015,23 +1021,25 @@
         if (snap.exists()) {
           const data = snap.data();
           // Always use server value - localStorage is not trusted
-          credits = data.credits ?? 5;
+          credits = data.credits ?? 0;
           transactions = data.transactions ?? [];
           results = data.results ?? {};
           const today = new Date().toDateString();
-          if (data.lastLogin) localStorage.setItem('nx_last_login', data.lastLogin);
-          if (data.lastShare) localStorage.setItem('nx_last_share', data.lastShare);
-          if (data.usedCodes) localStorage.setItem('nx_used_codes', JSON.stringify(data.usedCodes));
+          // Server state mein store karo - yahi trusted source hai
+          serverState.lastLogin = data.lastLogin || '';
+          serverState.lastShare = data.lastShare || '';
+          serverState.lastAdClaim = data.lastAdClaim || '';
+          serverState.usedCodes = data.usedCodes || [];
           if (data.unlockedCards) unlockedCards = new Set(data.unlockedCards);
           updateCreditUI();
           updateDailyBtnState();
           updateShareBtnState();
         } else {
-          // New user - give 0 credits
+          // New user - give 5 credits
           credits = 0;
           transactions = [];
           await saveToFirestore();
-          addCredit(0, '🎉 Welcome to Nexus Hub!');
+          _ac(0, '🎉 Welcome to Nexus Hub!');
         }
       } catch(e) {
         console.error('Firestore load error:', e);
@@ -1049,9 +1057,10 @@
           credits: credits,
           transactions: transactions.slice(0, 50),
           results: results,
-          lastLogin: localStorage.getItem('nx_last_login') || '',
-          lastShare: localStorage.getItem('nx_last_share') || '',
-          usedCodes: JSON.parse(localStorage.getItem('nx_used_codes') || '[]'),
+          lastLogin: serverState.lastLogin || '',
+          lastShare: serverState.lastShare || '',
+          lastAdClaim: serverState.lastAdClaim || '',
+          usedCodes: serverState.usedCodes || [],
           unlockedCards: [...unlockedCards],
           displayName: window.currentUser.displayName || '',
           email: window.currentUser.email || '',
@@ -1064,19 +1073,18 @@
 
     // ==================== CREDITS ====================
     function saveCredits() {
-      // Save to Firestore (server) - this is source of truth
       saveToFirestore();
-      // localStorage only for UI speed - NOT trusted on login
-      localStorage.setItem('nx_credits_cache', credits);
       updateCreditUI();
     }
 
-    function addCredit(amount, desc) {
-      // Validate - prevent manipulation
+    // Console hack band - random key se lock hai
+    const _ck = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    function addCredit(amount, desc, _key) {
+      if (_key !== _ck) return; // Direct console call block
       if (typeof amount !== 'number' || isNaN(amount)) return;
-      if (amount > 1000) return; // Max single credit add
+      if (amount > 1000) return;
       credits += amount;
-      if (credits < 0) credits = 0; // Never go below 0
+      if (credits < 0) credits = 0;
       const txn = {
         amount, desc,
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
@@ -1086,6 +1094,8 @@
       saveCredits();
       showToast((amount > 0 ? '+' + amount : amount) + ' Credit ' + (amount > 0 ? '💰' : ''), amount > 0 ? 'green' : 'red');
     }
+    // Internal wrapper - yahi use hoga har jagah
+    function _ac(amount, desc) { addCredit(amount, desc, _ck); }
 
     function deductCreditForNewPrediction(msgId, idStr, msgText) {
       // Only deduct once per prediction message
@@ -1098,16 +1108,8 @@
         localStorage.setItem('nx_unlocked', JSON.stringify([...unlockedCards]));
         return;
       }
-      credits -= 1;
-      const txn = {
-        amount: -1, desc: '📡 Prediction SIG-' + idStr,
-        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
-        date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-      };
-      transactions.unshift(txn);
       unlockedCards.add(msgId);
-      localStorage.setItem('nx_unlocked', JSON.stringify([...unlockedCards]));
-      saveCredits();
+      _ac(-1, '📡 Prediction SIG-' + idStr);
       checkCreditAutoStop();
     }
 
@@ -1132,23 +1134,18 @@
 
     // ==================== DAILY BONUS ====================
     function checkDailyBonus() {
-      const today = new Date().toDateString();
-      const lastLogin = localStorage.getItem('nx_last_login');
-      // AUTO credit band - sirf button click se milega
-      // Update claim button state only
       const btn = document.getElementById('daily-earn-btn');
-      if (btn) btn.disabled = (lastLogin === today);
+      if (btn) btn.disabled = (serverState.lastLogin === new Date().toDateString());
     }
 
     function claimDailyBonus() {
       const today = new Date().toDateString();
-      const lastLogin = localStorage.getItem('nx_last_login');
-      if (lastLogin === today) {
+      if (serverState.lastLogin === today) {
         showToast('Aaj ka bonus le chuke ho! Kal aana 😊', 'red');
         return;
       }
-      localStorage.setItem('nx_last_login', today);
-      addCredit(2, '🌅 Daily Login Bonus');
+      serverState.lastLogin = today;
+      _ac(2, '🌅 Daily Login Bonus');
       document.getElementById('daily-earn-btn').disabled = true;
     }
 
@@ -1187,8 +1184,15 @@
             clearInterval(ticker);
             ticker = null;
             document.removeEventListener('visibilitychange', onVisibility);
-            addCredit(5, '📺 Ad Watch Reward');
-            showToast('Ad dekha! +10 Credits 🎉', 'green');
+            const todayAd = new Date().toDateString();
+            if (serverState.lastAdClaim === todayAd) {
+              showToast('Aaj ka ad reward le chuke ho! Kal aana 😊', 'red');
+              if (btn1) { btn1.disabled = true; btn1.textContent = '✓ Done'; }
+              return;
+            }
+            serverState.lastAdClaim = todayAd;
+            _ac(5, '📺 Ad Watch Reward');
+            showToast('Ad dekha! +5 Credits 🎉', 'green');
             if (btn1) { btn1.disabled = false; btn1.textContent = '▶ Watch Ad'; }
           }
         }, 1000);
@@ -1265,15 +1269,13 @@
       if (adTimer) clearInterval(adTimer);
       document.getElementById('ad-modal').classList.remove('open');
       lastAdTime = Date.now();
-      localStorage.setItem('nx_last_ad', lastAdTime);
-      addCredit(5, '📺 Ad Watch Reward');
+      _ac(5, '📺 Ad Watch Reward');
     }
 
     // ==================== SHARE ====================
     function doShare() {
       const todayStr = new Date().toDateString();
-      const lastShare = localStorage.getItem('nx_last_share');
-      if (lastShare === todayStr) {
+      if (serverState.lastShare === todayStr) {
         showToast('Aaj share ho chuka hai! Kal dobara karo 📅', 'red');
         return;
       }
@@ -1306,8 +1308,8 @@
         document.body.appendChild(overlay);
         document.getElementById('share-yes-btn').onclick = () => {
           overlay.remove();
-          localStorage.setItem('nx_last_share', todayStr);
-          addCredit(10, '🔗 App Share Reward');
+          serverState.lastShare = todayStr;
+          _ac(10, '🔗 App Share Reward');
           updateShareBtnState();
           showToast('Shared! +10 Credits 🎉 (Kal dobara milega)', 'green');
         };
@@ -1371,8 +1373,7 @@
       const btn = document.getElementById('share-earn-btn');
       if (!btn) return;
       const todayStr = new Date().toDateString();
-      const lastShare = localStorage.getItem('nx_last_share');
-      if (lastShare === todayStr) {
+      if (serverState.lastShare === todayStr) {
         btn.disabled = true;
         btn.style.opacity = '0.35';
         btn.style.cursor = 'not-allowed';
@@ -1474,14 +1475,14 @@
       
       if (currentUID && ADMIN_UID && currentUID === ADMIN_UID) {
         adminUnlocked = true;
-        const codeBtn = document.getElementById('admin-code-btn');
-        if (codeBtn) codeBtn.style.display = 'block';
+        const bar = document.getElementById('admin-bar');
+        if (bar) bar.classList.add('visible');
       } else {
         // Reset - doosre user ke liye admin band
         adminUnlocked = false;
         localStorage.removeItem('nx_admin');
-        const codeBtn = document.getElementById('admin-code-btn');
-        if (codeBtn) codeBtn.style.display = 'none';
+        const bar = document.getElementById('admin-bar');
+        if (bar) bar.classList.remove('visible');
       }
     }
 
@@ -1498,9 +1499,9 @@
 
     function showAdminLogin() {
       if (adminUnlocked) {
-        // Already unlocked - toggle CODE button
-        const codeBtn = document.getElementById('admin-code-btn');
-        if (codeBtn) codeBtn.style.display = codeBtn.style.display === 'none' ? 'block' : 'none';
+        // Already unlocked - toggle bar
+        const bar = document.getElementById('admin-bar');
+        bar.classList.toggle('visible');
         return;
       }
       const overlay = document.createElement('div');
@@ -1547,8 +1548,8 @@
         const uid = window.currentUser ? window.currentUser.uid : '';
         localStorage.setItem('nx_admin', 'true');
         localStorage.setItem('nx_admin_uid', uid);
-        const codeBtn = document.getElementById('admin-code-btn');
-        if (codeBtn) codeBtn.style.display = 'block';
+        const bar = document.getElementById('admin-bar');
+        bar.classList.add('visible');
         showToast('✅ Admin mode ON!', 'green');
       } else {
         document.getElementById('admin-pass-msg').style.display = 'block';
@@ -1644,9 +1645,8 @@
         showMsg('❌ Invalid code!', 'red'); return;
       }
 
-      // Check if already used
-      const usedCodes = JSON.parse(localStorage.getItem('nx_used_codes') || '[]');
-      if (usedCodes.includes(code)) {
+      // Check if already used - serverState se (multi-device reuse band)
+      if (serverState.usedCodes.includes(code)) {
         showMsg('❌ Yeh code pehle use ho chuka hai!', 'red'); return;
       }
 
@@ -1656,10 +1656,9 @@
         showMsg('❌ Invalid ya expired code!', 'red'); return;
       }
 
-      // Code valid! Apply credits
-      usedCodes.push(code);
-      localStorage.setItem('nx_used_codes', JSON.stringify(usedCodes));
-      addCredit(credits, '🎟️ Code Redeemed: ' + code);
+      // Code valid! Apply credits - serverState mein save (Firestore tak jayega)
+      serverState.usedCodes.push(code);
+      _ac(credits, '🎟️ Code Redeemed: ' + code);
       input.value = '';
       showMsg('✅ ' + credits + ' Credits mil gaye!', 'green');
       setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
