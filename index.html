@@ -1936,10 +1936,13 @@
     let _spinAdListener = null;
 
     function openSpinAdModal() {
+      // Cleanup any previous session
       _spinAdWatching = false;
       if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
       if (_spinAdListener) { document.removeEventListener('visibilitychange', _spinAdListener); _spinAdListener = null; }
-      let _spinElapsed = 0; // sirf ad tab pe guzra hua waqt count hoga
+
+      let elapsed = 0;
+      let isOnAdTab = false;
 
       const overlay = document.createElement('div');
       overlay.id = 'spin-ad-overlay';
@@ -1953,94 +1956,86 @@
             <div style="font-size:14px;color:rgba(255,255,255,0.6);">Ad poora dekho aur<br/>1 Spin Token pao!</div>
           </div>
           <div style="background:rgba(255,255,255,0.04);border-radius:10px;height:6px;overflow:hidden;margin-bottom:8px;">
-            <div id="spin-ad-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--neon),#0088ff);border-radius:10px;transition:width 0.1s linear;"></div>
+            <div id="spin-ad-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--neon),#0088ff);border-radius:10px;transition:width 0.2s linear;"></div>
           </div>
           <div id="spin-ad-label" style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:16px;">0s / ${SPIN_AD_DURATION}s</div>
-          <button id="spin-ad-claim-btn" disabled onclick="claimSpinAd()" style="width:100%;padding:14px;border-radius:14px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:not-allowed;opacity:0.4;">Pehle poora dekho...</button>
+          <button id="spin-ad-claim-btn" style="width:100%;padding:14px;border-radius:14px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:not-allowed;opacity:0.4;">Pehle poora dekho...</button>
         </div>`;
       document.body.appendChild(overlay);
 
-      // UI update function
-      function updateSpinAdUI() {
-        const pct = Math.min((_spinElapsed / SPIN_AD_DURATION) * 100, 100);
-        const bar = document.getElementById('spin-ad-bar');
-        const label = document.getElementById('spin-ad-label');
-        const claimBtn = document.getElementById('spin-ad-claim-btn');
-        if (bar) bar.style.width = pct + '%';
-        if (label) label.textContent = _spinElapsed + 's / ' + SPIN_AD_DURATION + 's';
-        if (_spinElapsed >= SPIN_AD_DURATION) {
-          if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
-          _spinAdWatching = true;
-          if (claimBtn) {
-            claimBtn.disabled = false;
-            claimBtn.style.opacity = '1';
-            claimBtn.style.cursor = 'pointer';
-            claimBtn.textContent = '🎰 Claim Spin Token!';
-            claimBtn.style.background = 'rgba(0,245,255,0.18)';
-            claimBtn.style.borderColor = 'rgba(0,245,255,0.3)';
-            claimBtn.style.color = 'var(--neon)';
-            claimBtn.onclick = claimSpinAd;
-          }
-        }
-      }
+      const getBtn = () => document.getElementById('spin-ad-claim-btn');
+      const getBar = () => document.getElementById('spin-ad-bar');
+      const getLabel = () => document.getElementById('spin-ad-label');
 
-
-      // Main polling timer - hamesha chalta rahega jab tak 20s complete na ho
-      function startSpinPolling() {
-        if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
-        spinAdTimer = setInterval(() => {
-          const hidden = document.hidden || document.webkitHidden;
-          if (hidden) {
-            // User ad tab pe hai - count karo
-            _spinElapsed++;
-            updateSpinAdUI();
-            if (_spinElapsed >= SPIN_AD_DURATION) {
-              clearInterval(spinAdTimer);
-              spinAdTimer = null;
-            }
-          } else {
-            // User app pe wapas aa gaya - retry button dikhao
-            if (_spinElapsed > 0 && _spinElapsed < SPIN_AD_DURATION) {
-              clearInterval(spinAdTimer);
-              spinAdTimer = null;
-              enableRetryButton();
-            }
-          }
-        }, 1000);
-      }
-
-      function enableRetryButton() {
-        // Pehle wali enableRetryButton override karo - ab startSpinPolling call kare
-        const left = SPIN_AD_DURATION - _spinElapsed;
-        const label = document.getElementById('spin-ad-label');
-        const claimBtn = document.getElementById('spin-ad-claim-btn');
-        if (label) label.textContent = `⏱ ${left}s baaki`;
-        if (claimBtn) {
-          claimBtn.disabled = false;
-          claimBtn.style.opacity = '1';
-          claimBtn.style.cursor = 'pointer';
-          claimBtn.textContent = '📺 Dobara Ad Dekho';
-          claimBtn.style.background = 'rgba(255,165,0,0.15)';
-          claimBtn.style.borderColor = 'rgba(255,165,0,0.4)';
-          claimBtn.style.color = 'var(--gold)';
-          claimBtn.onclick = function() {
-            _spinElapsed = 0;
-            claimBtn.disabled = true;
-            claimBtn.style.opacity = '0.4';
-            claimBtn.style.cursor = 'not-allowed';
-            claimBtn.textContent = 'Pehle poora dekho...';
-            claimBtn.style.background = 'rgba(0,245,255,0.08)';
-            claimBtn.style.borderColor = 'rgba(0,245,255,0.3)';
-            claimBtn.style.color = 'var(--neon)';
-            claimBtn.onclick = claimSpinAd;
+      function setRetryMode() {
+        const left = SPIN_AD_DURATION - elapsed;
+        const btn = getBtn();
+        if (getLabel()) getLabel().textContent = `⏱ ${left}s baaki`;
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+          btn.textContent = '📺 Dobara Ad Dekho';
+          btn.style.background = 'rgba(255,165,0,0.15)';
+          btn.style.borderColor = 'rgba(255,165,0,0.4)';
+          btn.style.color = 'var(--gold)';
+          btn.onclick = function() {
+            elapsed = 0;
+            isOnAdTab = false;
+            btn.disabled = true;
+            btn.style.opacity = '0.4';
+            btn.style.cursor = 'not-allowed';
+            btn.textContent = 'Pehle poora dekho...';
+            btn.style.background = 'rgba(0,245,255,0.08)';
+            btn.style.borderColor = 'rgba(0,245,255,0.3)';
+            btn.style.color = 'var(--neon)';
+            btn.onclick = null;
             window.open('https://omg10.com', '_blank');
-            // Dobara polling start karo
-            setTimeout(() => startSpinPolling(), 500);
+            // Polling dobara start karo
+            if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+            spinAdTimer = setInterval(pollFn, 1000);
           };
         }
       }
 
-      startSpinPolling();
+      function setClaimMode() {
+        const btn = getBtn();
+        if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+        _spinAdWatching = true;
+        if (getBar()) getBar().style.width = '100%';
+        if (getLabel()) getLabel().textContent = '✅ Claim karo!';
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+          btn.textContent = '🎰 Claim Spin Token!';
+          btn.style.background = 'rgba(0,245,255,0.18)';
+          btn.style.borderColor = 'rgba(0,245,255,0.3)';
+          btn.style.color = 'var(--neon)';
+          btn.onclick = claimSpinAd;
+        }
+      }
+
+      // Polling function - named taaki restart ho sake
+      function pollFn() {
+        const hidden = document.hidden || document.webkitHidden;
+        if (hidden && !isOnAdTab) isOnAdTab = true;
+        if (hidden) {
+          elapsed++;
+          const pct = Math.min((elapsed / SPIN_AD_DURATION) * 100, 100);
+          if (getBar()) getBar().style.width = pct + '%';
+          if (getLabel()) getLabel().textContent = elapsed + 's / ' + SPIN_AD_DURATION + 's';
+          if (elapsed >= SPIN_AD_DURATION) setClaimMode();
+        } else if (isOnAdTab) {
+          if (elapsed < SPIN_AD_DURATION) {
+            clearInterval(spinAdTimer);
+            spinAdTimer = null;
+            setRetryMode();
+          }
+        }
+      }
+
+      spinAdTimer = setInterval(pollFn, 1000);
 
       // Ad kholo
       window.open('https://omg10.com', '_blank');
