@@ -367,6 +367,165 @@
     .fab:active { transform: scale(0.93); }
     .fab.spinning .fab-icon { animation: spin 0.5s linear; }
     .fab-new { position: absolute; top: -3px; right: -3px; background: var(--red); color: #fff; font-family: 'Orbitron', sans-serif; font-size: 8px; font-weight: 700; border-radius: 10px; padding: 2px 5px; min-width: 16px; text-align: center; display: none; }
+    /* ===== CYBERPUNK SPIN WHEEL ===== */
+    #page-spin { background: transparent; }
+    .spin-page-bg {
+      position: relative;
+      padding: 0 16px;
+    }
+    .spin-page-bg::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(ellipse 80% 40% at 50% 0%, rgba(123,47,255,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 30% at 20% 80%, rgba(0,245,255,0.07) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .spin-token-card {
+      position: relative;
+      background: linear-gradient(135deg, rgba(123,47,255,0.12), rgba(0,245,255,0.06));
+      border: 1px solid rgba(123,47,255,0.4);
+      border-radius: 18px;
+      padding: 16px 20px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+    .spin-token-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(123,47,255,0.08), transparent);
+      animation: tokenShimmer 3s ease-in-out infinite;
+    }
+    @keyframes tokenShimmer { 0%,100% { left: -100% } 50% { left: 150% } }
+    .spin-wheel-card {
+      position: relative;
+      background: rgba(8,4,20,0.9);
+      border: 1px solid rgba(123,47,255,0.25);
+      border-radius: 24px;
+      padding: 28px 16px 22px;
+      margin-bottom: 16px;
+      text-align: center;
+      overflow: hidden;
+    }
+    .spin-wheel-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 100% 50% at 50% 100%, rgba(123,47,255,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .spin-pointer-wrap {
+      position: relative;
+      display: inline-block;
+      margin-bottom: -14px;
+      z-index: 10;
+    }
+    .spin-pointer {
+      width: 0; height: 0;
+      border-left: 13px solid transparent;
+      border-right: 13px solid transparent;
+      border-top: 26px solid var(--neon);
+      filter: drop-shadow(0 0 10px var(--neon)) drop-shadow(0 0 20px rgba(0,245,255,0.5));
+      margin: 0 auto;
+      animation: pointerPulse 2s ease-in-out infinite;
+    }
+    @keyframes pointerPulse {
+      0%,100% { filter: drop-shadow(0 0 8px var(--neon)) drop-shadow(0 0 16px rgba(0,245,255,0.4)); }
+      50% { filter: drop-shadow(0 0 14px var(--neon)) drop-shadow(0 0 28px rgba(0,245,255,0.7)); }
+    }
+    .spin-canvas-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .spin-canvas-ring {
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      background: conic-gradient(
+        #7B2FFF, #00F5FF, #00FF88, #FFD700, #FF6B35, #FF2D55, #7B2FFF
+      );
+      animation: ringRotate 8s linear infinite;
+      opacity: 0.6;
+    }
+    .spin-canvas-ring::before {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      background: #08041a;
+    }
+    @keyframes ringRotate { to { transform: rotate(360deg); } }
+    .spin-canvas-glow {
+      position: absolute;
+      inset: -20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(123,47,255,0.15) 0%, transparent 70%);
+      animation: glowPulse 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes glowPulse {
+      0%,100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
+    }
+    .spin-hub {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #2a1060, #08041a);
+      border: 2px solid rgba(0,245,255,0.6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      z-index: 5;
+      box-shadow: 0 0 20px rgba(0,245,255,0.4), inset 0 0 15px rgba(123,47,255,0.3);
+    }
+    .spin-btn-cyber {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,215,0,0.5);
+      background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.08));
+      color: var(--gold);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s;
+      box-shadow: 0 0 20px rgba(255,215,0,0.15), inset 0 0 20px rgba(255,215,0,0.05);
+    }
+    .spin-btn-cyber::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,215,0,0.15), transparent);
+      transition: left 0.4s;
+    }
+    .spin-btn-cyber:not(:disabled):hover::before { left: 100%; }
+    .spin-btn-cyber:not(:disabled):active { transform: scale(0.98); }
+    .spin-btn-cyber:disabled { opacity: 0.3; cursor: not-allowed; }
+    .spin-corners::before, .spin-corners::after {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      border-color: rgba(0,245,255,0.4);
+      border-style: solid;
+    }
+    .spin-corners::before { top: 8px; left: 8px; border-width: 1px 0 0 1px; }
+    .spin-corners::after { bottom: 8px; right: 8px; border-width: 0 1px 1px 0; }
+
     /* SPIN FAB */
     .spin-fab { position: fixed; bottom: 152px; right: 18px; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #00FF88, #00CC66); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 24px rgba(0,255,136,0.4); font-size: 22px; transition: transform 0.2s; z-index: 50; animation: spinFabPulse 2s ease-in-out infinite; }
     .spin-fab:active { transform: scale(0.93); }
@@ -844,48 +1003,48 @@
 
     <!-- SPIN PAGE -->
     <div id="page-spin" class="page">
-      <div class="section-title" style="padding-top:22px">Lucky Spin</div>
-      <div style="padding:0 16px">
+      <div class="section-title" style="padding-top:22px;background:linear-gradient(90deg,var(--neon),#7B2FFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px;">⚡ LUCKY SPIN</div>
+      <div class="spin-page-bg">
 
         <!-- SPIN TOKENS -->
-        <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:16px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:4px;">SPIN TOKENS</div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:32px;font-weight:900;color:var(--green);" id="spin-token-display">0</div>
+        <div class="spin-token-card">
+          <div style="position:relative;z-index:1;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:9px;color:rgba(123,47,255,0.8);letter-spacing:3px;margin-bottom:6px;">▸ SPIN TOKENS</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:36px;font-weight:900;background:linear-gradient(135deg,#00FF88,#7B2FFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;" id="spin-token-display">0</div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-size:32px;line-height:1;">🎰</div>
-            <div id="spin-token-sub" style="font-size:10px;color:rgba(0,255,136,0.5);letter-spacing:1px;margin-top:4px;font-family:'Orbitron',sans-serif;"></div>
+          <div style="text-align:right;position:relative;z-index:1;">
+            <div style="font-size:36px;line-height:1;filter:drop-shadow(0 0 12px rgba(123,47,255,0.6));">🎰</div>
+            <div id="spin-token-sub" style="font-size:9px;letter-spacing:2px;margin-top:6px;font-family:'Orbitron',sans-serif;color:rgba(0,255,136,0.6);"></div>
           </div>
         </div>
 
-        <!-- SPIN WHEEL - Canvas -->
-        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:24px 16px;margin-bottom:16px;text-align:center;position:relative;">
+        <!-- SPIN WHEEL -->
+        <div class="spin-wheel-card spin-corners">
 
           <!-- Pointer -->
-          <div style="position:relative;display:inline-block;margin-bottom:-12px;z-index:10;">
-            <div style="width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:24px solid var(--gold);filter:drop-shadow(0 0 8px rgba(255,215,0,0.8));margin:0 auto;"></div>
+          <div class="spin-pointer-wrap">
+            <div class="spin-pointer"></div>
           </div>
 
-          <!-- Canvas Wheel -->
-          <div style="position:relative;display:inline-block;">
-            <canvas id="spin-canvas" width="280" height="280" style="border-radius:50%;box-shadow:0 0 40px rgba(255,215,0,0.15),0 0 0 4px rgba(255,215,0,0.25);display:block;margin:0 auto;"></canvas>
-            <!-- Center hub -->
-            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1a0a2e,#020008);border:3px solid rgba(255,215,0,0.6);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:5;box-shadow:0 0 20px rgba(255,215,0,0.3);">🎯</div>
+          <!-- Canvas Wheel with glow ring -->
+          <div class="spin-canvas-wrap">
+            <div class="spin-canvas-ring"></div>
+            <div class="spin-canvas-glow"></div>
+            <canvas id="spin-canvas" width="280" height="280" style="border-radius:50%;display:block;margin:0 auto;position:relative;z-index:2;"></canvas>
+            <div class="spin-hub">🎯</div>
           </div>
 
           <!-- Spin Button -->
-          <div style="margin-top:20px;">
-            <button id="spin-btn" onclick="doSpin()" style="width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;letter-spacing:2px;cursor:pointer;box-shadow:0 4px 20px rgba(255,215,0,0.35);transition:all 0.2s;">
-              🎰 SPIN NOW
+          <div style="margin-top:24px;position:relative;z-index:2;">
+            <button id="spin-btn" class="spin-btn-cyber" onclick="doSpin()">
+              ⚡ SPIN NOW
             </button>
 
-            <!-- Watch Ad button - sirf 0 tokens par dikhega -->
-            <button id="spin-watch-ad-btn" onclick="openSpinAdModal()" style="display:none;width:100%;margin-top:10px;padding:13px;border-radius:14px;border:1px solid rgba(0,245,255,0.35);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s;">
+            <button id="spin-watch-ad-btn" onclick="openSpinAdModal()" style="display:none;width:100%;margin-top:10px;padding:13px;border-radius:14px;border:1px solid rgba(0,245,255,0.35);background:rgba(0,245,255,0.06);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s;box-shadow:0 0 15px rgba(0,245,255,0.08);">
               📺 WATCH AD · GET SPIN TOKEN
             </button>
 
-            <div id="spin-msg" style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:10px;letter-spacing:1px;min-height:18px;"></div>
+            <div id="spin-msg" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:10px;letter-spacing:2px;min-height:18px;font-family:'Orbitron',sans-serif;"></div>
           </div>
         </div>
 
@@ -1760,59 +1919,101 @@
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const cx = canvas.width / 2, cy = canvas.height / 2;
-      const r = cx - 4;
-      const total = SPIN_SEGMENTS.length;
-      const sliceAngle = (2 * Math.PI) / total;
+      const r = cx - 3;
+      const sliceAngle = (2 * Math.PI) / SPIN_SEGMENTS.length;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Dark background circle
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+      ctx.fillStyle = '#08041a';
+      ctx.fill();
 
       SPIN_SEGMENTS.forEach((seg, i) => {
         const startAngle = angle + i * sliceAngle;
         const endAngle = startAngle + sliceAngle;
+        const midAngle = startAngle + sliceAngle / 2;
 
-        // Segment fill
+        // Gradient fill per segment
+        const gx = cx + Math.cos(midAngle) * r * 0.5;
+        const gy = cy + Math.sin(midAngle) * r * 0.5;
+        const grad = ctx.createRadialGradient(gx, gy, 0, cx, cy, r);
+        grad.addColorStop(0, seg.color + 'FF');
+        grad.addColorStop(1, seg.color + '88');
+
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.arc(cx, cy, r, startAngle, endAngle);
         ctx.closePath();
-        ctx.fillStyle = seg.color;
+        ctx.fillStyle = grad;
         ctx.fill();
 
-        // Segment border
+        // Neon border between segments
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.arc(cx, cy, r, startAngle, endAngle);
         ctx.closePath();
-        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.strokeStyle = 'rgba(0,0,0,0.6)';
         ctx.lineWidth = 2;
         ctx.stroke();
+
+        // Glowing divider lines
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(startAngle) * r, cy + Math.sin(startAngle) * r);
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
 
         // Text
         ctx.save();
         ctx.translate(cx, cy);
-        ctx.rotate(startAngle + sliceAngle / 2);
+        ctx.rotate(midAngle);
         ctx.textAlign = 'right';
-        ctx.fillStyle = '#fff';
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 6;
 
-        // Credit emoji
-        ctx.font = 'bold 13px Orbitron, sans-serif';
-        ctx.fillText('🪙', r - 14, 5);
+        // Glow effect on text
+        ctx.shadowColor = 'rgba(0,0,0,0.9)';
+        ctx.shadowBlur = 8;
+
+        // Coin emoji
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText('🪙', r - 12, 5);
 
         // Credit number
-        const fontSize = seg.label.length > 3 ? 12 : 15;
+        const fontSize = seg.label.length > 3 ? 11 : 14;
         ctx.font = `900 ${fontSize}px Orbitron, sans-serif`;
-        ctx.fillText(seg.label, r - 28, 5);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(0,0,0,1)';
+        ctx.shadowBlur = 10;
+        ctx.fillText(seg.label, r - 26, 5);
 
         ctx.restore();
       });
 
-      // Outer ring
+      // Outer neon ring - multi-layer glow
+      for (let i = 3; i >= 1; i--) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+        ctx.strokeStyle = `rgba(123,47,255,${0.15 * i})`;
+        ctx.lineWidth = i * 4;
+        ctx.stroke();
+      }
+
+      // Crisp outer border
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'rgba(255,215,0,0.5)';
-      ctx.lineWidth = 4;
+      ctx.strokeStyle = 'rgba(0,245,255,0.5)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Inner subtle ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.72, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
       ctx.stroke();
     }
 
