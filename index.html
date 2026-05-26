@@ -69,11 +69,11 @@
       }, 400);
     }
     // Fallback - 5 sec mein force hide
-    setTimeout(hideSplash, 5000);
+    setTimeout(hideSplash, 8000);
 
     // Auth state listener
     onAuthStateChanged(auth, async (user) => {
-      setTimeout(hideSplash, 3000);
+      setTimeout(hideSplash, 7000);
       if (user) {
         window.currentUser = user;
         await window.onUserLoggedIn(user);
@@ -792,7 +792,7 @@
       background: linear-gradient(90deg, var(--gold), #FFF176);
       border-radius: 2px;
       box-shadow: 0 0 8px rgba(255,215,0,0.8);
-      animation: loadFill 2.5s ease 0.5s forwards;
+      animation: loadFill 5s ease 0.5s forwards;
     }
     @keyframes loadFill {
       0% { width: 0%; }
