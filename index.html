@@ -1518,27 +1518,27 @@
       const wrap = document.getElementById('insta-timer-wrap');
       const btn = document.getElementById('insta-follow-btn');
       if (wrap) { wrap.style.display = 'flex'; wrap.textContent = '⏱ Instagram page pe jao, follow karo...'; wrap.style.color = 'rgba(225,48,108,0.7)'; }
-      
-      let _viewed = 0;
-      if (_instaTimer) clearInterval(_instaTimer);
+
+      if (_instaTimer) { clearInterval(_instaTimer); _instaTimer = null; }
+      const openTime = Date.now();
+
+      function giveInstaReward() {
+        if (serverState.instaFollowed) return;
+        if (_instaTimer) { clearInterval(_instaTimer); _instaTimer = null; }
+        serverState.instaFollowed = true;
+        _ac(5, '📸 Instagram Follow Reward');
+        saveToFirestore();
+        updateInstaBtnState();
+        showToast('Instagram follow reward! +5 Credits 🎉', 'green');
+      }
 
       function startInstaTimer() {
         if (_instaTimer) return;
         _instaTimer = setInterval(() => {
-          _viewed++;
-          const left = Math.max(0, INSTA_WAIT_SEC - _viewed);
+          const elapsed = Math.floor((Date.now() - openTime) / 1000);
+          const left = Math.max(0, INSTA_WAIT_SEC - elapsed);
           if (wrap) wrap.textContent = `⏱ ${left}s baaki — follow karo aur wapas aao`;
-          if (_viewed >= INSTA_WAIT_SEC) {
-            clearInterval(_instaTimer); _instaTimer = null;
-            // Credit only if not already given
-            if (!serverState.instaFollowed) {
-              serverState.instaFollowed = true;
-              _ac(5, '📸 Instagram Follow Reward');
-              saveToFirestore();
-              updateInstaBtnState();
-              showToast('Instagram follow reward! +5 Credits 🎉', 'green');
-            }
-          }
+          if (elapsed >= INSTA_WAIT_SEC) giveInstaReward();
         }, 1000);
       }
 
@@ -1546,17 +1546,21 @@
         if (document.hidden) {
           startInstaTimer();
         } else {
+          const elapsed = Math.floor((Date.now() - openTime) / 1000);
+          if (elapsed >= INSTA_WAIT_SEC) { giveInstaReward(); return; }
           if (_instaTimer) { clearInterval(_instaTimer); _instaTimer = null; }
-          const left = Math.max(0, INSTA_WAIT_SEC - _viewed);
-          if (left > 0 && !serverState.instaFollowed) {
-            if (wrap) wrap.textContent = `⏱ ${left}s baaki — wapas page pe jao follow karo`;
-            showToast(`${left}s baaki hai — Instagram follow karo ⏱`, 'red');
-          }
-          document.removeEventListener('visibilitychange', _instaListener);
+          const left = INSTA_WAIT_SEC - elapsed;
+          if (wrap) wrap.textContent = `⏱ ${left}s baaki — wapas page pe jao follow karo`;
+          showToast(`${left}s baaki hai — Instagram follow karo ⏱`, 'red');
         }
-        if (serverState.instaFollowed) document.removeEventListener('visibilitychange', _instaListener);
       };
 
+      window.addEventListener('pagehide', () => startInstaTimer());
+      window.addEventListener('pageshow', () => {
+        const elapsed = Math.floor((Date.now() - openTime) / 1000);
+        if (elapsed >= INSTA_WAIT_SEC) { giveInstaReward(); return; }
+        if (_instaTimer) { clearInterval(_instaTimer); _instaTimer = null; }
+      });
       document.addEventListener('visibilitychange', _instaListener);
       window.open('https://www.instagram.com/nexus.prediction?igsh=MTNwa3owOG56a29vMQ==', '_blank');
       setTimeout(() => { if (document.hidden) startInstaTimer(); }, 300);
@@ -1592,26 +1596,27 @@
       const wrap = document.getElementById('tg-timer-wrap');
       const btn = document.getElementById('tg-join-btn');
       if (wrap) { wrap.style.display = 'flex'; wrap.textContent = '⏱ Telegram channel pe jao, join karo...'; wrap.style.color = 'rgba(41,182,246,0.7)'; }
-      
-      let _viewed = 0;
-      if (_tgTimer) clearInterval(_tgTimer);
+
+      if (_tgTimer) { clearInterval(_tgTimer); _tgTimer = null; }
+      const openTime = Date.now();
+
+      function giveTgReward() {
+        if (serverState.tgJoined) return;
+        if (_tgTimer) { clearInterval(_tgTimer); _tgTimer = null; }
+        serverState.tgJoined = true;
+        _ac(5, '✈️ Telegram Channel Join Reward');
+        saveToFirestore();
+        updateTgBtnState();
+        showToast('Telegram join reward! +5 Credits 🎉', 'green');
+      }
 
       function startTgTimer() {
         if (_tgTimer) return;
         _tgTimer = setInterval(() => {
-          _viewed++;
-          const left = Math.max(0, TG_WAIT_SEC - _viewed);
+          const elapsed = Math.floor((Date.now() - openTime) / 1000);
+          const left = Math.max(0, TG_WAIT_SEC - elapsed);
           if (wrap) wrap.textContent = `⏱ ${left}s baaki — channel join karo aur wapas aao`;
-          if (_viewed >= TG_WAIT_SEC) {
-            clearInterval(_tgTimer); _tgTimer = null;
-            if (!serverState.tgJoined) {
-              serverState.tgJoined = true;
-              _ac(5, '✈️ Telegram Channel Join Reward');
-              saveToFirestore();
-              updateTgBtnState();
-              showToast('Telegram join reward! +5 Credits 🎉', 'green');
-            }
-          }
+          if (elapsed >= TG_WAIT_SEC) giveTgReward();
         }, 1000);
       }
 
@@ -1619,17 +1624,21 @@
         if (document.hidden) {
           startTgTimer();
         } else {
+          const elapsed = Math.floor((Date.now() - openTime) / 1000);
+          if (elapsed >= TG_WAIT_SEC) { giveTgReward(); return; }
           if (_tgTimer) { clearInterval(_tgTimer); _tgTimer = null; }
-          const left = Math.max(0, TG_WAIT_SEC - _viewed);
-          if (left > 0 && !serverState.tgJoined) {
-            if (wrap) wrap.textContent = `⏱ ${left}s baaki — wapas channel pe jao join karo`;
-            showToast(`${left}s baaki hai — Telegram join karo ⏱`, 'red');
-          }
-          document.removeEventListener('visibilitychange', _tgListener);
+          const left = TG_WAIT_SEC - elapsed;
+          if (wrap) wrap.textContent = `⏱ ${left}s baaki — wapas channel pe jao join karo`;
+          showToast(`${left}s baaki hai — Telegram join karo ⏱`, 'red');
         }
-        if (serverState.tgJoined) document.removeEventListener('visibilitychange', _tgListener);
       };
 
+      window.addEventListener('pagehide', () => startTgTimer());
+      window.addEventListener('pageshow', () => {
+        const elapsed = Math.floor((Date.now() - openTime) / 1000);
+        if (elapsed >= TG_WAIT_SEC) { giveTgReward(); return; }
+        if (_tgTimer) { clearInterval(_tgTimer); _tgTimer = null; }
+      });
       document.addEventListener('visibilitychange', _tgListener);
       window.open('https://telegram.me/nexuspredictionss', '_blank');
       setTimeout(() => { if (document.hidden) startTgTimer(); }, 300);
