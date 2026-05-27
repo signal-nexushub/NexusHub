@@ -882,13 +882,18 @@
     </div>
 
     <!-- CREDIT BAR -->
-    <div class="credit-bar">
+    <div class="credit-bar" id="main-credit-bar">
       <div class="credit-top-row">
         <div class="credit-left">
-          <div class="credit-coin">🪙</div>
+          <div class="credit-coin" id="header-coin">🪙</div>
           <div class="credit-info">
             <div class="credit-amount" id="header-credits">—</div>
-            <div class="credit-label">CREDITS</div>
+            <div class="credit-label" id="header-credit-label">CREDITS</div>
+          </div>
+          <!-- VIP badge — sirf jab active ho -->
+          <div id="header-vip-badge" style="display:none;margin-left:8px;background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(123,47,255,0.15));border:1px solid rgba(255,215,0,0.5);border-radius:20px;padding:3px 10px;display:none;align-items:center;gap:4px;">
+            <span style="font-size:12px;">👑</span>
+            <span style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;color:var(--gold);" id="header-vip-days">VIP</span>
           </div>
         </div>
         <div class="credit-actions">
@@ -906,8 +911,8 @@
         <button onclick="setTab('credits')" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.3);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;">
           🪙 EARN
         </button>
-        <button onclick="showBuyMenu()" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,200,100,0.06));border:1px solid rgba(0,255,136,0.25);color:var(--green);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;">
-          🛒 BUY
+        <button onclick="showBuyMenu()" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,165,0,0.06));border:1px solid rgba(255,215,0,0.35);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;">
+          👑 VIP PASS
         </button>
       </div>
     </div>
@@ -990,7 +995,7 @@
             <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.2);border-radius:16px;padding:16px;">
               <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:12px;">Payment ke baad mila code yahan enter karo:</div>
               <div style="display:flex;gap:8px;">
-                <input id="redeem-input" type="text" placeholder="NEXUS-100-XXXX" maxlength="20"
+                <input id="redeem-input" type="text" placeholder="NEXUS-VIP-1M-XXXX" maxlength="24"
                   style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:12px 14px;color:white;font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:1px;outline:none;"
                   oninput="this.value=this.value.toUpperCase()"/>
                 <button onclick="redeemCode()" 
@@ -1002,55 +1007,89 @@
             </div>
           </div>
 
-          <div class="section-title" style="padding:0 0 12px;">Buy Credits</div>
-
-          <!-- Package 1 -->
-          <div onclick="showBuyPopup(100, 19)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(255,215,0,0.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.07)'">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;">🪙</div>
-              <div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--gold);">100 Credits</div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:2px;">Starter Pack</div>
+          <!-- VIP PASS ACTIVE BADGE -->
+          <div id="vip-active-banner" style="display:none;margin-bottom:14px;background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(123,47,255,0.1));border:1.5px solid rgba(255,215,0,0.5);border-radius:16px;padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="font-size:28px;">👑</div>
+              <div style="flex:1;">
+                <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:900;color:var(--gold);letter-spacing:2px;">VIP PASS ACTIVE</div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:3px;" id="vip-time-left-text">Loading...</div>
               </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹19</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">₹0.19/credit</div>
+              <div style="background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.35);border-radius:20px;padding:5px 12px;">
+                <div style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;color:var(--green);" id="vip-days-badge">—</div>
+              </div>
             </div>
           </div>
 
-          <!-- Package 2 -->
-          <div onclick="showBuyPopup(400, 49)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(0,245,255,0.2);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(0,245,255,0.4)'" onmouseout="this.style.borderColor='rgba(0,245,255,0.2)'">
-            <div style="position:absolute;top:-8px;left:16px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;">POPULAR</div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:44px;height:44px;border-radius:12px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;">💎</div>
-              <div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--neon);">400 Credits</div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:2px;">Popular Pack</div>
-              </div>
+          <!-- BUY VIP PASS SECTION -->
+          <div style="margin-bottom:14px;">
+            <!-- Limited Time Offer banner -->
+            <div style="background:linear-gradient(135deg,rgba(255,45,85,0.12),rgba(123,47,255,0.08));border:1px dashed rgba(255,45,85,0.4);border-radius:12px;padding:10px 14px;margin-bottom:14px;text-align:center;">
+              <div style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:900;color:var(--red);letter-spacing:2px;animation:pulse 1.5s ease-in-out infinite;">⏰ LIMITED TIME OFFER — ABHI LO!</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;">Yeh prices sirf kuch time ke liye hain • Badh sakti hain kabhi bhi</div>
             </div>
-            <div style="text-align:right;">
-              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹49</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">₹0.12/credit</div>
-            </div>
-          </div>
 
-          <!-- Package 3 -->
-          <div onclick="showBuyPopup(1000, 99)" style="background:linear-gradient(135deg,rgba(255,215,0,0.06),rgba(255,165,0,0.03));border:1px solid rgba(255,215,0,0.25);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.5)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.25)'">
-            <div style="position:absolute;top:-8px;left:16px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;">BEST VALUE</div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">👑</div>
-              <div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--gold);">1000 Credits</div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:2px;">VIP Pack</div>
+            <div class="section-title" style="padding:0 0 12px;">👑 Buy VIP Pass</div>
+
+            <!-- VIP Plan 1 — 1 Month -->
+            <div onclick="showBuyPopup('vip-1m', 99)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;">🥉</div>
+                  <div>
+                    <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1 Month VIP</div>
+                    <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">30 days valid</div>
+                  </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                  <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹199</div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹99</div>
+                  <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">50% OFF</div>
+                </div>
               </div>
             </div>
-            <div style="text-align:right;">
-              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹99</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">₹0.09/credit</div>
+
+            <!-- VIP Plan 2 — 3 Months -->
+            <div onclick="showBuyPopup('vip-3m', 199)" style="background:linear-gradient(135deg,rgba(0,245,255,0.05),rgba(123,47,255,0.04));border:1.5px solid rgba(0,245,255,0.25);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(0,245,255,0.5)'" onmouseout="this.style.borderColor='rgba(0,245,255,0.25)'">
+              <div style="position:absolute;top:-9px;left:14px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;">🔥 POPULAR</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;">🥈</div>
+                  <div>
+                    <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--neon);">3 Month VIP</div>
+                    <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">90 days valid</div>
+                  </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                  <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹599</div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹199</div>
+                  <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">67% OFF</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIP Plan 3 — 1 Year -->
+            <div onclick="showBuyPopup('vip-1y', 699)" style="background:linear-gradient(135deg,rgba(255,215,0,0.07),rgba(255,165,0,0.04));border:1.5px solid rgba(255,215,0,0.35);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.6)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.35)'">
+              <div style="position:absolute;top:-9px;left:14px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;">👑 BEST VALUE</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.35);display:flex;align-items:center;justify-content:center;font-size:24px;">🥇</div>
+                  <div>
+                    <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1 Year VIP</div>
+                    <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">365 days valid</div>
+                  </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                  <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹1199</div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹699</div>
+                  <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">42% OFF</div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
 
         <div class="section-title" style="padding:0 0 10px">Ways to Earn</div>
@@ -1453,6 +1492,15 @@
     let lastAdTime = 0;
     const AD_COOLDOWN = 60 * 1000; // 1 min cooldown between ads
 
+    // VIP Pass state
+    let vipState = {
+      active: false,
+      plan: '',       // 'vip-1m', 'vip-3m', 'vip-1y'
+      startDate: '',  // ISO string
+      endDate: '',    // ISO string
+      daysLeft: 0
+    };
+
     // Server state - Firestore se aata hai, localStorage pe depend nahi
     let serverState = {
       lastLogin: '',
@@ -1556,6 +1604,15 @@
           freeSpinUsed = data.freeSpinUsed ?? false;
           // Free spin pehli baar
           if (!freeSpinUsed) { spinTokens = Math.max(spinTokens, 1); }
+          // VIP Pass load karo
+          if (data.vip) {
+            vipState.plan = data.vip.plan || '';
+            vipState.startDate = data.vip.startDate || '';
+            vipState.endDate = data.vip.endDate || '';
+            checkVipExpiry();
+          } else {
+            vipState.active = false;
+          }
           updateCreditUI();
           updateDailyBtnState();
           updateShareBtnState();
@@ -1563,6 +1620,7 @@
           updateSpinUI();
           updateInstaBtnState();
           updateTgBtnState();
+          updateVipBadgeUI();
         } else {
           // New user - give 5 credits + 1 free spin
           credits = 0;
@@ -1597,6 +1655,11 @@
           unlockedCards: [...unlockedCards],
           spinTokens: spinTokens,
           freeSpinUsed: freeSpinUsed,
+          vip: vipState.plan ? {
+            plan: vipState.plan,
+            startDate: vipState.startDate,
+            endDate: vipState.endDate
+          } : null,
           displayName: window.currentUser.displayName || '',
           email: window.currentUser.email || '',
           updatedAt: new Date().toISOString()
@@ -1610,6 +1673,79 @@
     function saveCredits() {
       saveToFirestore();
       updateCreditUI();
+    }
+
+    // ==================== VIP PASS SYSTEM ====================
+    function checkVipExpiry() {
+      if (!vipState.endDate) { vipState.active = false; return; }
+      const now = new Date();
+      const end = new Date(vipState.endDate);
+      const diffMs = end - now;
+      if (diffMs > 0) {
+        vipState.active = true;
+        vipState.daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      } else {
+        vipState.active = false;
+        vipState.daysLeft = 0;
+        // Expired — clear from DB
+        if (window.currentUser) {
+          window.fbDoc && window.fbSetDoc(window.fbDoc(window.fbDb, 'users', window.currentUser.uid), { vip: null }, { merge: true }).catch(() => {});
+        }
+      }
+    }
+
+    function updateVipBadgeUI() {
+      const banner = document.getElementById('vip-active-banner');
+      const headerBadge = document.getElementById('header-vip-badge');
+      const headerDays = document.getElementById('header-vip-days');
+      const timeLeftText = document.getElementById('vip-time-left-text');
+      const daysBadge = document.getElementById('vip-days-badge');
+
+      checkVipExpiry();
+      if (vipState.active) {
+        const d = vipState.daysLeft;
+        const txt = d === 1 ? '1 day left' : d + ' days left';
+        if (banner) banner.style.display = 'block';
+        if (headerBadge) { headerBadge.style.display = 'inline-flex'; }
+        if (headerDays) headerDays.textContent = txt;
+        if (timeLeftText) timeLeftText.textContent = 'Unlimited credits — subscription active hai';
+        if (daysBadge) daysBadge.textContent = txt;
+      } else {
+        if (banner) banner.style.display = 'none';
+        if (headerBadge) headerBadge.style.display = 'none';
+      }
+      updateCreditUI();
+    }
+
+    // VIP Pass redeem — called from redeemCode when NEXUS-VIP-* code detected
+    async function activateVipPass(plan, code) {
+      const planDays = { 'VIP-1M': 30, 'VIP-3M': 90, 'VIP-1Y': 365 };
+      const days = planDays[plan] || 30;
+      const planKey = plan === 'VIP-1M' ? 'vip-1m' : plan === 'VIP-3M' ? 'vip-3m' : 'vip-1y';
+
+      const now = new Date();
+      const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+      // Agar pehle se VIP active hai toh extend karo
+      if (vipState.active && vipState.endDate) {
+        const existingEnd = new Date(vipState.endDate);
+        if (existingEnd > now) {
+          end.setTime(existingEnd.getTime() + days * 24 * 60 * 60 * 1000);
+        }
+      }
+
+      vipState.plan = planKey;
+      vipState.startDate = now.toISOString();
+      vipState.endDate = end.toISOString();
+      vipState.active = true;
+      vipState.daysLeft = days;
+
+      await saveToFirestore();
+      updateVipBadgeUI();
+      updateCreditUI();
+
+      const planNames = { 'VIP-1M': '1 Month', 'VIP-3M': '3 Months', 'VIP-1Y': '1 Year' };
+      return planNames[plan] || plan;
     }
 
     // Console hack band - random key se lock hai
@@ -1635,6 +1771,11 @@
     function deductCreditForNewPrediction(msgId, idStr, msgText) {
       // Only deduct once per prediction message
       if (unlockedCards.has(msgId)) return;
+      // VIP active hai toh credit deduct nahi hoga — mark as seen only
+      if (vipState.active) {
+        unlockedCards.add(msgId);
+        return;
+      }
       if (credits < 1) return;
       // Result messages pe credit deduct nahi hoga - sirf predictions pe
       const isResult = (msgText || '').toLowerCase().includes('result');
@@ -1649,8 +1790,17 @@
     }
 
     function updateCreditUI() {
-      document.getElementById('header-credits').textContent = credits;
-      document.getElementById('credit-big').textContent = credits;
+      if (vipState.active) {
+        document.getElementById('header-credits').textContent = '∞';
+        document.getElementById('header-credit-label').textContent = 'UNLIMITED';
+        document.getElementById('header-coin').textContent = '👑';
+      } else {
+        document.getElementById('header-credits').textContent = credits;
+        document.getElementById('header-credit-label').textContent = 'CREDITS';
+        document.getElementById('header-coin').textContent = '🪙';
+      }
+      const bigEl = document.getElementById('credit-big');
+      if (bigEl) bigEl.textContent = vipState.active ? '∞' : credits;
       renderTxnList();
     }
 
@@ -1995,23 +2145,24 @@
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
       overlay.innerHTML = `
         <div style="background:#0d0d1a;border:1px solid rgba(255,215,0,0.2);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;">
-          <div style="text-align:center;margin-bottom:16px;">
-            <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--gold);letter-spacing:2px;">🛒 BUY CREDITS</div>
+          <div style="text-align:center;margin-bottom:4px;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--gold);letter-spacing:2px;">👑 BUY VIP PASS</div>
+            <div style="font-size:10px;color:rgba(255,45,85,0.8);letter-spacing:1px;font-weight:700;margin-top:4px;animation:pulse 1.5s ease-in-out infinite;">⏰ LIMITED TIME OFFER</div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-            <div onclick="showBuyPopup(100,19);document.getElementById('buy-menu-overlay').remove();" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px 16px;cursor:pointer;">
-              <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">🪙</span><div><div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--gold);">100 Credits</div><div style="font-size:11px;color:rgba(255,255,255,0.3);">Starter Pack</div></div></div>
-              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹19</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin:14px 0 16px;">
+            <div onclick="showBuyPopup('vip-1m',99);document.getElementById('buy-menu-overlay').remove();" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all 0.2s;">
+              <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">🥉</span><div><div style="font-family:'Orbitron',sans-serif;font-size:13px;color:var(--gold);">1 Month VIP</div><div style="font-size:10px;color:rgba(0,255,136,0.7);">∞ Unlimited • 30 days</div></div></div>
+              <div style="text-align:right;"><div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹199</div><div style="font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900;color:var(--green);">₹99</div></div>
             </div>
-            <div onclick="showBuyPopup(400,49);document.getElementById('buy-menu-overlay').remove();" style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.2);border-radius:14px;padding:14px 16px;cursor:pointer;position:relative;">
-              <div style="position:absolute;top:-8px;left:14px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:2px 8px;border-radius:20px;">POPULAR</div>
-              <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">💎</span><div><div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--neon);">400 Credits</div><div style="font-size:11px;color:rgba(255,255,255,0.3);">Popular Pack</div></div></div>
-              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹49</div>
+            <div onclick="showBuyPopup('vip-3m',199);document.getElementById('buy-menu-overlay').remove();" style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.2);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all 0.2s;position:relative;">
+              <div style="position:absolute;top:-8px;left:12px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:2px 8px;border-radius:20px;">🔥 POPULAR</div>
+              <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">🥈</span><div><div style="font-family:'Orbitron',sans-serif;font-size:13px;color:var(--neon);">3 Month VIP</div><div style="font-size:10px;color:rgba(0,255,136,0.7);">∞ Unlimited • 90 days</div></div></div>
+              <div style="text-align:right;"><div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹599</div><div style="font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900;color:var(--green);">₹199</div></div>
             </div>
-            <div onclick="showBuyPopup(1000,99);document.getElementById('buy-menu-overlay').remove();" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:14px 16px;cursor:pointer;position:relative;">
-              <div style="position:absolute;top:-8px;left:14px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:2px 8px;border-radius:20px;">BEST VALUE</div>
-              <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:22px;">👑</span><div><div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--gold);">1000 Credits</div><div style="font-size:11px;color:rgba(255,255,255,0.3);">VIP Pack</div></div></div>
-              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--green);">₹99</div>
+            <div onclick="showBuyPopup('vip-1y',699);document.getElementById('buy-menu-overlay').remove();" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all 0.2s;position:relative;">
+              <div style="position:absolute;top:-8px;left:12px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:2px 8px;border-radius:20px;">👑 BEST VALUE</div>
+              <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">🥇</span><div><div style="font-family:'Orbitron',sans-serif;font-size:13px;color:var(--gold);">1 Year VIP</div><div style="font-size:10px;color:rgba(0,255,136,0.7);">∞ Unlimited • 365 days</div></div></div>
+              <div style="text-align:right;"><div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹1199</div><div style="font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900;color:var(--green);">₹699</div></div>
             </div>
           </div>
           <button onclick="document.getElementById('buy-menu-overlay').remove()" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Cancel</button>
@@ -2020,18 +2171,29 @@
       document.body.appendChild(overlay);
     }
 
-    // ==================== BUY CREDITS ====================
-    function showBuyPopup(credits, price) {
+    // ==================== BUY VIP PASS ====================
+    function showBuyPopup(plan, price) {
       const upi = 'preregisterbgmi-1@oksbi';
+      // Plan details
+      const planMap = {
+        'vip-1m': { label: '1 Month VIP Pass', days: 30, orig: 199, icon: '🥉', desc: '30 days • Unlimited Credits' },
+        'vip-3m': { label: '3 Month VIP Pass', days: 90, orig: 599, icon: '🥈', desc: '90 days • Unlimited Credits' },
+        'vip-1y': { label: '1 Year VIP Pass', days: 365, orig: 1199, icon: '🥇', desc: '365 days • Unlimited Credits' },
+      };
+      const info = planMap[plan] || { label: plan, days: 30, orig: price, icon: '👑', desc: '' };
       const overlay = document.createElement('div');
       overlay.id = 'buy-overlay';
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
       overlay.innerHTML = `
         <div style="background:#0d0d1a;border:1px solid rgba(255,215,0,0.3);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;">
           <div style="text-align:center;margin-bottom:20px;">
-            <div style="font-size:32px;margin-bottom:8px;">🪙</div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">${credits} CREDITS</div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--green);margin-top:4px;">₹${price}</div>
+            <div style="font-size:36px;margin-bottom:8px;">${info.icon}</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">${info.label}</div>
+            <div style="font-size:12px;color:rgba(0,255,136,0.8);margin-top:4px;font-weight:600;">∞ ${info.desc}</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;">
+              <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:rgba(255,255,255,0.3);text-decoration:line-through;">₹${info.orig}</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:26px;font-weight:900;color:var(--green);">₹${price}</div>
+            </div>
           </div>
 
           <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:16px;margin-bottom:16px;">
@@ -2040,7 +2202,7 @@
               1️⃣ UPI se ₹${price} bhejo<br>
               2️⃣ Screenshot lo<br>
               3️⃣ Developer ko Telegram pe bhejo<br>
-              4️⃣ Credits mil jayenge ✅
+              4️⃣ VIP Pass code milega ✅
             </div>
           </div>
 
@@ -2160,21 +2322,30 @@
     function showCodeGenerator() {
       const overlay = document.createElement('div');
       overlay.id = 'code-gen-overlay';
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
       overlay.innerHTML = `
-        <div style="background:#0d0d1a;border:1px solid rgba(255,215,0,0.35);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;">
+        <div style="background:#0d0d1a;border:1px solid rgba(255,215,0,0.35);border-radius:20px;padding:24px 20px;max-width:340px;width:100%;margin:auto;">
           <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;margin-bottom:20px;text-align:center;">🎟️ GENERATE CODE</div>
 
-          <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:8px;">Credits amount select karo:</div>
+          <!-- Credit Codes -->
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;letter-spacing:1px;">CREDIT CODES:</div>
           <div style="display:flex;gap:8px;margin-bottom:16px;">
             <button onclick="genCode(100)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.08);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">100</button>
             <button onclick="genCode(400)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">400</button>
             <button onclick="genCode(1000)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,215,0,0.5);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">1000</button>
           </div>
 
+          <!-- VIP Pass Codes -->
+          <div style="font-size:11px;color:rgba(255,215,0,0.6);margin-bottom:6px;letter-spacing:1px;font-weight:700;">👑 VIP PASS CODES:</div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button onclick="genVipCode('VIP-1M')" style="flex:1;padding:9px 4px;border-radius:10px;border:1px solid rgba(255,215,0,0.35);background:rgba(255,215,0,0.1);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;cursor:pointer;line-height:1.3;">1M<br><span style="font-size:8px;opacity:0.7;">30 days</span></button>
+            <button onclick="genVipCode('VIP-3M')" style="flex:1;padding:9px 4px;border-radius:10px;border:1px solid rgba(0,245,255,0.35);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;cursor:pointer;line-height:1.3;">3M<br><span style="font-size:8px;opacity:0.7;">90 days</span></button>
+            <button onclick="genVipCode('VIP-1Y')" style="flex:1;padding:9px 4px;border-radius:10px;border:1px solid rgba(255,215,0,0.6);background:rgba(255,215,0,0.15);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;cursor:pointer;line-height:1.3;">1Y<br><span style="font-size:8px;opacity:0.7;">365 days</span></button>
+          </div>
+
           <div id="gen-result" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;display:none;">
             <div style="font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:8px;">GENERATED CODE</div>
-            <div id="gen-code-text" style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;color:var(--gold);letter-spacing:2px;"></div>
+            <div id="gen-code-text" style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:var(--gold);letter-spacing:1px;word-break:break-all;"></div>
             <button id="gen-copy-btn" onclick="copyGenCode()" style="margin-top:12px;padding:8px 20px;border-radius:10px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.1);color:var(--gold);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📋 Copy</button>
           </div>
 
@@ -2184,6 +2355,13 @@
           </button>
         </div>`;
       document.body.appendChild(overlay);
+    }
+
+    function genVipCode(plan) {
+      const code = generateAdminVipCode(plan);
+      document.getElementById('gen-result').style.display = 'block';
+      document.getElementById('gen-code-text').textContent = code;
+      document.getElementById('gen-copy-btn').textContent = '📋 Copy';
     }
 
     function genCode(credits) {
@@ -2205,18 +2383,85 @@
     // Format: NEXUS-{CREDITS}-{RANDOM4}
     // Codes are stored in localStorage after use (to prevent reuse)
 
-    // Code validation - secret is split and obfuscated
-    const _k = ['N','X','2','0','2','4','J','A','L','W','A'];
-    function _ks() { return _k.slice(0,6).join('') + _k.slice(6).join(''); }
+    // ==================== CODE SECURITY SYSTEM ====================
+    // Secret key — multi-layer obfuscated, runtime mein reconstruct hota hai
+    // 4 parts ko XOR + reverse ke saath combine kiya — DevTools mein directly readable nahi
+    const _s1 = [78,88,50,48,50,52];          // part A
+    const _s2 = [74,65,76,87,65,57,51];        // part B (reversed)
+    const _s3 = [0x4e,0x58,0x53,0x45,0x43];   // part C (hex)
+    const _s4 = [113,105,108,109,110,107];     // part D (XOR'd with 1)
+    function _ks() {
+      const a = _s1.map(c => String.fromCharCode(c)).join('');
+      const b = _s2.map(c => String.fromCharCode(c)).reverse().join('');
+      const c = _s3.map(c => String.fromCharCode(c ^ 0x01)).join('');
+      const d = _s4.map(c => String.fromCharCode(c ^ 1)).join('');
+      return a + b + c + d;
+    }
 
-    function generateCodeHash(credits, random4) {
-      const str = credits + '-' + random4 + '-' + _ks();
-      let hash = 0;
+    // Strong hash — FNV-1a 32-bit, much better avalanche than djb2
+    function _fnv32(str) {
+      let h = 0x811c9dc5;
       for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash |= 0;
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 0x01000193) >>> 0;
       }
-      return Math.abs(hash).toString(36).toUpperCase().substring(0, 4);
+      return h;
+    }
+
+    // Double-round hash — run FNV-1a twice with different salt to increase entropy
+    function generateCodeHash(credits, r2) {
+      const secret = _ks();
+      const round1 = _fnv32(credits + '||' + r2 + '||' + secret);
+      const round2 = _fnv32(secret + '||' + round1.toString(16) + '||' + r2);
+      // Take 4 chars from base-36 — gives 36^4 = 1,679,616 combinations
+      return ((round1 ^ round2) >>> 0).toString(36).toUpperCase().padStart(6, '0').substring(0, 4);
+    }
+
+    function generateVipCodeHash(plan, r2) {
+      const secret = _ks();
+      const round1 = _fnv32('VIP||' + plan + '||' + r2 + '||' + secret);
+      const round2 = _fnv32(secret + '||' + plan + '||' + round1.toString(16));
+      return ((round1 ^ round2) >>> 0).toString(36).toUpperCase().padStart(6, '0').substring(0, 4);
+    }
+
+    function isValidCode(credits, random4) {
+      if (!random4 || random4.length !== 4) return false;
+      const r2 = random4.substring(0, 2);
+      const h2 = random4.substring(2, 4);
+      const expected = generateCodeHash(credits, r2).substring(0, 2);
+      // Constant-time comparison (anti-timing attack)
+      if (h2.length !== expected.length) return false;
+      let diff = 0;
+      for (let i = 0; i < h2.length; i++) diff |= h2.charCodeAt(i) ^ expected.charCodeAt(i);
+      return diff === 0;
+    }
+
+    function isValidVipCode(plan, random4) {
+      if (!random4 || random4.length !== 4) return false;
+      const r2 = random4.substring(0, 2);
+      const h2 = random4.substring(2, 4);
+      const expected = generateVipCodeHash(plan, r2).substring(0, 2);
+      let diff = 0;
+      for (let i = 0; i < h2.length; i++) diff |= h2.charCodeAt(i) ^ expected.charCodeAt(i);
+      return diff === 0;
+    }
+
+    function generateAdminVipCode(plan) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let r2 = '';
+      for (let i = 0; i < 2; i++) r2 += chars[Math.floor(Math.random() * chars.length)];
+      const h4 = generateVipCodeHash(plan, r2);
+      const h2 = h4.substring(0, 2);
+      return 'NEXUS-' + plan + '-' + r2 + h2;
+    }
+
+    function generateAdminCode(credits) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let r2 = '';
+      for (let i = 0; i < 2; i++) r2 += chars[Math.floor(Math.random() * chars.length)];
+      const h4 = generateCodeHash(credits, r2);
+      const h2 = h4.substring(0, 2);
+      return 'NEXUS-' + credits + '-' + r2 + h2;
     }
 
     async function redeemCode() {
@@ -2233,7 +2478,53 @@
 
       if (!code) { showMsg('Code enter karo!', 'red'); return; }
 
-      // Format check
+      // VIP Pass code format: NEXUS-VIP-1M-XXXX / NEXUS-VIP-3M-XXXX / NEXUS-VIP-1Y-XXXX
+      const vipMatch = code.match(/^NEXUS-(VIP-(?:1M|3M|1Y))-([A-Z0-9]{4})$/);
+      if (vipMatch) {
+        const vipPlan = vipMatch[1]; // e.g. 'VIP-1M'
+        const vipRand = vipMatch[2];
+
+        // Validate VIP code hash
+        if (!isValidVipCode(vipPlan, vipRand)) {
+          showMsg('❌ Invalid ya expired VIP code!', 'red'); return;
+        }
+
+        if (redeemBtn) { redeemBtn.disabled = true; redeemBtn.textContent = 'Checking...'; }
+        showMsg('⏳ VIP Pass verify ho raha hai...', 'gold');
+
+        try {
+          const globalRef = window.fbDoc(window.fbDb, 'redeemedCodes', code);
+          const globalSnap = await window.fbGetDoc(globalRef);
+          if (globalSnap.exists()) {
+            showMsg('❌ Yeh VIP code already use ho chuka hai!', 'red');
+            if (redeemBtn) { redeemBtn.disabled = false; redeemBtn.textContent = 'REDEEM'; }
+            return;
+          }
+          // Mark globally used
+          await window.fbSetDoc(globalRef, {
+            usedBy: window.currentUser.uid,
+            usedByEmail: window.currentUser.email || '',
+            usedAt: new Date().toISOString(),
+            type: 'vip',
+            plan: vipPlan
+          });
+          // Activate VIP
+          serverState.usedCodes.push(code);
+          const planName = await activateVipPass(vipPlan, code);
+          input.value = '';
+          showMsg(`✅ ${planName} VIP Pass active ho gaya! 👑 Unlimited credits!`, 'green');
+          showToast(`👑 VIP Pass active! ${vipState.daysLeft} days unlimited credits!`, 'green');
+          setTimeout(() => { msgEl.style.display = 'none'; }, 5000);
+        } catch(e) {
+          showMsg('❌ Network error, dobara try karo', 'red');
+          console.error('VIP Redeem error:', e);
+        } finally {
+          if (redeemBtn) { redeemBtn.disabled = false; redeemBtn.textContent = 'REDEEM'; }
+        }
+        return;
+      }
+
+      // Normal credit code format: NEXUS-{CREDITS}-XXXX
       const parts = code.split('-');
       if (parts.length !== 3 || parts[0] !== 'NEXUS') {
         showMsg('❌ Invalid code format!', 'red'); return;
@@ -2287,27 +2578,6 @@
       } finally {
         if (redeemBtn) { redeemBtn.disabled = false; redeemBtn.textContent = 'REDEEM'; }
       }
-    }
-
-    function isValidCode(credits, random4) {
-      // Validate: hash of credits+random4+secret must equal last 4 chars of random4... 
-      // Actually we use a simpler system: admin generates codes using generateAdminCode()
-      const expectedHash = generateCodeHash(credits, random4.substring(0, 4));
-      // random4 is actually random(2) + hash(2)
-      const r2 = random4.substring(0, 2);
-      const h2 = random4.substring(2, 4);
-      const checkHash = generateCodeHash(credits, r2).substring(0, 2);
-      return h2 === checkHash;
-    }
-
-    // Admin panel mein yeh function code generate karta hai
-    function generateAdminCode(credits) {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      let r2 = '';
-      for (let i = 0; i < 2; i++) r2 += chars[Math.floor(Math.random() * chars.length)];
-      const hash = generateCodeHash(credits, r2);
-      const h2 = hash.substring(0, 2);
-      return 'NEXUS-' + credits + '-' + r2 + h2;
     }
 
     // ==================== LUCKY SPIN ====================
@@ -2650,6 +2920,7 @@
     }
 
     function checkCreditAutoStop() {
+      if (vipState.active) return; // VIP users ke liye auto-stop nahi
       if (credits <= 0 && predictionsRunning) {
         predictionsRunning = false;
         localStorage.setItem('nx_pred_running', JSON.stringify(false));
@@ -2698,7 +2969,7 @@
       if (tab === 'stats') updateStats();
       if (tab === 'alerts') renderNotifLog();
       if (tab === 'spin') { updateSpinUI(); setTimeout(initWheel, 50); }
-      if (tab === 'credits') { updateCreditUI(); updateDailyBtnState(); updateShareBtnState(); }
+      if (tab === 'credits') { updateCreditUI(); updateDailyBtnState(); updateShareBtnState(); updateVipBadgeUI(); }
     }
 
     function updateDailyBtnState() {
@@ -3096,12 +3367,12 @@
           <div class="state-icon">⏸</div>
           <div class="state-title">PREDICTIONS PAUSED</div>
           <div class="state-sub" style="margin-top:16px">
-            ${credits < 1
+            ${credits < 1 && !vipState.active
               ? 'Credit khatam ho gaya. Earn karo aur dobara shuru karo.'
               : 'Start button dabao predictions shuru karne ke liye.'
             }
           </div>
-          ${credits < 1 ? `<button onclick="setTab('credits')" style="margin-top:18px;padding:10px 24px;border-radius:12px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;">🪙 EARN CREDITS</button>` : ''}
+          ${credits < 1 && !vipState.active ? `<button onclick="setTab('credits')" style="margin-top:18px;padding:10px 24px;border-radius:12px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;">🪙 EARN CREDITS</button>` : ''}
         </div>`;
         return;
       }
