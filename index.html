@@ -1341,14 +1341,16 @@
           <div class="section-title" style="padding:0 0 12px;">👑 Buy VIP Pass</div>
 
           <!-- VIP Plan 1 — 1 Month -->
-          <div onclick="showBuyPopup('vip-1m', 99)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
+          <div id="vip-card-1m" onclick="showBuyPopup('vip-1m', 99)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
+            <!-- ACTIVE badge slot -->
+            <div id="vip-active-badge-1m" style="display:none;position:absolute;top:-10px;right:14px;background:linear-gradient(135deg,var(--green),#00cc66);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;box-shadow:0 2px 10px rgba(0,255,136,0.4);">✅ ACTIVE</div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <div style="display:flex;align-items:center;gap:12px;">
                 <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;">🥉</div>
                 <div>
                   <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1 Month VIP</div>
                   <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
-                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">30 days valid</div>
+                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;" id="vip-card-1m-sub">30 days valid</div>
                 </div>
               </div>
               <div style="text-align:right;flex-shrink:0;">
@@ -1360,15 +1362,17 @@
           </div>
 
           <!-- VIP Plan 2 — 3 Months -->
-          <div onclick="showBuyPopup('vip-3m', 199)" style="background:linear-gradient(135deg,rgba(0,245,255,0.05),rgba(123,47,255,0.04));border:1.5px solid rgba(0,245,255,0.25);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(0,245,255,0.5)'" onmouseout="this.style.borderColor='rgba(0,245,255,0.25)'">
+          <div id="vip-card-3m" onclick="showBuyPopup('vip-3m', 199)" style="background:linear-gradient(135deg,rgba(0,245,255,0.05),rgba(123,47,255,0.04));border:1.5px solid rgba(0,245,255,0.25);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(0,245,255,0.5)'" onmouseout="this.style.borderColor='rgba(0,245,255,0.25)'">
             <div style="position:absolute;top:-9px;left:14px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;">🔥 POPULAR</div>
+            <!-- ACTIVE badge slot -->
+            <div id="vip-active-badge-3m" style="display:none;position:absolute;top:-10px;right:14px;background:linear-gradient(135deg,var(--green),#00cc66);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;box-shadow:0 2px 10px rgba(0,255,136,0.4);">✅ ACTIVE</div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <div style="display:flex;align-items:center;gap:12px;">
                 <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;">🥈</div>
                 <div>
                   <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--neon);">3 Month VIP</div>
                   <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
-                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">90 days valid</div>
+                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;" id="vip-card-3m-sub">90 days valid</div>
                 </div>
               </div>
               <div style="text-align:right;flex-shrink:0;">
@@ -1380,15 +1384,17 @@
           </div>
 
           <!-- VIP Plan 3 — 1 Year -->
-          <div onclick="showBuyPopup('vip-1y', 699)" style="background:linear-gradient(135deg,rgba(255,215,0,0.07),rgba(255,165,0,0.04));border:1.5px solid rgba(255,215,0,0.35);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.6)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.35)'">
+          <div id="vip-card-1y" onclick="showBuyPopup('vip-1y', 699)" style="background:linear-gradient(135deg,rgba(255,215,0,0.07),rgba(255,165,0,0.04));border:1.5px solid rgba(255,215,0,0.35);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.6)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.35)'">
             <div style="position:absolute;top:-9px;left:14px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;">👑 BEST VALUE</div>
+            <!-- ACTIVE badge slot -->
+            <div id="vip-active-badge-1y" style="display:none;position:absolute;top:-10px;right:14px;background:linear-gradient(135deg,var(--green),#00cc66);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;box-shadow:0 2px 10px rgba(0,255,136,0.4);">✅ ACTIVE</div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <div style="display:flex;align-items:center;gap:12px;">
                 <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.35);display:flex;align-items:center;justify-content:center;font-size:24px;">🥇</div>
                 <div>
                   <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1 Year VIP</div>
                   <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
-                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">365 days valid</div>
+                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;" id="vip-card-1y-sub">365 days valid</div>
                 </div>
               </div>
               <div style="text-align:right;flex-shrink:0;">
@@ -1888,17 +1894,57 @@
       const activeBanner = document.getElementById('vip-page-active-banner');
       const buySection = document.getElementById('vip-page-buy-section');
       const daysBadge = document.getElementById('vip-page-days-badge');
+
+      // Pehle sabhi cards ko default state mein reset karo
+      const planKeys = ['1m', '3m', '1y'];
+      const defaultBorders = {
+        '1m': 'rgba(255,255,255,0.1)',
+        '3m': 'rgba(0,245,255,0.25)',
+        '1y': 'rgba(255,215,0,0.35)'
+      };
+      planKeys.forEach(k => {
+        const badge = document.getElementById('vip-active-badge-' + k);
+        const card = document.getElementById('vip-card-' + k);
+        if (badge) badge.style.display = 'none';
+        if (card) card.style.borderColor = defaultBorders[k];
+        // mouseover/mouseout listeners reset (border color overridden by active state below)
+      });
+
       if (vipState.active) {
         if (activeBanner) activeBanner.style.display = 'block';
+        if (buySection) buySection.style.display = 'block';
         if (daysBadge) {
           const d = vipState.daysLeft;
           daysBadge.textContent = d === 1 ? '1 day left' : d + ' days left';
         }
-        // VIP active hone par bhi packs dikhao (renew/extend ke liye)
-        if (buySection) buySection.style.display = 'block';
+
+        // Active plan detect karo
+        const activePlanKey = vipState.plan; // 'vip-1m', 'vip-3m', 'vip-1y'
+        const shortKey = activePlanKey ? activePlanKey.replace('vip-', '') : '';  // '1m', '3m', '1y'
+
+        if (shortKey) {
+          const activeBadge = document.getElementById('vip-active-badge-' + shortKey);
+          const activeCard = document.getElementById('vip-card-' + shortKey);
+          const subEl = document.getElementById('vip-card-' + shortKey + '-sub');
+
+          if (activeBadge) activeBadge.style.display = 'block';
+          if (activeCard) {
+            // Green glow border for active card
+            activeCard.style.borderColor = 'rgba(0,255,136,0.7)';
+            activeCard.style.boxShadow = '0 0 18px rgba(0,255,136,0.18), inset 0 0 18px rgba(0,255,136,0.04)';
+            // mouseover pe bhi green rakho
+            activeCard.onmouseover = null;
+            activeCard.onmouseout = null;
+          }
+          // Sub text mein days left dikhao
+          if (subEl && vipState.daysLeft > 0) {
+            subEl.innerHTML = '<span style="color:var(--green);font-weight:700;">⏳ ' + vipState.daysLeft + ' days left</span>';
+          }
+        }
       } else {
         if (activeBanner) activeBanner.style.display = 'none';
         if (buySection) buySection.style.display = 'block';
+        // Cards reset already done above
       }
     }
 
