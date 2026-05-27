@@ -279,6 +279,26 @@
     .result-tag.auto-loss { background: rgba(255,45,85,0.1); color: var(--red); border: 1px solid rgba(255,45,85,0.3); }
     .result-tag.pending { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.3); border: 1px dashed rgba(255,255,255,0.1); font-size: 10px; }
 
+    /* PREDICTION CARD TIMER */
+    .pred-timer {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 700;
+      color: var(--gold); letter-spacing: 1px;
+      background: rgba(255,215,0,0.07); border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 8px; padding: 4px 10px;
+      transition: color 0.3s, background 0.3s, border-color 0.3s;
+    }
+    .pred-timer.timer-urgent {
+      color: var(--red); background: rgba(255,45,85,0.1); border-color: rgba(255,45,85,0.35);
+      animation: timerPulse 0.6s ease-in-out infinite;
+    }
+    .pred-timer.timer-done {
+      color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08);
+      font-size: 10px;
+    }
+    .timer-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    @keyframes timerPulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
     /* PREDICTION CARD BODY - styled message */
     .pred-body-header {
       display: flex; align-items: center; gap: 8px;
@@ -977,8 +997,8 @@
           <div class="streak-val" id="today-acc">—%</div>
         </div>
 
-        <!-- Recent Notifications (moved from Alerts page) -->
-        <div class="section-title" style="padding-top:6px">Recent Notifications</div>
+        <!-- Prediction History -->
+        <div class="section-title" style="padding-top:6px">Prediction History</div>
         <div class="notif-log" id="notif-log">
           <div class="empty-alerts">📭 Koi notification abhi tak nahi</div>
         </div>
@@ -3401,23 +3421,24 @@
     function extractNotifInfo(rawText) {
       const t = rawText || '';
       const tl = t.toLowerCase();
-      const isResult = tl.includes('result');
 
       // Period number extract karo
       const periodMatch = t.match(/period\s*[:\s]+[.]*(\d+)/i) || t.match(/\.\.\.(\d+)/);
       const period = periodMatch ? periodMatch[1] : '';
 
-      if (isResult) {
-        // Result msg: WIN/LOSS + Period
-        const isWin = (tl.includes('win') || tl.includes('w i n')) && !tl.includes('wingo');
-        const isLoss = tl.includes('loss') || tl.includes('l o s s') || tl.includes('agli baar');
-        const result = isWin ? '✅ WIN' : isLoss ? '❌ LOSS' : '📋 RESULT';
+      // Result message check — WIN/LOSS dono properly detect karo
+      const isResult = tl.includes('result') || tl.includes('l o s s') || tl.includes('w i n');
+      const isLoss = tl.includes('❌') || tl.includes('loss') || tl.includes('l o s s') || tl.includes('agli baar');
+      const isWin = !isLoss && (tl.includes('✅') || ((tl.includes('win') || tl.includes('w i n')) && !tl.includes('wingo')));
+
+      if (isResult && (isWin || isLoss)) {
+        // Result msg: WIN/LOSS clearly show karo
         return {
-          icon: isWin ? '✅' : isLoss ? '❌' : '📋',
-          title: result,
+          icon: isWin ? '✅' : '❌',
+          title: isWin ? '✅ WIN' : '❌ LOSS',
           sub: period ? `Period: ...${period}` : 'Result aaya'
         };
-      } else {
+      } else if (!isResult || (!isWin && !isLoss && tl.includes('result'))) {
         // Prediction msg: BIG/SMALL + Period
         const isBig = tl.includes('b i g') || (tl.includes('big') && !tl.includes('result'));
         const isSmall = tl.includes('s m a l l') || (tl.includes('small') && !tl.includes('result'));
@@ -3430,6 +3451,9 @@
           title: call,
           sub: (period ? `Period: ...${period}` : 'Naya signal') + conf
         };
+      } else {
+        // Fallback
+        return { icon: '📋', title: '📋 RESULT', sub: period ? `Period: ...${period}` : 'Result aaya' };
       }
     }
 
@@ -3663,6 +3687,20 @@
 
         let resultHTML = '';
         const isResultCard = (p.text || '').toLowerCase().includes('result');
+
+        // Timer: sirf prediction cards pe (result cards pe nahi)
+        let timerHTML = '';
+        if (!isResultCard) {
+          const cardTime = p.date * 1000; // ms
+          const elapsed = Date.now() - cardTime;
+          const remaining = Math.max(0, 60000 - elapsed); // 1 min = 60s
+          const remSec = Math.round(remaining / 1000);
+          if (remaining > 0) {
+            timerHTML = `<span class="pred-timer" data-born="${cardTime}" data-msgid="${msgId}"><span class="timer-dot"></span><span class="timer-txt">${remSec}s</span></span>`;
+          } else {
+            timerHTML = `<span class="pred-timer timer-done"><span class="timer-txt">⏱ Expired</span></span>`;
+          }
+        }
         if (isResultCard) {
           // Result message — WIN/LOSS already shown inside card body, no footer tag needed
           resultHTML = '';
@@ -3683,6 +3721,7 @@
             <div class="card-body">${formatPredictionBody(p.text || '')}</div>
             <div class="card-footer">
               ${signalHTML(sig)}
+              ${timerHTML}
               ${resultHTML}
             </div>
           </div>`;
@@ -3723,6 +3762,34 @@
         if (allCards.length > 50) [...allCards].slice(50).forEach(c => c.remove());
       }
     }
+
+    // ==================== PREDICTION CARD TIMER ENGINE ====================
+    (function startTimerEngine() {
+      setInterval(() => {
+        const timers = document.querySelectorAll('.pred-timer[data-born]');
+        timers.forEach(el => {
+          const born = parseInt(el.getAttribute('data-born'));
+          const elapsed = Date.now() - born;
+          const remaining = Math.max(0, 60000 - elapsed);
+          const txt = el.querySelector('.timer-txt');
+          if (!txt) return;
+          if (remaining <= 0) {
+            el.classList.remove('timer-urgent');
+            el.classList.add('timer-done');
+            el.removeAttribute('data-born'); // stop updating
+            txt.textContent = '⏱ Expired';
+          } else {
+            const remSec = Math.ceil(remaining / 1000);
+            txt.textContent = remSec + 's';
+            if (remSec <= 10) {
+              el.classList.add('timer-urgent');
+            } else {
+              el.classList.remove('timer-urgent');
+            }
+          }
+        });
+      }, 1000);
+    })();
 
     // ==================== FETCH ====================
     async function fetchPredictions(isRefresh = false) {
