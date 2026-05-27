@@ -929,8 +929,8 @@
       </div>
     </div>
 
-    <!-- TOP STATS -->
-    <div class="stats-bar">
+    <!-- TOP STATS — sirf signals page pe show hogi via JS -->
+    <div class="stats-bar" id="main-stats-bar">
       <div class="stat-box"><div class="stat-val" id="stat-total">—</div><div class="stat-label">Total</div></div>
       <div class="stat-box"><div class="stat-val" id="stat-today">—</div><div class="stat-label">Today</div></div>
       <div class="stat-box"><div class="stat-val" style="color:var(--green);font-size:13px" id="stat-status">LIVE</div><div class="stat-label">Status</div></div>
@@ -1015,18 +1015,53 @@
           </div>
 
           <!-- VIP PASS ACTIVE BADGE -->
-          <div id="vip-active-banner" style="display:none;margin-bottom:14px;background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(123,47,255,0.1));border:1.5px solid rgba(255,215,0,0.5);border-radius:16px;padding:14px 16px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="font-size:28px;">👑</div>
-              <div style="flex:1;">
-                <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:900;color:var(--gold);letter-spacing:2px;">VIP PASS ACTIVE</div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:3px;" id="vip-time-left-text">Loading...</div>
+          <!-- VIP ACTIVE FULL PAGE (sirf VIP users ko dikhega) -->
+          <div id="vip-active-banner" style="display:none;margin-bottom:20px;">
+            <!-- Hero Card -->
+            <div style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(123,47,255,0.12),rgba(0,245,255,0.08));border:1.5px solid rgba(255,215,0,0.5);border-radius:20px;padding:24px 20px;text-align:center;position:relative;overflow:hidden;margin-bottom:14px;">
+              <!-- Glow effect -->
+              <div style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:200px;height:200px;background:radial-gradient(circle,rgba(255,215,0,0.15) 0%,transparent 70%);pointer-events:none;"></div>
+              <div style="font-size:48px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(255,215,0,0.5));">👑</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--gold);letter-spacing:3px;margin-bottom:4px;">YOU ARE VIP!</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,245,255,0.8);letter-spacing:4px;margin-bottom:16px;">NEXUS ELITE MEMBER</div>
+              <!-- Days Left Badge -->
+              <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.4);border-radius:30px;padding:8px 20px;margin-bottom:16px;">
+                <span style="font-size:14px;">⏳</span>
+                <span style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--green);" id="vip-days-badge">— days left</span>
               </div>
-              <div style="background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.35);border-radius:20px;padding:5px 12px;">
-                <div style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;color:var(--green);" id="vip-days-badge">—</div>
+              <!-- Description -->
+              <div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.7;" id="vip-time-left-text">Unlimited predictions • No credits needed</div>
+            </div>
+            <!-- Benefits Grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+              <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:14px;text-align:center;">
+                <div style="font-size:22px;margin-bottom:6px;">♾️</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--gold);letter-spacing:1px;">UNLIMITED</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Predictions</div>
+              </div>
+              <div style="background:rgba(0,245,255,0.06);border:1px solid rgba(0,245,255,0.2);border-radius:14px;padding:14px;text-align:center;">
+                <div style="font-size:22px;margin-bottom:6px;">⚡</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--neon);letter-spacing:1px;">PRIORITY</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Access</div>
+              </div>
+              <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:14px;padding:14px;text-align:center;">
+                <div style="font-size:22px;margin-bottom:6px;">🎰</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--green);letter-spacing:1px;">LUCKY SPIN</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Included</div>
+              </div>
+              <div style="background:rgba(123,47,255,0.08);border:1px solid rgba(123,47,255,0.25);border-radius:14px;padding:14px;text-align:center;">
+                <div style="font-size:22px;margin-bottom:6px;">🏆</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:#a78bfa;letter-spacing:1px;">ELITE</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Status</div>
               </div>
             </div>
+            <!-- Motivational message -->
+            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;text-align:center;margin-bottom:14px;">
+              <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;">Aap hain Nexus ke <span style="color:var(--gold);font-weight:700;">elite members</span> mein se ek. Aapko credit ki koi chinta nahi — <span style="color:var(--green);font-weight:700;">unlimited predictions</span> enjoy karo aur apna game level karo! 🚀</div>
+            </div>
           </div>
+          <!-- VIP users ke liye earn/buy section hidden hoga — JS se handle -->
+          <div id="vip-non-member-section">
 
           <!-- BUY VIP PASS SECTION -->
           <div style="margin-bottom:14px;">
@@ -1036,7 +1071,7 @@
               <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;">Yeh prices sirf kuch time ke liye hain • Badh sakti hain kabhi bhi</div>
             </div>
 
-            <div class="section-title" style="padding:0 0 12px;">👑 Buy VIP Pass</div>
+            <div class="section-title" style="padding:0 0 12px;" id="vip-buy-section">👑 Buy VIP Pass</div>
 
             <!-- VIP Plan 1 — 1 Month -->
             <div onclick="showBuyPopup('vip-1m', 99)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
@@ -1099,8 +1134,8 @@
           </div>
 
 
-        <div class="section-title" style="padding:0 0 10px">Ways to Earn</div>
-        <div class="earn-ways">
+        <div class="section-title" style="padding:0 0 10px" id="ways-to-earn-title">Ways to Earn</div>
+        <div class="earn-ways" id="earn-ways-section">
           <div class="earn-card">
             <div class="earn-info">
               <div class="earn-icon">📺</div>
@@ -1151,6 +1186,20 @@
             <div style="text-align:right">
               <div class="earn-amount minus">-1</div>
             </div>
+          </div>
+        </div>
+
+        <!-- LUCKY SPIN EARN CARD -->
+        <div class="earn-card" id="spin-earn-card" style="border-color:rgba(0,255,136,0.25);background:linear-gradient(135deg,rgba(0,255,136,0.06),rgba(0,200,100,0.04));">
+          <div style="display:flex;flex-direction:column;gap:10px;width:100%;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:44px;height:44px;border-radius:14px;background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.3);display:flex;align-items:center;justify-content:center;font-size:24px;">🎰</div>
+              <div style="flex:1;">
+                <div class="earn-name" style="color:var(--green);">Lucky Spin</div>
+                <div class="earn-desc">Watch Ad karke Spin Token kamao aur wheel spin karo!</div>
+              </div>
+            </div>
+            <button onclick="setTab('spin')" style="width:100%;padding:11px;border-radius:12px;border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.1);color:var(--green);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;">🎰 OPEN LUCKY SPIN</button>
           </div>
         </div>
 
@@ -1303,6 +1352,7 @@
           </div>
         </div>
       </div>
+          </div><!-- end vip-non-member-section -->
     </div>
 
     <!-- SPIN PAGE -->
@@ -1415,10 +1465,7 @@
   </div><!-- end .app -->
 
   <!-- FAB -->
-  <button class="spin-fab" id="spin-fab-btn" onclick="setTab('spin')" title="Lucky Spin">
-    <span id="spin-fab-icon" style="display:inline-block;">🎰</span>
-    <span class="spin-fab-badge" id="spin-fab-badge"></span>
-  </button>
+
   <button class="fab" id="fab-btn" onclick="doRefresh()">
     <span class="fab-icon">🔄</span>
     <span class="fab-new" id="fab-new">0</span>
@@ -1433,7 +1480,7 @@
       <span class="nav-icon">📊</span>Stats
     </button>
     <button class="nav-btn" id="nav-credits" onclick="setTab('credits')">
-      <span class="nav-icon">🪙</span>Credits
+      <span class="nav-icon">🪙</span>Earn
     </button>
     <button class="nav-btn" id="nav-alerts" onclick="setTab('alerts')">
       <span class="nav-icon">🔔</span>Alerts
@@ -1442,9 +1489,8 @@
     <button class="nav-btn" id="nav-support" onclick="setTab('support')">
       <span class="nav-icon">✈️</span>Support
     </button>
-    <button class="nav-btn" id="nav-spin" onclick="setTab('spin')">
-      <span class="nav-icon">🎰</span>Spin
-      <span class="nav-badge" id="spin-badge" style="display:none;background:var(--green);">1</span>
+    <button class="nav-btn" id="nav-vip" onclick="setTab('credits');setTimeout(()=>document.getElementById('vip-buy-section').scrollIntoView({behavior:'smooth'}),200)">
+      <span class="nav-icon">👑</span>VIP
     </button>
   </div>
 
@@ -1703,6 +1749,10 @@
       const headerDays = document.getElementById('header-vip-days');
       const timeLeftText = document.getElementById('vip-time-left-text');
       const daysBadge = document.getElementById('vip-days-badge');
+      const nonMemberSection = document.getElementById('vip-non-member-section');
+      const earnWays = document.getElementById('earn-ways-section');
+      const earnTitle = document.getElementById('ways-to-earn-title');
+      const spinEarnCard = document.getElementById('spin-earn-card');
 
       checkVipExpiry();
       if (vipState.active) {
@@ -1711,11 +1761,23 @@
         if (banner) banner.style.display = 'block';
         if (headerBadge) { headerBadge.style.display = 'inline-flex'; }
         if (headerDays) headerDays.textContent = txt;
-        if (timeLeftText) timeLeftText.textContent = 'Unlimited credits — subscription active hai';
+        if (timeLeftText) timeLeftText.textContent = 'Aap ek VIP user hain — unlimited predictions, zero credit tension! 🚀';
         if (daysBadge) daysBadge.textContent = txt;
+        // VIP users ke liye buy/earn section hide karo
+        if (nonMemberSection) nonMemberSection.style.display = 'none';
+        if (earnWays) earnWays.style.display = 'none';
+        if (earnTitle) earnTitle.style.display = 'none';
+        if (spinEarnCard) spinEarnCard.style.display = 'none';
+        // Nav VIP button gold color
+        const navVip = document.getElementById('nav-vip');
+        if (navVip) navVip.style.color = 'var(--gold)';
       } else {
         if (banner) banner.style.display = 'none';
         if (headerBadge) headerBadge.style.display = 'none';
+        if (nonMemberSection) nonMemberSection.style.display = 'block';
+        if (earnWays) earnWays.style.display = 'flex';
+        if (earnTitle) earnTitle.style.display = 'block';
+        if (spinEarnCard) spinEarnCard.style.display = 'block';
       }
       updateCreditUI();
     }
@@ -2968,7 +3030,11 @@
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('page-' + tab).classList.add('active');
-      document.getElementById('nav-' + tab).classList.add('active');
+      const navEl = document.getElementById('nav-' + tab);
+      if (navEl) navEl.classList.add('active');
+      // Stats bar sirf signals page pe dikhe
+      const statsBar = document.getElementById('main-stats-bar');
+      if (statsBar) statsBar.style.display = (tab === 'signals') ? '' : 'none';
       if (tab === 'stats') { updateStats(); renderNotifLog(); }
       if (tab === 'alerts') renderNotifLog();
       if (tab === 'spin') { updateSpinUI(); setTimeout(initWheel, 50); }
