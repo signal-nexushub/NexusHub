@@ -1868,7 +1868,7 @@
         btn.style.opacity = '0.45';
         btn.style.cursor = 'not-allowed';
         btn.textContent = '✓ Followed';
-        if (wrap) { wrap.style.display = 'flex'; wrap.textContent = '✅ Credit claimed (lifetime)'; wrap.style.color = 'rgba(0,255,136,0.6)'; }
+        if (wrap) { wrap.style.display = 'flex'; wrap.textContent = '✅ Credit Claimed'; wrap.style.color = 'rgba(0,255,136,0.6)'; }
       } else {
         btn.disabled = false;
         btn.style.opacity = '1';
@@ -1936,7 +1936,7 @@
         btn.style.opacity = '0.45';
         btn.style.cursor = 'not-allowed';
         btn.textContent = '✓ Joined';
-        if (wrap) { wrap.style.display = 'flex'; wrap.textContent = '✅ Credit claimed (lifetime)'; wrap.style.color = 'rgba(0,255,136,0.6)'; }
+        if (wrap) { wrap.style.display = 'flex'; wrap.textContent = '✅ Credit Claimed'; wrap.style.color = 'rgba(0,255,136,0.6)'; }
       } else {
         btn.disabled = false;
         btn.style.opacity = '1';
@@ -2966,8 +2966,27 @@
         } catch(e) {}
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
       }
-      const preview = msgText ? msgText.substring(0, 80) + (msgText.length > 80 ? '...' : '') : 'Naya signal aaya!';
-      sendPushNotif('🎯 Nexus Prediction — New Signal!', preview);
+      // Signal text se period aur prediction extract karo
+      let notifBody = 'Naya signal aaya!';
+      if (msgText) {
+        const lines = msgText.split('\n').map(l => l.trim()).filter(Boolean);
+        let period = '', prediction = '';
+        for (const line of lines) {
+          const ll = line.toLowerCase();
+          if (!period && (ll.includes('period') || ll.includes('round'))) {
+            period = line.includes(':') ? line.split(':').slice(1).join(':').trim() : line.replace(/period|round/gi,'').trim();
+          }
+          if (!prediction) {
+            if (ll.includes('b i g') || (ll.includes('big') && (line.includes('🔴') || line.includes('>>>')))) prediction = '🔴 BIG';
+            else if (ll.includes('s m a l l') || (ll.includes('small') && (line.includes('🟢') || line.includes('>>>')))) prediction = '🟢 SMALL';
+          }
+        }
+        if (period && prediction) notifBody = `Period: ${period} — ${prediction}`;
+        else if (period) notifBody = `Period: ${period}`;
+        else if (prediction) notifBody = prediction;
+        else notifBody = msgText.substring(0, 80) + (msgText.length > 80 ? '...' : '');
+      }
+      sendPushNotif('🎯 Nexus Prediction — New Signal!', notifBody);
     }
 
     // ==================== STYLED PREDICTION BODY ====================
