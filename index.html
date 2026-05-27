@@ -2797,9 +2797,15 @@
 
     // ==================== STATS ====================
     function updateStats() {
-      const total = allPredictions.length;
+      // Sirf actual prediction messages count karo (result/promo nahi)
+      const onlyPreds = allPredictions.filter(p => {
+        const t = (p.text || '').toLowerCase();
+        return (t.includes('period') || t.includes('round')) &&
+               (t.includes('big') || t.includes('small') || t.includes('confidence') || t.includes('lucky') || t.includes('wingo'));
+      });
+      const total = onlyPreds.length;
       const today = new Date().toDateString();
-      const todayPreds = allPredictions.filter(p => new Date(p.date*1000).toDateString() === today);
+      const todayPreds = onlyPreds.filter(p => new Date(p.date*1000).toDateString() === today);
 
       let wins = 0, losses = 0;
       allPredictions.forEach(p => {
@@ -2807,6 +2813,7 @@
         if (r === 'auto-win') wins++;
         else if (r === 'auto-loss') losses++;
       });
+      // Win/loss sirf result messages se, total sirf predictions se
 
       const rated = wins + losses;
       const acc = rated > 0 ? Math.round((wins / rated) * 100) : 0;
