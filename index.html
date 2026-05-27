@@ -1344,10 +1344,10 @@
           <div class="divider"></div>
           <div class="alert-row">
             <div class="alert-info">
-              <div class="alert-name">🌙 Quiet Hours</div>
-              <div class="alert-desc">Raat 11pm – Subah 7am alerts band</div>
+              <div class="alert-name">🔔 Notifications</div>
+              <div class="alert-desc">Naya signal aane par notification aaye</div>
             </div>
-            <label class="toggle"><input type="checkbox" id="toggle-quiet" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+            <label class="toggle"><input type="checkbox" id="toggle-notif" checked onchange="saveSettings(); handleNotifToggle()"><span class="toggle-slider"></span></label>
           </div>
           <div class="divider"></div>
           <div class="alert-row">
@@ -1476,7 +1476,7 @@
     try {
       const s = JSON.parse(localStorage.getItem('nx_settings') || '{}');
       if (s.sound !== undefined) document.getElementById('toggle-sound').checked = s.sound;
-      if (s.quiet !== undefined) document.getElementById('toggle-quiet').checked = s.quiet;
+      if (s.notif !== undefined) document.getElementById('toggle-notif').checked = s.notif;
     } catch(e) {}
 
     if (confFilter > 0) {
@@ -2677,7 +2677,7 @@
     function saveSettings() {
       localStorage.setItem('nx_settings', JSON.stringify({
         sound: document.getElementById('toggle-sound').checked,
-        quiet: document.getElementById('toggle-quiet').checked
+        notif: document.getElementById('toggle-notif').checked
       }));
     }
 
@@ -2917,11 +2917,40 @@
       badge.style.display = 'inline';
     }
 
-    function playAlert() {
-      const soundOn = document.getElementById('toggle-sound').checked;
-      const quietOn = document.getElementById('toggle-quiet').checked;
-      const hr = new Date().getHours();
-      if (quietOn && (hr >= 23 || hr < 7)) return;
+    // ==================== NOTIFICATIONS ====================
+    async function requestNotifPermission() {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+    }
+
+    function handleNotifToggle() {
+      const on = document.getElementById('toggle-notif')?.checked;
+      if (on) requestNotifPermission();
+    }
+
+    function sendPushNotif(title, body) {
+      // Service Worker ke through (PWA background mein ho tab)
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'SHOW_NOTIFICATION', title, body });
+        return;
+      }
+      // Direct browser notification (app open ho tab)
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      try {
+        new Notification(title, {
+          body, icon: 'icon-192.png', badge: 'icon-192.png',
+          tag: 'nexus-signal', renotify: true
+        });
+      } catch(e) {}
+    }
+
+    function playAlert(msgText) {
+      const soundOn = document.getElementById('toggle-sound')?.checked;
+      const notifOn = document.getElementById('toggle-notif')?.checked ?? true;
+      if (!notifOn) return; // User ne notification band kiya hai
+
       if (soundOn) {
         try {
           const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2937,6 +2966,8 @@
         } catch(e) {}
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
       }
+      const preview = msgText ? msgText.substring(0, 80) + (msgText.length > 80 ? '...' : '') : 'Naya signal aaya!';
+      sendPushNotif('🎯 Nexus Prediction — New Signal!', preview);
     }
 
     // ==================== STYLED PREDICTION BODY ====================
@@ -3149,7 +3180,7 @@
             allPredictions = [...brandNew, ...allPredictions].slice(0, 100);
             if (!isFirstLoad) {
               brandNew.forEach(p => addNotif(cleanPrediction(p.text || ''), '📡'));
-              playAlert();
+              playAlert(cleanPrediction(brandNew[0]?.text || ""));
               newCount += brandNew.length;
               const badge = document.getElementById('fab-new');
               badge.textContent = newCount;
@@ -3200,7 +3231,7 @@
             allPredictions = [...brandNew, ...allPredictions].slice(0, 100);
             renderCards(allPredictions);
             brandNew.forEach(p => addNotif(cleanPrediction(p.text || ''), '📡'));
-            playAlert();
+            playAlert(cleanPrediction(brandNew[0]?.text || ''));
             document.getElementById('fab-btn').classList.add('spinning');
             setTimeout(() => document.getElementById('fab-btn').classList.remove('spinning'), 500);
             const now = new Date();
@@ -3215,7 +3246,8 @@
     updateCreditUI();
     updateAdminUI();
     checkDailyBonus();
-    setTimeout(initWheel, 300); // Draw wheel on load
+    setTimeout(initWheel, 300);
+    setTimeout(requestNotifPermission, 2000); // 2s baad permission maango
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   </script>
 </body>
