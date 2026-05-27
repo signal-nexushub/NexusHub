@@ -975,6 +975,13 @@
           <div><div class="streak-label">🎯 Today's Accuracy</div></div>
           <div class="streak-val" id="today-acc">—%</div>
         </div>
+
+        <!-- Recent Notifications (moved from Alerts page) -->
+        <div class="section-title" style="padding-top:6px">Recent Notifications</div>
+        <div class="notif-log" id="notif-log">
+          <div class="empty-alerts">📭 Koi notification abhi tak nahi</div>
+        </div>
+
       </div>
     </div>
 
@@ -1203,11 +1210,6 @@
         </div>
 
 
-        <div class="section-title" style="padding:14px 0 10px">Transaction History</div>
-        <div class="txn-list" id="txn-list">
-          <div class="empty-txn">📭 Koi transaction abhi tak nahi</div>
-        </div>
-
         <!-- DEVELOPER CONTACT -->
         <div style="margin-top:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px;">
           <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:3px;margin-bottom:14px;">SUPPORT & HELP</div>
@@ -1402,9 +1404,10 @@
             <div class="conf-chip" onclick="setConf(90,this)">90%+</div>
           </div>
         </div>
-        <div class="section-title">Recent Notifications</div>
-        <div class="notif-log" id="notif-log">
-          <div class="empty-alerts">📭 Koi notification abhi tak nahi</div>
+        <!-- Transaction History (moved from Earn page) -->
+        <div class="section-title" style="padding-top:14px">Transaction History</div>
+        <div class="txn-list" id="txn-list">
+          <div class="empty-txn">📭 Koi transaction abhi tak nahi</div>
         </div>
       </div>
     </div>
@@ -2966,7 +2969,7 @@
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('page-' + tab).classList.add('active');
       document.getElementById('nav-' + tab).classList.add('active');
-      if (tab === 'stats') updateStats();
+      if (tab === 'stats') { updateStats(); renderNotifLog(); }
       if (tab === 'alerts') renderNotifLog();
       if (tab === 'spin') { updateSpinUI(); setTimeout(initWheel, 50); }
       if (tab === 'credits') { updateCreditUI(); updateDailyBtnState(); updateShareBtnState(); updateVipBadgeUI(); }
