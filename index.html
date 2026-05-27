@@ -891,12 +891,13 @@
             <div class="credit-label" id="header-credit-label">CREDITS</div>
           </div>
           <!-- VIP badge — sirf jab active ho -->
-          <div id="header-vip-badge" style="display:none;margin-left:8px;background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(123,47,255,0.15));border:1px solid rgba(255,215,0,0.5);border-radius:20px;padding:3px 10px;display:none;align-items:center;gap:4px;">
+          <div id="header-vip-badge" style="display:none;margin-left:8px;background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(123,47,255,0.15));border:1px solid rgba(255,215,0,0.5);border-radius:20px;padding:3px 10px;align-items:center;gap:4px;">
             <span style="font-size:12px;">👑</span>
             <span style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;color:var(--gold);" id="header-vip-days">VIP</span>
           </div>
         </div>
-        <div class="credit-actions">
+        <!-- Normal users ke liye Watch Ad + Share buttons -->
+        <div class="credit-actions" id="header-credit-actions">
           <div style="position:relative;display:inline-flex;">
             <span style="position:absolute;top:-7px;right:-4px;background:var(--green);color:#000;font-size:8px;font-weight:900;border-radius:6px;padding:1px 4px;z-index:2;pointer-events:none;">+5</span>
             <button class="credit-btn earn-btn" id="ad-header-btn" onclick="openAdModal()">▶ Watch Ad</button>
@@ -907,7 +908,7 @@
           </div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:2px;">
+      <div id="header-action-btns" style="display:flex;gap:8px;margin-top:2px;">
         <button onclick="setTab('credits')" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.3);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;">
           🪙 EARN
         </button>
@@ -996,22 +997,10 @@
 
         <!-- BUY CREDITS -->
         <div style="margin-bottom:14px;">
-          <!-- REDEEM CODE -->
-          <div style="margin-bottom:16px;">
-            <div class="section-title" style="padding:16px 0 12px;">Redeem Code</div>
-            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.2);border-radius:16px;padding:16px;">
-              <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:12px;">Payment ke baad mila code yahan enter karo:</div>
-              <div style="display:flex;gap:8px;">
-                <input id="redeem-input" type="text" placeholder="NEXUS-VIP-1M-XXXX" maxlength="24"
-                  style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:12px 14px;color:white;font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:1px;outline:none;"
-                  oninput="this.value=this.value.toUpperCase()"/>
-                <button onclick="redeemCode()" 
-                  style="padding:12px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;white-space:nowrap;">
-                  REDEEM
-                </button>
-              </div>
-              <div id="redeem-msg" style="font-size:12px;margin-top:8px;display:none;"></div>
-            </div>
+          <!-- REDEEM CODE — Hidden input for redeemCode() function, actual UI is in VIP tab -->
+          <div style="display:none;">
+            <input id="redeem-input" type="text" maxlength="24" oninput="this.value=this.value.toUpperCase()"/>
+            <div id="redeem-msg" style="font-size:12px;margin-top:8px;display:none;"></div>
           </div>
 
           <!-- VIP PASS ACTIVE BADGE -->
@@ -1063,76 +1052,20 @@
           <!-- VIP users ke liye earn/buy section hidden hoga — JS se handle -->
           <div id="vip-non-member-section">
 
-          <!-- BUY VIP PASS SECTION -->
-          <div style="margin-bottom:14px;">
-            <!-- Limited Time Offer banner -->
-            <div style="background:linear-gradient(135deg,rgba(255,45,85,0.12),rgba(123,47,255,0.08));border:1px dashed rgba(255,45,85,0.4);border-radius:12px;padding:10px 14px;margin-bottom:14px;text-align:center;">
-              <div style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:900;color:var(--red);letter-spacing:2px;animation:pulse 1.5s ease-in-out infinite;">⏰ LIMITED TIME OFFER — ABHI LO!</div>
-              <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;">Yeh prices sirf kuch time ke liye hain • Badh sakti hain kabhi bhi</div>
-            </div>
+          <!-- BUY VIP PASS SECTION — credits page pe hide rahega, VIP tab pe jaao -->
+          <div id="credits-vip-buy-section" style="display:none;margin-bottom:14px;"></div>
 
-            <div class="section-title" style="padding:0 0 12px;" id="vip-buy-section">👑 Buy VIP Pass</div>
-
-            <!-- VIP Plan 1 — 1 Month -->
-            <div onclick="showBuyPopup('vip-1m', 99)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                <div style="display:flex;align-items:center;gap:12px;">
-                  <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;">🥉</div>
-                  <div>
-                    <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1 Month VIP</div>
-                    <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
-                    <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">30 days valid</div>
-                  </div>
-                </div>
-                <div style="text-align:right;flex-shrink:0;">
-                  <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹199</div>
-                  <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹99</div>
-                  <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">50% OFF</div>
-                </div>
+          <!-- VIP Tab CTA — earn page pe dikhega sirf non-VIP users ko -->
+          <div id="credits-vip-cta" onclick="setTab('vip')" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(123,47,255,0.06));border:1px solid rgba(255,215,0,0.3);border-radius:16px;padding:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="font-size:28px;">👑</div>
+              <div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--gold);">VIP PASS</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Unlimited credits • No deduction</div>
               </div>
             </div>
-
-            <!-- VIP Plan 2 — 3 Months -->
-            <div onclick="showBuyPopup('vip-3m', 199)" style="background:linear-gradient(135deg,rgba(0,245,255,0.05),rgba(123,47,255,0.04));border:1.5px solid rgba(0,245,255,0.25);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(0,245,255,0.5)'" onmouseout="this.style.borderColor='rgba(0,245,255,0.25)'">
-              <div style="position:absolute;top:-9px;left:14px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;">🔥 POPULAR</div>
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                <div style="display:flex;align-items:center;gap:12px;">
-                  <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;">🥈</div>
-                  <div>
-                    <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--neon);">3 Month VIP</div>
-                    <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
-                    <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">90 days valid</div>
-                  </div>
-                </div>
-                <div style="text-align:right;flex-shrink:0;">
-                  <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹599</div>
-                  <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹199</div>
-                  <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">67% OFF</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- VIP Plan 3 — 1 Year -->
-            <div onclick="showBuyPopup('vip-1y', 699)" style="background:linear-gradient(135deg,rgba(255,215,0,0.07),rgba(255,165,0,0.04));border:1.5px solid rgba(255,215,0,0.35);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.6)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.35)'">
-              <div style="position:absolute;top:-9px;left:14px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;">👑 BEST VALUE</div>
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                <div style="display:flex;align-items:center;gap:12px;">
-                  <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.35);display:flex;align-items:center;justify-content:center;font-size:24px;">🥇</div>
-                  <div>
-                    <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1 Year VIP</div>
-                    <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
-                    <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">365 days valid</div>
-                  </div>
-                </div>
-                <div style="text-align:right;flex-shrink:0;">
-                  <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹1199</div>
-                  <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹699</div>
-                  <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">42% OFF</div>
-                </div>
-              </div>
-            </div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--gold);font-weight:700;white-space:nowrap;">VIEW →</div>
           </div>
-
 
         <div class="section-title" style="padding:0 0 10px" id="ways-to-earn-title">Ways to Earn</div>
         <div class="earn-ways" id="earn-ways-section">
@@ -1355,6 +1288,161 @@
           </div><!-- end vip-non-member-section -->
     </div>
 
+    <!-- VIP PAGE (nav se open hota hai) -->
+    <div id="page-vip" class="page">
+      <div class="section-title" style="padding-top:8px">VIP Pass</div>
+      <div style="padding:0 16px;">
+
+        <!-- VIP ACTIVE BANNER (sirf active VIP users ko) -->
+        <div id="vip-page-active-banner" style="display:none;margin-bottom:20px;">
+          <div style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(123,47,255,0.12),rgba(0,245,255,0.08));border:1.5px solid rgba(255,215,0,0.5);border-radius:20px;padding:24px 20px;text-align:center;position:relative;overflow:hidden;margin-bottom:14px;">
+            <div style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:200px;height:200px;background:radial-gradient(circle,rgba(255,215,0,0.15) 0%,transparent 70%);pointer-events:none;"></div>
+            <div style="font-size:48px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(255,215,0,0.5));">👑</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--gold);letter-spacing:3px;margin-bottom:4px;">YOU ARE VIP!</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,245,255,0.8);letter-spacing:4px;margin-bottom:16px;">NEXUS ELITE MEMBER</div>
+            <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.4);border-radius:30px;padding:8px 20px;margin-bottom:16px;">
+              <span style="font-size:14px;">⏳</span>
+              <span style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--green);" id="vip-page-days-badge">— days left</span>
+            </div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.7;">Unlimited predictions • No credits needed</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:14px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:6px;">♾️</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--gold);letter-spacing:1px;">UNLIMITED</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Predictions</div>
+            </div>
+            <div style="background:rgba(0,245,255,0.06);border:1px solid rgba(0,245,255,0.2);border-radius:14px;padding:14px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:6px;">⚡</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--neon);letter-spacing:1px;">PRIORITY</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Access</div>
+            </div>
+            <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:14px;padding:14px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:6px;">🎰</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--green);letter-spacing:1px;">LUCKY SPIN</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Included</div>
+            </div>
+            <div style="background:rgba(123,47,255,0.08);border:1px solid rgba(123,47,255,0.25);border-radius:14px;padding:14px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:6px;">🏆</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:#a78bfa;letter-spacing:1px;">ELITE</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Status</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIP PACKS (non-VIP users ke liye, ya page scroll ke liye) -->
+        <div id="vip-page-buy-section">
+          <!-- Limited Time Offer banner -->
+          <div style="background:linear-gradient(135deg,rgba(255,45,85,0.12),rgba(123,47,255,0.08));border:1px dashed rgba(255,45,85,0.4);border-radius:12px;padding:10px 14px;margin-bottom:14px;text-align:center;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:900;color:var(--red);letter-spacing:2px;animation:pulse 1.5s ease-in-out infinite;">⏰ LIMITED TIME OFFER — ABHI LO!</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;">Yeh prices sirf kuch time ke liye hain • Badh sakti hain kabhi bhi</div>
+          </div>
+
+          <div class="section-title" style="padding:0 0 12px;">👑 Buy VIP Pass</div>
+
+          <!-- VIP Plan 1 — 1 Month -->
+          <div onclick="showBuyPopup('vip-1m', 99)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;">🥉</div>
+                <div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1 Month VIP</div>
+                  <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
+                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">30 days valid</div>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹199</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹99</div>
+                <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">50% OFF</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIP Plan 2 — 3 Months -->
+          <div onclick="showBuyPopup('vip-3m', 199)" style="background:linear-gradient(135deg,rgba(0,245,255,0.05),rgba(123,47,255,0.04));border:1.5px solid rgba(0,245,255,0.25);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(0,245,255,0.5)'" onmouseout="this.style.borderColor='rgba(0,245,255,0.25)'">
+            <div style="position:absolute;top:-9px;left:14px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;">🔥 POPULAR</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;">🥈</div>
+                <div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--neon);">3 Month VIP</div>
+                  <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
+                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">90 days valid</div>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹599</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹199</div>
+                <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">67% OFF</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIP Plan 3 — 1 Year -->
+          <div onclick="showBuyPopup('vip-1y', 699)" style="background:linear-gradient(135deg,rgba(255,215,0,0.07),rgba(255,165,0,0.04));border:1.5px solid rgba(255,215,0,0.35);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.6)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.35)'">
+            <div style="position:absolute;top:-9px;left:14px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;">👑 BEST VALUE</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.35);display:flex;align-items:center;justify-content:center;font-size:24px;">🥇</div>
+                <div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1 Year VIP</div>
+                  <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
+                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;">365 days valid</div>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹1199</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹699</div>
+                <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">42% OFF</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- REDEEM CODE -->
+        <div style="margin-bottom:16px;">
+          <div class="section-title" style="padding:16px 0 12px;">Redeem Code</div>
+          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.2);border-radius:16px;padding:16px;">
+            <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:12px;">Payment ke baad mila code yahan enter karo:</div>
+            <div style="display:flex;gap:8px;">
+              <input id="vip-page-redeem-input" type="text" placeholder="NEXUS-VIP-1M-XXXX" maxlength="24"
+                style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:12px 14px;color:white;font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:1px;outline:none;"
+                oninput="this.value=this.value.toUpperCase()"/>
+              <button onclick="redeemCodeFromVipPage()"
+                style="padding:12px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;white-space:nowrap;">
+                REDEEM
+              </button>
+            </div>
+            <div id="vip-page-redeem-msg" style="font-size:12px;margin-top:8px;display:none;"></div>
+          </div>
+        </div>
+
+        <!-- SUPPORT -->
+        <div style="margin-bottom:20px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:3px;margin-bottom:14px;">SUPPORT & HELP</div>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#0055aa);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">💬</div>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.9);">Developer Support</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:3px;">NexusHub Official</div>
+            </div>
+          </div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:16px;">
+            VIP purchase ke baad code nahi mila? Ya koi aur issue hai? Directly developer se contact karo — hum help karenge! 🚀
+          </div>
+          <a href="https://telegram.dog/NexusXedit" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,rgba(0,136,204,0.2),rgba(0,85,170,0.2));border:1px solid rgba(0,136,204,0.35);border-radius:14px;padding:14px;text-decoration:none;transition:all 0.2s;">
+            <span style="font-size:20px;">✈️</span>
+            <div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:#0088cc;letter-spacing:1px;">CONTACT DEVELOPER</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">@NexusXedit on Telegram</div>
+            </div>
+          </a>
+        </div>
+
+      </div>
+    </div>
+
     <!-- SPIN PAGE -->
     <div id="page-spin" class="page">
       <div class="section-title" style="padding-top:8px">Lucky Spin</div>
@@ -1489,7 +1577,7 @@
     <button class="nav-btn" id="nav-support" onclick="setTab('support')">
       <span class="nav-icon">✈️</span>Support
     </button>
-    <button class="nav-btn" id="nav-vip" onclick="setTab('credits');setTimeout(()=>document.getElementById('vip-buy-section').scrollIntoView({behavior:'smooth'}),200)">
+    <button class="nav-btn" id="nav-vip" onclick="setTab('vip')">
       <span class="nav-icon">👑</span>VIP
     </button>
   </div>
@@ -1755,6 +1843,9 @@
       const spinEarnCard = document.getElementById('spin-earn-card');
 
       checkVipExpiry();
+      const headerCreditActions = document.getElementById('header-credit-actions');
+      const headerActionBtns = document.getElementById('header-action-btns');
+      const creditVipCta = document.getElementById('credits-vip-cta');
       if (vipState.active) {
         const d = vipState.daysLeft;
         const txt = d === 1 ? '1 day left' : d + ' days left';
@@ -1768,6 +1859,10 @@
         if (earnWays) earnWays.style.display = 'none';
         if (earnTitle) earnTitle.style.display = 'none';
         if (spinEarnCard) spinEarnCard.style.display = 'none';
+        // Home page buttons hide karo — Watch Ad, Share, Earn, VIP Pass
+        if (headerCreditActions) headerCreditActions.style.display = 'none';
+        if (headerActionBtns) headerActionBtns.style.display = 'none';
+        if (creditVipCta) creditVipCta.style.display = 'none';
         // Nav VIP button gold color
         const navVip = document.getElementById('nav-vip');
         if (navVip) navVip.style.color = 'var(--gold)';
@@ -1778,8 +1873,51 @@
         if (earnWays) earnWays.style.display = 'flex';
         if (earnTitle) earnTitle.style.display = 'block';
         if (spinEarnCard) spinEarnCard.style.display = 'block';
+        // Normal users ke liye buttons wapas dikhao
+        if (headerCreditActions) headerCreditActions.style.display = 'flex';
+        if (headerActionBtns) headerActionBtns.style.display = 'flex';
+        if (creditVipCta) creditVipCta.style.display = 'flex';
       }
       updateCreditUI();
+      if (currentTab === 'vip') syncVipPage();
+    }
+
+    // ==================== VIP PAGE SYNC ====================
+    function syncVipPage() {
+      checkVipExpiry();
+      const activeBanner = document.getElementById('vip-page-active-banner');
+      const buySection = document.getElementById('vip-page-buy-section');
+      const daysBadge = document.getElementById('vip-page-days-badge');
+      if (vipState.active) {
+        if (activeBanner) activeBanner.style.display = 'block';
+        if (daysBadge) {
+          const d = vipState.daysLeft;
+          daysBadge.textContent = d === 1 ? '1 day left' : d + ' days left';
+        }
+        // VIP active hone par bhi packs dikhao (renew/extend ke liye)
+        if (buySection) buySection.style.display = 'block';
+      } else {
+        if (activeBanner) activeBanner.style.display = 'none';
+        if (buySection) buySection.style.display = 'block';
+      }
+    }
+
+    // VIP page ka apna redeem function (credits page wale se alag input)
+    async function redeemCodeFromVipPage() {
+      const input = document.getElementById('vip-page-redeem-input');
+      const msg = document.getElementById('vip-page-redeem-msg');
+      if (!input || !msg) return;
+      // Credits page ke input mein bhi sync karo toh original redeemCode() kaam kare
+      const codeInput = document.getElementById('redeem-input');
+      if (codeInput) codeInput.value = input.value;
+      const result = await redeemCode();
+      // Copy message from original redeem-msg
+      const origMsg = document.getElementById('redeem-msg');
+      if (origMsg) {
+        msg.style.display = origMsg.style.display;
+        msg.style.color = origMsg.style.color;
+        msg.textContent = origMsg.textContent;
+      }
     }
 
     // VIP Pass redeem — called from redeemCode when NEXUS-VIP-* code detected
@@ -3039,6 +3177,7 @@
       if (tab === 'alerts') renderNotifLog();
       if (tab === 'spin') { updateSpinUI(); setTimeout(initWheel, 50); }
       if (tab === 'credits') { updateCreditUI(); updateDailyBtnState(); updateShareBtnState(); updateVipBadgeUI(); }
+      if (tab === 'vip') { syncVipPage(); }
     }
 
     function updateDailyBtnState() {
