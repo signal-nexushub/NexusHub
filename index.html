@@ -1949,14 +1949,13 @@
 
         snap.forEach(doc => {
           const d = doc.data();
-          // Sabhi users jo kabhi bhi ad dekhe hain — weekKey filter nahi
-          const cnt = d.adWatchCount || 0;
-          if (cnt > 0) {
+          // Sabhi registered users dikhao — adWatchCount 0 wale bhi
+          if (d.displayName || d.email) {
             entries.push({
               uid: doc.id,
               name: d.displayName || 'Anonymous',
               photoURL: d.photoURL || '',
-              count: cnt
+              count: d.adWatchCount || 0
             });
           }
         });
@@ -1983,7 +1982,7 @@
         }
 
         if (!top100.length) {
-          listEl.innerHTML = '<div class="lb-empty">📭 Abhi koi nahi — pehle ad dekho aur #1 bano!</div>';
+          listEl.innerHTML = '<div class="lb-empty">📭 Abhi koi user nahi — login karo aur credits kamao!</div>';
           return;
         }
 
@@ -2153,6 +2152,8 @@
           updateInstaBtnState();
           updateTgBtnState();
           updateVipBadgeUI();
+          // Firestore load complete — ab save karna safe hai
+          _firestoreLoaded = true;
           // Prize notification check
           if (data.prizeNotify) {
             setTimeout(() => {
@@ -2167,6 +2168,8 @@
           transactions = [];
           spinTokens = 1;
           freeSpinUsed = false;
+          adWatchCount = 0;
+          _firestoreLoaded = true; // Naya user — save karna safe hai
           await saveToFirestore();
           _ac(0, '🎉 Welcome to Nexus Hub!');
         }
@@ -2180,6 +2183,8 @@
 
     async function saveToFirestore() {
       if (!window.currentUser) return;
+      // Guard: Firestore se data load hone se pehle save mat karo — credits 0 overwrite se bachao
+      if (!_firestoreLoaded) return;
       try {
         const userRef = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
         await window.fbSetDoc(userRef, {
@@ -2395,6 +2400,9 @@
       const planNames = { 'VIP-1M': '1 Month', 'VIP-3M': '3 Months', 'VIP-1Y': '1 Year' };
       return planNames[plan] || plan;
     }
+
+    // Firestore load guard — credits 0 overwrite se bachao
+    let _firestoreLoaded = false;
 
     // Console hack band - random key se lock hai
     const _ck = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
