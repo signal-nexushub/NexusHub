@@ -1893,6 +1893,32 @@
       }
     }
 
+    // ===== ATOMIC AD COUNT — race condition free =====
+    async function atomicAdCount() {
+      if (!window.currentUser) return;
+      try {
+        const userRef = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
+        await window.fbUpdateDoc(userRef, {
+          adWatchCount: window.fbIncrement(1),
+          weekKey: getCurrentWeekKey(),
+          displayName: window.currentUser.displayName || '',
+          photoURL: window.currentUser.photoURL || '',
+          email: window.currentUser.email || ''
+        });
+      } catch(e) {
+        try {
+          const userRef2 = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
+          await window.fbSetDoc(userRef2, {
+            adWatchCount: adWatchCount,
+            weekKey: getCurrentWeekKey(),
+            displayName: window.currentUser.displayName || '',
+            photoURL: window.currentUser.photoURL || '',
+            email: window.currentUser.email || ''
+          }, { merge: true });
+        } catch(e2) { console.error('atomicAdCount err:', e2); }
+      }
+    }
+
     async function loadLeaderboard() {
       const listEl = document.getElementById('lb-list');
       const myRankCard = document.getElementById('lb-my-rank-card');
@@ -2454,9 +2480,8 @@
             _ac(5, '📺 Ad Watch Reward');
             spinTokens++;
             freeSpinUsed = true;
-            // Leaderboard count badho
             adWatchCount++;
-            saveToFirestore();
+            atomicAdCount(); // Firestore mein instantly +1
             updateSpinUI();
             showToast('Ad dekha! +5 Credits 🎉', 'green');
             _updateAdBtns('▶ Watch Ad', false);
@@ -3470,10 +3495,11 @@
       const overlay = document.getElementById('spin-ad-overlay');
       if (overlay) overlay.remove();
       spinTokens++;
-      adWatchCount++; // Leaderboard count
-      saveToFirestore();
+      adWatchCount++;
+      _ac(5, '📺 Spin Ad Watch Reward');
+      atomicAdCount(); // Firestore mein instantly +1
       updateSpinUI();
-      showToast('+1 Spin Token mila! 🎰', 'green');
+      showToast('+1 Spin Token + 5 Credits! 🎰', 'green');
     }
 
     // ==================== TOAST ====================
