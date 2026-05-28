@@ -1924,24 +1924,17 @@
       if (!window.currentUser) return;
       try {
         const userRef = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
-        await window.fbUpdateDoc(userRef, {
+        // setDoc + merge — naye aur purane dono users ke liye kaam karta hai
+        await window.fbSetDoc(userRef, {
           adWatchCount: window.fbIncrement(1),
           weekKey: getCurrentWeekKey(),
           displayName: window.currentUser.displayName || '',
           photoURL: window.currentUser.photoURL || '',
-          email: window.currentUser.email || ''
-        });
+          email: window.currentUser.email || '',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
       } catch(e) {
-        try {
-          const userRef2 = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
-          await window.fbSetDoc(userRef2, {
-            adWatchCount: adWatchCount,
-            weekKey: getCurrentWeekKey(),
-            displayName: window.currentUser.displayName || '',
-            photoURL: window.currentUser.photoURL || '',
-            email: window.currentUser.email || ''
-          }, { merge: true });
-        } catch(e2) { console.error('atomicAdCount err:', e2); }
+        console.error('atomicAdCount err:', e);
       }
     }
 
