@@ -1835,62 +1835,88 @@
       }, 1000);
     }
 
-    // Award prizes to winners
+    // ==================== WEEK PRIZE DISTRIBUTION ====================
+    // Yeh sirf admin ke browser se chalega — Firestore rules mein admin ko special write access dena hoga
     async function checkWeekWinners() {
+      if (!window.currentUser) return;
       try {
         const colRef = window.fbCollection(window.fbDb, 'users');
         const snap = await window.fbGetDocs(colRef);
-        const weekKey = getCurrentWeekKey();
         const entries = [];
-        snap.forEach(doc => {
-          const d = doc.data();
-          if ((d.weekKey === weekKey || d.adWatchCount > 0) && d.adWatchCount > 0) {
-            entries.push({ uid: doc.id, name: d.displayName || 'User', count: d.adWatchCount || 0, email: d.email || '' });
+        snap.forEach(d => {
+          const data = d.data();
+          if ((data.adWatchCount || 0) > 0) {
+            entries.push({ uid: d.id, name: data.displayName || 'User', count: data.adWatchCount || 0 });
           }
         });
         entries.sort((a, b) => b.count - a.count);
-        const winners = entries.slice(0, 3);
-        // Award prizes
-        for (let i = 0; i < winners.length; i++) {
-          const winner = winners[i];
-          const userRef = window.fbDoc(window.fbDb, 'users', winner.uid);
+        const myUid = window.currentUser.uid;
+        const myIdx = entries.findIndex(e => e.uid === myUid);
+
+        // Agar admin login hai — prizes do
+        if (adminUnlocked && entries.length > 0) {
+          await distributePrizes(entries);
+        }
+
+        // Sirf current user ka notification
+        if (myIdx === 0) showToast('🥇 Aap #1 hain! Prize processing... 👑', 'green');
+        else if (myIdx === 1) showToast('🥈 Aap #2 hain! Prize processing... 💰', 'green');
+        else if (myIdx === 2) showToast('🥉 Aap #3 hain! Prize processing... 🪙', 'green');
+      } catch(e) {
+        console.error('Week check error:', e);
+      }
+    }
+
+    // Admin ke browser se prizes distribute karo
+    async function distributePrizes(entries) {
+      const weekKey = getCurrentWeekKey();
+      const prizeWeekField = 'prizeGiven_' + weekKey;
+
+      for (let i = 0; i < Math.min(entries.length, 3); i++) {
+        const winner = entries[i];
+        const userRef = window.fbDoc(window.fbDb, 'users', winner.uid);
+
+        // Check karo is week prize already diya ya nahi
+        const snap = await window.fbGetDoc(userRef);
+        if (snap.exists() && snap.data()[prizeWeekField]) continue; // Already diya
+
+        try {
           if (i === 0) {
             // 1st: 1 Month VIP
             const now = new Date();
             const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
             await window.fbSetDoc(userRef, {
               vip: { plan: 'vip-1m', startDate: now.toISOString(), endDate: end.toISOString() },
-              weekPrize: '1m-vip', weekPrizeDate: now.toISOString()
+              [prizeWeekField]: '1st-vip-1m',
+              prizeNotify: '🥇 Aapne 1st prize jeeta! 1 Month VIP active ho gaya! 👑'
             }, { merge: true });
+            console.log('✅ 1st prize given to:', winner.name);
+
           } else if (i === 1) {
             // 2nd: 1000 credits
-            const userSnap = await window.fbGetDoc(userRef);
-            const cur = userSnap.exists() ? (userSnap.data().credits || 0) : 0;
-            await window.fbSetDoc(userRef, { credits: cur + 1000, weekPrize: '1000-credits', weekPrizeDate: new Date().toISOString() }, { merge: true });
+            const cur = snap.exists() ? (snap.data().credits || 0) : 0;
+            await window.fbSetDoc(userRef, {
+              credits: cur + 1000,
+              [prizeWeekField]: '2nd-1000-credits',
+              prizeNotify: '🥈 Aapne 2nd prize jeeta! +1000 Credits mile! 💰'
+            }, { merge: true });
+            console.log('✅ 2nd prize given to:', winner.name);
+
           } else if (i === 2) {
             // 3rd: 500 credits
-            const userSnap = await window.fbGetDoc(userRef);
-            const cur = userSnap.exists() ? (userSnap.data().credits || 0) : 0;
-            await window.fbSetDoc(userRef, { credits: cur + 500, weekPrize: '500-credits', weekPrizeDate: new Date().toISOString() }, { merge: true });
+            const cur = snap.exists() ? (snap.data().credits || 0) : 0;
+            await window.fbSetDoc(userRef, {
+              credits: cur + 500,
+              [prizeWeekField]: '3rd-500-credits',
+              prizeNotify: '🥉 Aapne 3rd prize jeeta! +500 Credits mile! 🪙'
+            }, { merge: true });
+            console.log('✅ 3rd prize given to:', winner.name);
           }
+        } catch(e) {
+          console.error('Prize error for', winner.name, e);
         }
-        // Current user ka prize check karo
-        if (window.currentUser) {
-          const myIdx = winners.findIndex(w => w.uid === window.currentUser.uid);
-          if (myIdx === 0) {
-            showToast('🥇 Aap 1st aaye! 1 Month VIP active ho gaya! 👑', 'green');
-            await loadUserFromFirestore(window.currentUser.uid);
-          } else if (myIdx === 1) {
-            showToast('🥈 Aap 2nd aaye! +1000 Credits mile! 💰', 'green');
-            await loadUserFromFirestore(window.currentUser.uid);
-          } else if (myIdx === 2) {
-            showToast('🥉 Aap 3rd aaye! +500 Credits mile! 🪙', 'green');
-            await loadUserFromFirestore(window.currentUser.uid);
-          }
-        }
-      } catch(e) {
-        console.error('Week winner check error:', e);
       }
+      showToast('✅ Prizes distribute ho gaye!', 'green');
     }
 
     // ===== ATOMIC AD COUNT — race condition free =====
@@ -2118,6 +2144,14 @@
           updateInstaBtnState();
           updateTgBtnState();
           updateVipBadgeUI();
+          // Prize notification check
+          if (data.prizeNotify) {
+            setTimeout(() => {
+              showToast(data.prizeNotify, 'green');
+              // Clear notification after showing
+              window.fbSetDoc(window.fbDoc(window.fbDb, 'users', uid), { prizeNotify: null }, { merge: true }).catch(()=>{});
+            }, 2000);
+          }
         } else {
           // New user - give 5 credits + 1 free spin
           credits = 0;
@@ -2458,88 +2492,107 @@
 
     function openAdModal() {
       const WAIT_SEC = 20;
-
-      // Cleanup any previous session
       _cleanupAd();
 
-      // Timer shuru se start karo (reset)
-      let _adViewed = 0;
+      // ---- In-app floating panel banana ----
+      let existing = document.getElementById('ad-watch-panel');
+      if (existing) existing.remove();
 
-      _updateAdBtns('⏱ 20s left', false);
-      showToast('Ad khul gaya — 20s poore dekho ⏱', '');
+      const panel = document.createElement('div');
+      panel.id = 'ad-watch-panel';
+      panel.style.cssText = [
+        'position:fixed','bottom:90px','left:50%','transform:translateX(-50%)',
+        'width:calc(100% - 32px)','max-width:448px',
+        'background:linear-gradient(135deg,#0d0818,#020008)',
+        'border:1.5px solid rgba(255,215,0,0.35)',
+        'border-radius:20px','padding:18px 16px',
+        'z-index:300','box-shadow:0 8px 40px rgba(0,0,0,0.7)',
+        'transition:all 0.3s'
+      ].join(';');
+      panel.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--gold);letter-spacing:2px;">📺 WATCH AD</div>
+          <div id="adp-status" style="font-family:'Orbitron',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:1px;">⏱ 20s baaki</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:10px;height:8px;overflow:hidden;margin-bottom:12px;">
+          <div id="adp-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--purple),var(--neon));border-radius:10px;transition:width 0.9s linear;"></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button id="adp-open-btn" onclick="window.open('https://omg10.com/4/11048781','_blank')" style="flex:1;padding:12px;border-radius:12px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;">🔗 Ad Kholo</button>
+          <button id="adp-claim-btn" disabled style="flex:2;padding:12px;border-radius:12px;border:1px solid rgba(255,215,0,0.2);background:rgba(255,215,0,0.05);color:rgba(255,215,0,0.3);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:not-allowed;">🔒 20s baad claim karo</button>
+        </div>
+        <div style="text-align:center;font-size:10px;color:rgba(255,255,255,0.2);margin-top:8px;letter-spacing:1px;">Ad tab mein 20s poore dekho — phir yahan Claim dabao</div>
+      `;
+      document.body.appendChild(panel);
+
+      let _adViewed = 0;
+      let _adReady = false;
+
+      function updatePanel() {
+        const pct = Math.min((_adViewed / WAIT_SEC) * 100, 100);
+        const left = Math.max(0, WAIT_SEC - _adViewed);
+        const bar = document.getElementById('adp-bar');
+        const status = document.getElementById('adp-status');
+        const claimBtn = document.getElementById('adp-claim-btn');
+        if (bar) bar.style.width = pct + '%';
+        if (status) status.textContent = left > 0 ? `⏱ ${left}s baaki` : '✅ Ready!';
+        if (claimBtn) {
+          if (_adReady) {
+            claimBtn.disabled = false;
+            claimBtn.style.cssText = 'flex:2;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:Orbitron,sans-serif;font-size:13px;font-weight:900;letter-spacing:1px;cursor:pointer;animation:pulse 1s ease-in-out infinite;';
+            claimBtn.textContent = '🎉 CLAIM +5 CREDITS';
+            claimBtn.onclick = claimAdReward;
+          } else {
+            claimBtn.textContent = left > 0 ? `🔒 ${left}s baad claim karo` : '✅ Claim karo!';
+          }
+        }
+      }
+
+      // Global claim function
+      window.claimAdReward = function() {
+        if (!_adReady) { showToast('20s poore nahi hue! ⏱', 'red'); return; }
+        _cleanupAd();
+        const p = document.getElementById('ad-watch-panel');
+        if (p) p.remove();
+        _ac(5, '📺 Ad Watch Reward');
+        spinTokens++;
+        freeSpinUsed = true;
+        adWatchCount++;
+        atomicAdCount();
+        updateSpinUI();
+        _updateAdBtns('▶ Watch Ad', false);
+        showToast('🎉 +5 Credits + Leaderboard +1!', 'green');
+      };
 
       function startTicking() {
         if (_adTicker) return;
         _adTicker = setInterval(() => {
           _adViewed++;
-          const left = Math.max(0, WAIT_SEC - _adViewed);
-          _updateAdBtns(`⏱ ${left}s left`, false);
-
+          updatePanel();
           if (_adViewed >= WAIT_SEC) {
             _cleanupAd();
-            _ac(5, '📺 Ad Watch Reward');
-            spinTokens++;
-            freeSpinUsed = true;
-            adWatchCount++;
-            atomicAdCount(); // Firestore mein instantly +1
-            updateSpinUI();
-            showToast('Ad dekha! +5 Credits 🎉', 'green');
-            _updateAdBtns('▶ Watch Ad', false);
+            _adReady = true;
+            updatePanel();
           }
         }, 1000);
       }
 
       _adListener = function() {
         if (document.hidden) {
-          // Band tab mein gaya — timer chalu
           startTicking();
         } else {
-          // Wapas aa gaya — timer rokao
           if (_adTicker) { clearInterval(_adTicker); _adTicker = null; }
-          const left = Math.max(0, WAIT_SEC - _adViewed);
-          if (left > 0) {
-            _updateAdBtns(`⏱ ${left}s left`, false);
-            showToast(`${left}s baaki hai — wapas ad dekho ⏱`, 'red');
-          }
+          if (!_adReady) updatePanel();
         }
       };
 
       document.addEventListener('visibilitychange', _adListener);
       window.open('https://omg10.com/4/11048781', '_blank');
+      _updateAdBtns('⏱ Ad chal raha hai...', true);
 
-      // Agar tab turant band ho gaya
-      setTimeout(() => {
-        if (document.hidden) startTicking();
-      }, 300);
+      setTimeout(() => { if (document.hidden) startTicking(); }, 300);
 
       return;
-      // OLD modal below (unused):
-      const now = Date.now();
-      if (now - lastAdTime < AD_COOLDOWN) {
-        const wait = Math.ceil((AD_COOLDOWN - (now - lastAdTime)) / 1000);
-        showToast(`${wait}s baad phir try karo ⏳`, 'red');
-        return;
-      }
-      document.getElementById('ad-modal').classList.add('open');
-      return; // unreachable - kept for reference
-      document.getElementById('modal-close-btn').disabled = true;
-      document.getElementById('modal-close-btn').textContent = `Pehle poora dekho...`;
-      document.getElementById('modal-prog-bar').style.width = '0%';
-      document.getElementById('modal-prog-label').textContent = `Ad load ho raha hai... 0s`;
-
-      let elapsed = 0;
-      if (adTimer) clearInterval(adTimer);
-      adTimer = setInterval(() => {
-        elapsed++;
-        const pct = Math.min((elapsed / AD_DURATION) * 100, 100);
-        document.getElementById('modal-prog-bar').style.width = pct + '%';
-        document.getElementById('modal-prog-label').textContent = `${elapsed}s / ${AD_DURATION}s dekha`;
-        if (elapsed >= AD_DURATION) {
-          clearInterval(adTimer);
-          document.getElementById('modal-close-btn').disabled = false;
-          document.getElementById('modal-close-btn').textContent = '🎉 Claim +10 Credits!';
-        }
-      }, 1000);
     }
 
     function closeAdModal(event) {
@@ -3598,8 +3651,10 @@
     function updateAdBtnState() {
       const b1 = document.getElementById('ad-earn-btn');
       const b2 = document.getElementById('ad-header-btn');
-      if (b1) { b1.disabled = false; b1.textContent = '▶ Watch Ad'; }
-      if (b2) { b2.disabled = false; b2.textContent = '▶ Watch Ad'; }
+      // Panel already open hai toh button state change mat karo
+      const panelOpen = !!document.getElementById('ad-watch-panel');
+      if (b1) { b1.disabled = panelOpen; b1.textContent = panelOpen ? '⏱ Ad chal raha hai...' : '▶ Watch Ad'; }
+      if (b2) { b2.disabled = panelOpen; b2.textContent = panelOpen ? '⏱ Ad chal raha hai...' : '▶ Watch Ad'; }
     }
 
     // ==================== HELPERS ====================
