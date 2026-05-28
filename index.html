@@ -1836,87 +1836,101 @@
     }
 
     // ==================== WEEK PRIZE DISTRIBUTION ====================
-    // Yeh sirf admin ke browser se chalega — Firestore rules mein admin ko special write access dena hoga
+    // Sirf admin account (custom claim) se chalega — koi bypass nahi
     async function checkWeekWinners() {
       if (!window.currentUser) return;
+
+      // Sirf tera admin UID trigger kar sakta hai
+      const ADMIN_UID = 'AOel8ZVLJwZIjL3J4IFYiDhYJxz2';
+      if (window.currentUser.uid !== ADMIN_UID) return;
+
+      const weekKey = getCurrentWeekKey();
+
       try {
+        // Check — is week prizes already diye ja chuke hain?
+        const winnerRef = window.fbDoc(window.fbDb, 'weeklyWinners', weekKey);
+        const winnerSnap = await window.fbGetDoc(winnerRef);
+        if (winnerSnap.exists()) return; // Already distribute ho chuka hai
+
         const colRef = window.fbCollection(window.fbDb, 'users');
         const snap = await window.fbGetDocs(colRef);
         const entries = [];
         snap.forEach(d => {
           const data = d.data();
           if ((data.adWatchCount || 0) > 0) {
-            entries.push({ uid: d.id, name: data.displayName || 'User', count: data.adWatchCount || 0 });
+            entries.push({
+              uid: d.id,
+              name: data.displayName || 'User',
+              count: data.adWatchCount || 0,
+              credits: data.credits || 0
+            });
           }
         });
+
+        if (!entries.length) return;
         entries.sort((a, b) => b.count - a.count);
-        const myUid = window.currentUser.uid;
-        const myIdx = entries.findIndex(e => e.uid === myUid);
 
-        // Agar admin login hai — prizes do
-        if (adminUnlocked && entries.length > 0) {
-          await distributePrizes(entries);
-        }
+        await distributePrizes(entries, weekKey, winnerRef);
 
-        // Sirf current user ka notification
-        if (myIdx === 0) showToast('🥇 Aap #1 hain! Prize processing... 👑', 'green');
-        else if (myIdx === 1) showToast('🥈 Aap #2 hain! Prize processing... 💰', 'green');
-        else if (myIdx === 2) showToast('🥉 Aap #3 hain! Prize processing... 🪙', 'green');
       } catch(e) {
         console.error('Week check error:', e);
       }
     }
 
-    // Admin ke browser se prizes distribute karo
-    async function distributePrizes(entries) {
-      const weekKey = getCurrentWeekKey();
-      const prizeWeekField = 'prizeGiven_' + weekKey;
+    // Admin ke browser se prizes distribute karo — secure version
+    async function distributePrizes(entries, weekKey, winnerRef) {
+      const winners = [];
 
       for (let i = 0; i < Math.min(entries.length, 3); i++) {
         const winner = entries[i];
         const userRef = window.fbDoc(window.fbDb, 'users', winner.uid);
 
-        // Check karo is week prize already diya ya nahi
-        const snap = await window.fbGetDoc(userRef);
-        if (snap.exists() && snap.data()[prizeWeekField]) continue; // Already diya
-
         try {
           if (i === 0) {
-            // 1st: 1 Month VIP
+            // 🥇 1st — 1 Month VIP Pass
             const now = new Date();
             const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
             await window.fbSetDoc(userRef, {
               vip: { plan: 'vip-1m', startDate: now.toISOString(), endDate: end.toISOString() },
-              [prizeWeekField]: '1st-vip-1m',
-              prizeNotify: '🥇 Aapne 1st prize jeeta! 1 Month VIP active ho gaya! 👑'
+              weekPrize: { week: weekKey, rank: 1, prize: 'VIP-1M' },
+              prizeNotify: '🥇 Weekly Champion! 1 Month VIP Pass mil gaya! 👑 30 days unlimited credits!'
             }, { merge: true });
-            console.log('✅ 1st prize given to:', winner.name);
+            winners.push({ uid: winner.uid, name: winner.name, rank: 1, prize: 'VIP-1M' });
 
           } else if (i === 1) {
-            // 2nd: 1000 credits
-            const cur = snap.exists() ? (snap.data().credits || 0) : 0;
+            // 🥈 2nd — 1000 Credits
             await window.fbSetDoc(userRef, {
-              credits: cur + 1000,
-              [prizeWeekField]: '2nd-1000-credits',
-              prizeNotify: '🥈 Aapne 2nd prize jeeta! +1000 Credits mile! 💰'
+              credits: winner.credits + 1000,
+              weekPrize: { week: weekKey, rank: 2, prize: '1000 credits' },
+              prizeNotify: '🥈 2nd Place! +1000 Credits mil gaye! 🎉 Agli baar 1st aao!'
             }, { merge: true });
-            console.log('✅ 2nd prize given to:', winner.name);
+            winners.push({ uid: winner.uid, name: winner.name, rank: 2, prize: '1000 credits' });
 
           } else if (i === 2) {
-            // 3rd: 500 credits
-            const cur = snap.exists() ? (snap.data().credits || 0) : 0;
+            // 🥉 3rd — 500 Credits
             await window.fbSetDoc(userRef, {
-              credits: cur + 500,
-              [prizeWeekField]: '3rd-500-credits',
-              prizeNotify: '🥉 Aapne 3rd prize jeeta! +500 Credits mile! 🪙'
+              credits: winner.credits + 500,
+              weekPrize: { week: weekKey, rank: 3, prize: '500 credits' },
+              prizeNotify: '🥉 3rd Place! +500 Credits mil gaye! 🎉 Agli baar aur upar aao!'
             }, { merge: true });
-            console.log('✅ 3rd prize given to:', winner.name);
+            winners.push({ uid: winner.uid, name: winner.name, rank: 3, prize: '500 credits' });
           }
         } catch(e) {
           console.error('Prize error for', winner.name, e);
         }
       }
-      showToast('✅ Prizes distribute ho gaye!', 'green');
+
+      // Record save karo — dobara trigger na ho
+      try {
+        await window.fbSetDoc(winnerRef, {
+          week: weekKey,
+          distributedAt: new Date().toISOString(),
+          distributedBy: window.currentUser.uid,
+          winners: winners
+        });
+      } catch(e) { console.error('Winner record save error:', e); }
+
+      showToast('🏆 Weekly prizes distribute ho gaye! ' + winners.length + ' winners!', 'green');
     }
 
     // ===== ATOMIC AD COUNT — race condition free =====
@@ -2002,14 +2016,24 @@
           const avatarHTML = e.photoURL
             ? `<img src="${e.photoURL}" alt="" onerror="this.parentElement.textContent='👤'">`
             : '👤';
+          const prizeTag = rank === 1
+            ? `<span style="font-size:9px;background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.4);color:var(--gold);padding:2px 7px;border-radius:20px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">👑 VIP 1M</span>`
+            : rank === 2
+            ? `<span style="font-size:9px;background:rgba(192,192,192,0.1);border:1px solid rgba(192,192,192,0.3);color:#C0C0C0;padding:2px 7px;border-radius:20px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">+1000 🪙</span>`
+            : rank === 3
+            ? `<span style="font-size:9px;background:rgba(205,127,50,0.1);border:1px solid rgba(205,127,50,0.3);color:#CD7F32;padding:2px 7px;border-radius:20px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">+500 🪙</span>`
+            : '';
           return `<div class="lb-item ${rankClass} ${meClass}">
             ${rankDisplay}
             <div class="lb-avatar">${avatarHTML}</div>
             <div class="lb-info">
               <div class="lb-name">${escapeHtml(e.name)}${isMe ? ' <span style="font-size:10px;color:var(--neon);">(You)</span>' : ''}</div>
-              <div class="lb-ads">📺 ${e.count} ads watched this week</div>
+              <div style="display:flex;align-items:center;gap:5px;margin-top:3px;">${prizeTag}</div>
             </div>
-            <div class="lb-count">${e.count}</div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div class="lb-count">${e.count}</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1px;">ADS</div>
+            </div>
           </div>`;
         }).join('');
       } catch(e) {
