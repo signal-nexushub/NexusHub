@@ -2200,6 +2200,7 @@
           unlockedCards: [...unlockedCards],
           spinTokens: spinTokens,
           freeSpinUsed: freeSpinUsed,
+          adWatchCount: adWatchCount,
           vip: vipState.plan ? {
             plan: vipState.plan,
             startDate: vipState.startDate,
@@ -2570,11 +2571,13 @@
         _cleanupAd();
         const p = document.getElementById('ad-watch-panel');
         if (p) p.remove();
-        _ac(5, '📺 Ad Watch Reward');
+        // Pehle adWatchCount increment karo memory mein
+        adWatchCount++;
         spinTokens++;
         freeSpinUsed = true;
-        adWatchCount++;
-        atomicAdCount();
+        // _ac credits add karta hai aur saveToFirestore call karta hai
+        // Ab saveToFirestore mein adWatchCount bhi hai — sab ek saath save hoga
+        _ac(5, '📺 Ad Watch Reward');
         updateSpinUI();
         _updateAdBtns('▶ Watch Ad', false);
         showToast('🎉 +5 Credits + Leaderboard +1!', 'green');
@@ -3565,8 +3568,9 @@
       if (overlay) overlay.remove();
       spinTokens++;
       adWatchCount++;
+      // _ac credits add karta hai aur saveToFirestore call karta hai
+      // saveToFirestore mein adWatchCount bhi hai — sab ek saath save hoga
       _ac(5, '📺 Spin Ad Watch Reward');
-      atomicAdCount(); // Firestore mein instantly +1
       updateSpinUI();
       showToast('+1 Spin Token + 5 Credits! 🎰', 'green');
     }
