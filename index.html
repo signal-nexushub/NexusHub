@@ -3727,24 +3727,28 @@
 
     function isPromoMessage(text) {
       const t = text.toLowerCase();
-      // WHITELIST approach - sirf prediction aur result messages allow karo
-      // Prediction message: period + (big/small/confidence) hona chahiye
-      const isPrediction = (t.includes('period') || t.includes('round')) &&
-                           (t.includes('big') || t.includes('small') || t.includes('confidence') || t.includes('lucky') || t.includes('wingo'));
-      // Result message: result keyword hona chahiye
-      const isResult = t.includes('result') && (t.includes('period') || t.includes('number') || t.includes('colour') || t.includes('color') || t.includes('size'));
-      // Agar dono mein se kuch bhi nahi - promo hai, block karo
+      // Prediction message check — naye aur purane dono formats support karo
+      const hasPeriod = t.includes('period') || t.includes('round') ||
+                        /\.\.\.\d+/.test(t) || // ...1174 format
+                        t.includes('wingo') || t.includes('win go') || t.includes('1m') || t.includes('5m') || t.includes('3m');
+      const hasPrediction = t.includes('big') || t.includes('small') ||
+                            t.includes('b i g') || t.includes('s m a l l') ||
+                            t.includes('confidence') || t.includes('lucky');
+      const isPrediction = hasPeriod && hasPrediction;
+      // Result message check
+      const isResult = t.includes('result') && (t.includes('period') || t.includes('number') ||
+                       t.includes('colour') || t.includes('color') || t.includes('size') || /\.\.\.\d+/.test(t));
       return !isPrediction && !isResult;
     }
 
     function cleanPrediction(text) {
       const blocked = [
-        'open game link','t.me','http','join now','join karo','@auto_predict','telegram.me',
+        'open game link','t.me','http','join now','join karo','@','telegram.me',
         'subscribe','channel join','free mein','earning','ny_hack','help desk','vip tips',
         'daily free','win rate','latest updates','next level','premium bot','automation','hack bot',
         'click to join','click here','join here','join us','abhi join','channel ko join',
-        'tap to join','press to join','visit','follow us','@','whatsapp','invite',
-        'ny prediction bot','prediction bot','badsha engine','server 3','server 1','server 2','v10.0','tri-server'
+        'tap to join','press to join','visit','follow us','whatsapp','invite',
+        'ny prediction bot','prediction bot','tri-server'
       ];
       const lines = text.split('\n').filter(line => {
         const l = line.toLowerCase().trim();
@@ -3995,11 +3999,27 @@
         const l = line.trim();
         if (!l) return '';
         const ll = l.toLowerCase();
-        if (ll.includes('server') || ll.includes('engine') || ll.includes('mode') || ll.includes('bot v') || ll.includes('ny prediction') || ll.includes('prediction bot') || ll.includes('badsha') || ll.includes('v10') || ll.includes('v10.0')) {
-          return `<div class="msg-header-line">${escapeHtml(l)}</div>`;
+        // Header/branding lines — hide karo
+        if (ll.includes('server') || ll.includes('engine') || ll.includes('mode') || ll.includes('bot v') ||
+            ll.includes('ny prediction') || ll.includes('prediction bot') || ll.includes('badsha') ||
+            ll.includes('ultra pro') || ll.includes('ny ultra') ||
+            /v\d+\.\d+/.test(ll) || // v11.0, v10.0 etc
+            l.includes('╔') || l.includes('╚') || l.includes('║') ||
+            l.includes('▓') || l.includes('◄') || l.includes('►')) {
+          return ''; // Hide completely
         }
-        if (ll.includes('period') || ll.includes('round')) {
-          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+        // Period / WinGo round detect karo — naye format mein "WinGo 1M  📌 ...1174"
+        if (ll.includes('period') || ll.includes('round') ||
+            (ll.includes('wingo') || ll.includes('win go')) && /\.\.\.\d+/.test(l)) {
+          // Extract period number from ...1174 format
+          const periodMatch = l.match(/\.\.\.?(\d+)/);
+          const val = periodMatch ? '...' + periodMatch[1] : (l.includes(':') ? l.split(':').slice(1).join(':').trim() : l);
+          return `<div class="msg-row"><span class="msg-key">📍 PERIOD</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        // WinGo type line — "WinGo 1M" etc
+        if ((ll.includes('wingo') || ll.includes('win go')) && !ll.includes('confidence')) {
+          const periodMatch = l.match(/\.\.\.?(\d+)/);
+          const val = periodMatch ? '...' + periodMatch[1] : l.replace(/[╔╚║┌└│▓◈◄►]/g, '').trim();
           return `<div class="msg-row"><span class="msg-key">📍 PERIOD</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
         }
         if (ll.includes('time') && !ll.includes('real')) {
