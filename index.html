@@ -1925,6 +1925,7 @@
       try {
         const userRef = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
         // setDoc + merge — naye aur purane dono users ke liye kaam karta hai
+        // increment() server-side count badhaata hai — koi override nahi hota
         await window.fbSetDoc(userRef, {
           adWatchCount: window.fbIncrement(1),
           weekKey: getCurrentWeekKey(),
@@ -1933,6 +1934,7 @@
           email: window.currentUser.email || '',
           updatedAt: new Date().toISOString()
         }, { merge: true });
+        adWatchCount += 1; // Local variable bhi update karo
       } catch(e) {
         console.error('atomicAdCount err:', e);
       }
@@ -2136,7 +2138,9 @@
           // AdWatchCount - week match karo
           const savedWeekKey = data.weekKey || '';
           const currentWK = getCurrentWeekKey();
-          adWatchCount = (savedWeekKey === currentWK) ? (data.adWatchCount ?? 0) : 0;
+          // Week match karo sirf display ke liye — Firestore mein actual value rehti hai
+          adWatchCount = (savedWeekKey === currentWK) ? (data.adWatchCount ?? 0) : (data.adWatchCount ?? 0);
+          // Note: adWatchCount Firestore se aata hai — saveToFirestore mein increment nahi karo
           // VIP Pass load karo
           if (data.vip) {
             vipState.plan = data.vip.plan || '';
@@ -2204,7 +2208,6 @@
           displayName: window.currentUser.displayName || '',
           email: window.currentUser.email || '',
           photoURL: window.currentUser.photoURL || '',
-          adWatchCount: adWatchCount,
           weekKey: getCurrentWeekKey(),
           updatedAt: new Date().toISOString()
         }, { merge: true });
