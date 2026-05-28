@@ -755,6 +755,63 @@
       margin-top: 6px;
       box-shadow: 0 0 20px rgba(255,215,0,0.1);
     }
+
+    /* ===== AD LEADERBOARD ===== */
+    #page-leaderboard { padding: 0 16px; }
+    .lb-countdown-card {
+      background: linear-gradient(135deg, rgba(123,47,255,0.12), rgba(0,245,255,0.07));
+      border: 1px solid rgba(123,47,255,0.35);
+      border-radius: 18px; padding: 20px; margin-bottom: 16px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .lb-countdown-card::before {
+      content: ''; position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(123,47,255,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .lb-countdown-label { font-family: 'Orbitron', sans-serif; font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 3px; margin-bottom: 10px; }
+    .lb-countdown-timer { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; color: var(--neon); letter-spacing: 2px; }
+    .lb-prizes {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px;
+    }
+    .lb-prize-card {
+      border-radius: 14px; padding: 12px 8px; text-align: center;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    }
+    .lb-prize-card.gold { background: rgba(255,215,0,0.07); border-color: rgba(255,215,0,0.3); }
+    .lb-prize-card.silver { background: rgba(192,192,192,0.06); border-color: rgba(192,192,192,0.25); }
+    .lb-prize-card.bronze { background: rgba(205,127,50,0.06); border-color: rgba(205,127,50,0.2); }
+    .lb-prize-icon { font-size: 22px; margin-bottom: 4px; }
+    .lb-prize-rank { font-family: 'Orbitron', sans-serif; font-size: 8px; font-weight: 700; letter-spacing: 1px; margin-bottom: 4px; }
+    .lb-prize-val { font-family: 'Orbitron', sans-serif; font-size: 9px; font-weight: 700; color: var(--gold); line-height: 1.4; }
+    .lb-list { display: flex; flex-direction: column; gap: 8px; }
+    .lb-item {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; padding: 12px 14px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .lb-item.lb-me { border-color: rgba(0,245,255,0.3); background: rgba(0,245,255,0.05); }
+    .lb-item.rank-1 { border-color: rgba(255,215,0,0.45); background: rgba(255,215,0,0.06); }
+    .lb-item.rank-2 { border-color: rgba(192,192,192,0.35); background: rgba(192,192,192,0.04); }
+    .lb-item.rank-3 { border-color: rgba(205,127,50,0.35); background: rgba(205,127,50,0.04); }
+    .lb-rank { font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 900; min-width: 28px; text-align: center; }
+    .lb-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; overflow: hidden; }
+    .lb-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .lb-info { flex: 1; min-width: 0; }
+    .lb-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lb-ads { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
+    .lb-count { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 900; color: var(--gold); }
+    .lb-empty { text-align: center; padding: 30px; color: rgba(255,255,255,0.2); font-size: 13px; letter-spacing: 1px; }
+    .lb-ended-banner {
+      background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(123,47,255,0.08));
+      border: 1.5px solid rgba(255,215,0,0.4); border-radius: 18px; padding: 24px 20px;
+      text-align: center; margin-bottom: 16px;
+    }
+    .lb-my-rank-card {
+      background: rgba(0,245,255,0.05); border: 1px solid rgba(0,245,255,0.25);
+      border-radius: 14px; padding: 14px; text-align: center; margin-bottom: 14px;
+    }
   </style>
 </head>
 <body>
@@ -1578,6 +1635,67 @@
 
   </div><!-- end .app -->
 
+  <!-- LEADERBOARD PAGE (outside .app for nav access, inside main-app) -->
+  <div id="page-leaderboard" class="page" style="padding:0 16px 100px;">
+    <div class="section-title" style="padding-top:8px">🏆 Ad Watch Leaderboard</div>
+
+    <!-- Countdown Card -->
+    <div class="lb-countdown-card" id="lb-countdown-card">
+      <div class="lb-countdown-label">COMPETITION ENDS IN</div>
+      <div class="lb-countdown-timer" id="lb-countdown">--:--:--</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:8px;letter-spacing:1px;">Jitne zyada ads dekho — top pe raho!</div>
+    </div>
+
+    <!-- Prize Cards -->
+    <div class="section-title" style="padding:0 0 10px">🎁 Weekly Prizes</div>
+    <div class="lb-prizes">
+      <div class="lb-prize-card gold">
+        <div class="lb-prize-icon">🥇</div>
+        <div class="lb-prize-rank" style="color:var(--gold);">1st Place</div>
+        <div class="lb-prize-val">👑 1 Month<br>VIP Pass</div>
+      </div>
+      <div class="lb-prize-card silver">
+        <div class="lb-prize-icon">🥈</div>
+        <div class="lb-prize-rank" style="color:#C0C0C0;">2nd Place</div>
+        <div class="lb-prize-val" style="color:#C0C0C0;">💰 1000<br>Credits</div>
+      </div>
+      <div class="lb-prize-card bronze">
+        <div class="lb-prize-icon">🥉</div>
+        <div class="lb-prize-rank" style="color:#CD7F32;">3rd Place</div>
+        <div class="lb-prize-val" style="color:#CD7F32;">🪙 500<br>Credits</div>
+      </div>
+    </div>
+
+    <!-- My Rank Card -->
+    <div class="lb-my-rank-card" id="lb-my-rank-card" style="display:none;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,245,255,0.6);letter-spacing:2px;margin-bottom:6px;">YOUR RANK</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+        <div>
+          <div class="lb-rank" id="lb-my-rank-num" style="font-size:28px;color:var(--neon);">—</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;letter-spacing:1px;">RANK</div>
+        </div>
+        <div style="width:1px;height:40px;background:rgba(255,255,255,0.1);"></div>
+        <div>
+          <div class="lb-count" id="lb-my-ad-count" style="color:var(--neon);">0</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;letter-spacing:1px;">ADS WATCHED</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 100 List -->
+    <div class="section-title" style="padding:4px 0 10px">📋 Top 100 Rankings</div>
+    <div class="lb-list" id="lb-list">
+      <div class="lb-empty">⏳ Leaderboard load ho raha hai...</div>
+    </div>
+
+    <!-- Watch Ad Button -->
+    <div style="margin-top:16px;margin-bottom:20px;">
+      <button onclick="openAdModal()" style="width:100%;padding:15px;border-radius:14px;border:1px solid rgba(255,215,0,0.35);background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,165,0,0.08));color:var(--gold);font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;">
+        📺 WATCH AD · CLIMB THE RANKS
+      </button>
+    </div>
+  </div>
+
   <!-- FAB -->
 
   <button class="fab" id="fab-btn" onclick="doRefresh()">
@@ -1596,12 +1714,12 @@
     <button class="nav-btn" id="nav-credits" onclick="setTab('credits')">
       <span class="nav-icon">🪙</span>Earn
     </button>
+    <button class="nav-btn" id="nav-leaderboard" onclick="setTab('leaderboard')">
+      <span class="nav-icon">🏆</span>Board
+    </button>
     <button class="nav-btn" id="nav-alerts" onclick="setTab('alerts')">
       <span class="nav-icon">🔔</span>Alerts
       <span class="nav-badge" id="alert-badge"></span>
-    </button>
-    <button class="nav-btn" id="nav-support" onclick="setTab('support')">
-      <span class="nav-icon">✈️</span>Support
     </button>
     <button class="nav-btn" id="nav-vip" onclick="setTab('vip')">
       <span class="nav-icon">👑</span>VIP
@@ -1663,6 +1781,190 @@
       endDate: '',    // ISO string
       daysLeft: 0
     };
+
+    // Ad Watch Leaderboard
+    let adWatchCount = 0; // Current week ka count
+
+    // ==================== LEADERBOARD HELPERS ====================
+    // Week key — Monday se Sunday (ISO week)
+    function getCurrentWeekKey() {
+      const now = new Date();
+      const day = now.getDay(); // 0=Sun
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+      const monday = new Date(now.setDate(diff));
+      return monday.toISOString().split('T')[0]; // YYYY-MM-DD
+    }
+
+    // Week end time (Sunday 23:59:59)
+    function getWeekEndTime() {
+      const now = new Date();
+      const day = now.getDay();
+      const daysUntilSunday = day === 0 ? 0 : 7 - day;
+      const sunday = new Date();
+      sunday.setDate(sunday.getDate() + daysUntilSunday);
+      sunday.setHours(23, 59, 59, 999);
+      return sunday;
+    }
+
+    function formatCountdown(ms) {
+      if (ms <= 0) return '00:00:00';
+      const totalSec = Math.floor(ms / 1000);
+      const d = Math.floor(totalSec / 86400);
+      const h = Math.floor((totalSec % 86400) / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      if (d > 0) return d + 'd ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+      return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+
+    // Countdown ticker
+    let _lbCountdownTicker = null;
+    function startLbCountdown() {
+      if (_lbCountdownTicker) return;
+      _lbCountdownTicker = setInterval(() => {
+        const el = document.getElementById('lb-countdown');
+        if (!el) return;
+        const remaining = getWeekEndTime() - Date.now();
+        el.textContent = formatCountdown(remaining);
+        if (remaining <= 0) {
+          clearInterval(_lbCountdownTicker);
+          _lbCountdownTicker = null;
+          el.textContent = '🎉 Week Ended!';
+          checkWeekWinners();
+        }
+      }, 1000);
+    }
+
+    // Award prizes to winners
+    async function checkWeekWinners() {
+      try {
+        const colRef = window.fbCollection(window.fbDb, 'users');
+        const snap = await window.fbGetDocs(colRef);
+        const weekKey = getCurrentWeekKey();
+        const entries = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          if ((d.weekKey === weekKey || d.adWatchCount > 0) && d.adWatchCount > 0) {
+            entries.push({ uid: doc.id, name: d.displayName || 'User', count: d.adWatchCount || 0, email: d.email || '' });
+          }
+        });
+        entries.sort((a, b) => b.count - a.count);
+        const winners = entries.slice(0, 3);
+        // Award prizes
+        for (let i = 0; i < winners.length; i++) {
+          const winner = winners[i];
+          const userRef = window.fbDoc(window.fbDb, 'users', winner.uid);
+          if (i === 0) {
+            // 1st: 1 Month VIP
+            const now = new Date();
+            const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+            await window.fbSetDoc(userRef, {
+              vip: { plan: 'vip-1m', startDate: now.toISOString(), endDate: end.toISOString() },
+              weekPrize: '1m-vip', weekPrizeDate: now.toISOString()
+            }, { merge: true });
+          } else if (i === 1) {
+            // 2nd: 1000 credits
+            const userSnap = await window.fbGetDoc(userRef);
+            const cur = userSnap.exists() ? (userSnap.data().credits || 0) : 0;
+            await window.fbSetDoc(userRef, { credits: cur + 1000, weekPrize: '1000-credits', weekPrizeDate: new Date().toISOString() }, { merge: true });
+          } else if (i === 2) {
+            // 3rd: 500 credits
+            const userSnap = await window.fbGetDoc(userRef);
+            const cur = userSnap.exists() ? (userSnap.data().credits || 0) : 0;
+            await window.fbSetDoc(userRef, { credits: cur + 500, weekPrize: '500-credits', weekPrizeDate: new Date().toISOString() }, { merge: true });
+          }
+        }
+        // Current user ka prize check karo
+        if (window.currentUser) {
+          const myIdx = winners.findIndex(w => w.uid === window.currentUser.uid);
+          if (myIdx === 0) {
+            showToast('🥇 Aap 1st aaye! 1 Month VIP active ho gaya! 👑', 'green');
+            await loadUserFromFirestore(window.currentUser.uid);
+          } else if (myIdx === 1) {
+            showToast('🥈 Aap 2nd aaye! +1000 Credits mile! 💰', 'green');
+            await loadUserFromFirestore(window.currentUser.uid);
+          } else if (myIdx === 2) {
+            showToast('🥉 Aap 3rd aaye! +500 Credits mile! 🪙', 'green');
+            await loadUserFromFirestore(window.currentUser.uid);
+          }
+        }
+      } catch(e) {
+        console.error('Week winner check error:', e);
+      }
+    }
+
+    async function loadLeaderboard() {
+      const listEl = document.getElementById('lb-list');
+      const myRankCard = document.getElementById('lb-my-rank-card');
+      if (!listEl) return;
+      listEl.innerHTML = '<div class="lb-empty"><div class="loader" style="width:28px;height:28px;"></div></div>';
+      try {
+        const colRef = window.fbCollection(window.fbDb, 'users');
+        const snap = await window.fbGetDocs(colRef);
+        const weekKey = getCurrentWeekKey();
+        const entries = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          const cnt = d.adWatchCount || 0;
+          if (cnt > 0) {
+            entries.push({
+              uid: doc.id,
+              name: d.displayName || 'Anonymous',
+              photoURL: d.photoURL || '',
+              count: cnt,
+              weekKey: d.weekKey || ''
+            });
+          }
+        });
+        // Sort by count descending
+        entries.sort((a, b) => b.count - a.count);
+        const top100 = entries.slice(0, 100);
+
+        // My rank
+        const myUid = window.currentUser ? window.currentUser.uid : null;
+        const myIdx = myUid ? entries.findIndex(e => e.uid === myUid) : -1;
+        if (myIdx >= 0 && myRankCard) {
+          myRankCard.style.display = 'block';
+          document.getElementById('lb-my-rank-num').textContent = '#' + (myIdx + 1);
+          document.getElementById('lb-my-ad-count').textContent = entries[myIdx].count;
+        } else if (myRankCard) {
+          myRankCard.style.display = adWatchCount > 0 ? 'block' : 'none';
+          if (adWatchCount > 0) {
+            document.getElementById('lb-my-rank-num').textContent = '#' + (entries.length + 1);
+            document.getElementById('lb-my-ad-count').textContent = adWatchCount;
+          }
+        }
+
+        if (!top100.length) {
+          listEl.innerHTML = '<div class="lb-empty">📭 Abhi koi nahi — pehle ad dekho aur #1 bano!</div>';
+          return;
+        }
+
+        const rankEmoji = ['🥇','🥈','🥉'];
+        listEl.innerHTML = top100.map((e, i) => {
+          const rank = i + 1;
+          const isMe = myUid && e.uid === myUid;
+          const rankClass = rank <= 3 ? 'rank-' + rank : '';
+          const meClass = isMe ? 'lb-me' : '';
+          const rankDisplay = rank <= 3 ? `<span style="font-size:20px;">${rankEmoji[i]}</span>` : `<span class="lb-rank" style="color:${rank<=10?'var(--gold)':'rgba(255,255,255,0.35)'}">#${rank}</span>`;
+          const avatarHTML = e.photoURL
+            ? `<img src="${e.photoURL}" alt="" onerror="this.parentElement.textContent='👤'">`
+            : '👤';
+          return `<div class="lb-item ${rankClass} ${meClass}">
+            ${rankDisplay}
+            <div class="lb-avatar">${avatarHTML}</div>
+            <div class="lb-info">
+              <div class="lb-name">${escapeHtml(e.name)}${isMe ? ' <span style="font-size:10px;color:var(--neon);">(You)</span>' : ''}</div>
+              <div class="lb-ads">📺 ${e.count} ads watched this week</div>
+            </div>
+            <div class="lb-count">${e.count}</div>
+          </div>`;
+        }).join('');
+      } catch(e) {
+        listEl.innerHTML = '<div class="lb-empty">⚠️ Load error. Retry karo.</div>';
+        console.error('Leaderboard error:', e);
+      }
+    }
 
     // Server state - Firestore se aata hai, localStorage pe depend nahi
     let serverState = {
@@ -1737,6 +2039,8 @@
       fetchPredictions();
       setTimeout(longPoll, 2000);
       setInterval(() => fetchPredictions(true), 10000);
+      // Week end check
+      if (getWeekEndTime() - Date.now() < 0) checkWeekWinners();
     };
 
     window.onUserLoggedOut = function() {
@@ -1767,6 +2071,10 @@
           freeSpinUsed = data.freeSpinUsed ?? false;
           // Free spin pehli baar
           if (!freeSpinUsed) { spinTokens = Math.max(spinTokens, 1); }
+          // AdWatchCount - week match karo
+          const savedWeekKey = data.weekKey || '';
+          const currentWK = getCurrentWeekKey();
+          adWatchCount = (savedWeekKey === currentWK) ? (data.adWatchCount ?? 0) : 0;
           // VIP Pass load karo
           if (data.vip) {
             vipState.plan = data.vip.plan || '';
@@ -1825,6 +2133,9 @@
           } : null,
           displayName: window.currentUser.displayName || '',
           email: window.currentUser.email || '',
+          photoURL: window.currentUser.photoURL || '',
+          adWatchCount: adWatchCount,
+          weekKey: getCurrentWeekKey(),
           updatedAt: new Date().toISOString()
         }, { merge: true });
       } catch(e) {
@@ -2143,6 +2454,8 @@
             _ac(5, '📺 Ad Watch Reward');
             spinTokens++;
             freeSpinUsed = true;
+            // Leaderboard count badho
+            adWatchCount++;
             saveToFirestore();
             updateSpinUI();
             showToast('Ad dekha! +5 Credits 🎉', 'green');
@@ -3157,6 +3470,7 @@
       const overlay = document.getElementById('spin-ad-overlay');
       if (overlay) overlay.remove();
       spinTokens++;
+      adWatchCount++; // Leaderboard count
       saveToFirestore();
       updateSpinUI();
       showToast('+1 Spin Token mila! 🎰', 'green');
@@ -3244,6 +3558,10 @@
       if (tab === 'spin') { updateSpinUI(); setTimeout(initWheel, 50); }
       if (tab === 'credits') { updateCreditUI(); updateDailyBtnState(); updateShareBtnState(); updateVipBadgeUI(); }
       if (tab === 'vip') { syncVipPage(); }
+      if (tab === 'leaderboard') {
+        startLbCountdown();
+        loadLeaderboard();
+      }
     }
 
     function updateDailyBtnState() {
@@ -3692,13 +4010,32 @@
         let timerHTML = '';
         if (!isResultCard) {
           const cardTime = p.date * 1000; // ms
-          const elapsed = Date.now() - cardTime;
-          const remaining = Math.max(0, 60000 - elapsed); // 1 min = 60s
+          // Next message aane ka time calculate karo — messages ke beech average interval se
+          const onlyPredMsgs = predictions.filter(q => {
+            const qt = (q.text || '').toLowerCase();
+            return (qt.includes('period') || qt.includes('round')) &&
+                   (qt.includes('big') || qt.includes('small') || qt.includes('confidence') || qt.includes('lucky') || qt.includes('wingo'));
+          });
+          // Sort by date ascending
+          const sorted = [...onlyPredMsgs].sort((a, b) => a.date - b.date);
+          let avgInterval = 5 * 60 * 1000; // default 5 min
+          if (sorted.length >= 2) {
+            const gaps = [];
+            for (let k = 1; k < Math.min(sorted.length, 6); k++) {
+              const gap = (sorted[k].date - sorted[k-1].date) * 1000;
+              if (gap > 10000 && gap < 30 * 60 * 1000) gaps.push(gap); // 10s to 30min
+            }
+            if (gaps.length > 0) {
+              avgInterval = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+            }
+          }
+          const nextMsgTime = cardTime + avgInterval;
+          const remaining = Math.max(0, nextMsgTime - Date.now());
           const remSec = Math.round(remaining / 1000);
           if (remaining > 0) {
-            timerHTML = `<span class="pred-timer" data-born="${cardTime}" data-msgid="${msgId}"><span class="timer-dot"></span><span class="timer-txt">${remSec}s</span></span>`;
+            timerHTML = `<span class="pred-timer" data-born="${cardTime}" data-interval="${Math.round(avgInterval)}" data-msgid="${msgId}"><span class="timer-dot"></span><span class="timer-txt">${remSec > 60 ? Math.ceil(remSec/60)+'m '+( remSec%60)+'s' : remSec+'s'}</span></span>`;
           } else {
-            timerHTML = `<span class="pred-timer timer-done"><span class="timer-txt">⏱ Expired</span></span>`;
+            timerHTML = `<span class="pred-timer timer-done"><span class="timer-txt">⏱ Next soon</span></span>`;
           }
         }
         if (isResultCard) {
@@ -3769,19 +4106,26 @@
         const timers = document.querySelectorAll('.pred-timer[data-born]');
         timers.forEach(el => {
           const born = parseInt(el.getAttribute('data-born'));
-          const elapsed = Date.now() - born;
-          const remaining = Math.max(0, 60000 - elapsed);
+          const interval = parseInt(el.getAttribute('data-interval') || '300000');
+          const nextTime = born + interval;
+          const remaining = Math.max(0, nextTime - Date.now());
           const txt = el.querySelector('.timer-txt');
           if (!txt) return;
           if (remaining <= 0) {
             el.classList.remove('timer-urgent');
             el.classList.add('timer-done');
             el.removeAttribute('data-born'); // stop updating
-            txt.textContent = '⏱ Expired';
+            txt.textContent = '⏱ Next soon';
           } else {
             const remSec = Math.ceil(remaining / 1000);
-            txt.textContent = remSec + 's';
-            if (remSec <= 10) {
+            if (remSec > 60) {
+              const m = Math.floor(remSec / 60);
+              const s = remSec % 60;
+              txt.textContent = m + 'm ' + (s > 0 ? s + 's' : '');
+            } else {
+              txt.textContent = remSec + 's';
+            }
+            if (remSec <= 30) {
               el.classList.add('timer-urgent');
             } else {
               el.classList.remove('timer-urgent');
