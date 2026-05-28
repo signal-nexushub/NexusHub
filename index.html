@@ -3743,16 +3743,18 @@
 
     function cleanPrediction(text) {
       const blocked = [
-        'open game link','t.me','http','join now','join karo','@','telegram.me',
-        'subscribe','channel join','free mein','earning','ny_hack','help desk','vip tips',
-        'daily free','win rate','latest updates','next level','premium bot','automation','hack bot',
+        'open game link','t.me','http','join now','join karo','telegram.me',
+        'subscribe','channel join','free mein','earning','help desk','vip tips',
+        'daily free','win rate','latest updates','next level','premium bot','automation',
         'click to join','click here','join here','join us','abhi join','channel ko join',
-        'tap to join','press to join','visit','follow us','whatsapp','invite',
-        'ny prediction bot','prediction bot','tri-server'
+        'tap to join','press to join','follow us','whatsapp','invite',
+        'ny prediction bot','prediction bot','@ny_auto','@auto_predict'
       ];
       const lines = text.split('\n').filter(line => {
         const l = line.toLowerCase().trim();
         if (!l) return false;
+        // Box drawing characters wali lines hide karo (decorative only)
+        if (/^[╔╚║╗┌└│┐├┤▰▱◄►═\-\s\u2500-\u257F]+$/.test(line.trim())) return false;
         return !blocked.some(kw => l.includes(kw));
       });
       while (lines.length && !lines[lines.length-1].trim()) lines.pop();
@@ -3770,8 +3772,9 @@
       // Sirf actual prediction messages count karo (result/promo nahi)
       const onlyPreds = allPredictions.filter(p => {
         const t = (p.text || '').toLowerCase();
-        return (t.includes('period') || t.includes('round')) &&
-               (t.includes('big') || t.includes('small') || t.includes('confidence') || t.includes('lucky') || t.includes('wingo'));
+        const hasPeriod = t.includes('period') || t.includes('round') || t.includes('wingo') || t.includes('win go') || /\.\.\.\d+/.test(t);
+        const hasPred = t.includes('big') || t.includes('small') || t.includes('b i g') || t.includes('s m a l l') || t.includes('confidence') || t.includes('lucky');
+        return hasPeriod && hasPred;
       });
       const total = onlyPreds.length;
       const today = new Date().toDateString();
