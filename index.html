@@ -2152,8 +2152,6 @@
           updateInstaBtnState();
           updateTgBtnState();
           updateVipBadgeUI();
-          // Firestore load complete — ab save karna safe hai
-          _firestoreLoaded = true;
           // Prize notification check
           if (data.prizeNotify) {
             setTimeout(() => {
@@ -2169,7 +2167,6 @@
           spinTokens = 1;
           freeSpinUsed = false;
           adWatchCount = 0;
-          _firestoreLoaded = true; // Naya user — save karna safe hai
           await saveToFirestore();
           _ac(0, '🎉 Welcome to Nexus Hub!');
         }
@@ -2183,12 +2180,17 @@
 
     async function saveToFirestore() {
       if (!window.currentUser) return;
-      // Guard: Firestore se data load hone se pehle save mat karo — credits 0 overwrite se bachao
-      if (!_firestoreLoaded) return;
       try {
         const userRef = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
+        // Server se current values padho - stale data se overwrite na ho
+        const snap = await window.fbGetDoc(userRef);
+        const serverCredits = snap.exists() ? (snap.data().credits ?? 0) : 0;
+        const serverAdCount = snap.exists() ? (snap.data().adWatchCount ?? 0) : 0;
+        // Local value sirf tab use karo jab woh server se zyada ho
+        const safeCredits = Math.max(credits, serverCredits);
+        const safeAdCount = Math.max(adWatchCount, serverAdCount);
         await window.fbSetDoc(userRef, {
-          credits: credits,
+          credits: safeCredits,
           transactions: transactions.slice(0, 50),
           results: results,
           lastLogin: serverState.lastLogin || '',
@@ -2200,7 +2202,7 @@
           unlockedCards: [...unlockedCards],
           spinTokens: spinTokens,
           freeSpinUsed: freeSpinUsed,
-          adWatchCount: adWatchCount,
+          adWatchCount: safeAdCount,
           vip: vipState.plan ? {
             plan: vipState.plan,
             startDate: vipState.startDate,
@@ -2212,6 +2214,9 @@
           weekKey: getCurrentWeekKey(),
           updatedAt: new Date().toISOString()
         }, { merge: true });
+        // Memory bhi safe values se update karo
+        credits = safeCredits;
+        adWatchCount = safeAdCount;
       } catch(e) {
         console.error('Firestore save error:', e);
       }
@@ -2401,9 +2406,6 @@
       const planNames = { 'VIP-1M': '1 Month', 'VIP-3M': '3 Months', 'VIP-1Y': '1 Year' };
       return planNames[plan] || plan;
     }
-
-    // Firestore load guard — credits 0 overwrite se bachao
-    let _firestoreLoaded = false;
 
     // Console hack band - random key se lock hai
     const _ck = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
