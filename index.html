@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#020008" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Nexus Hub" />
+  <meta name="monetag" content="190f1738d649ebf4294cd4b0eb2fe2fc">
+  <meta name="monetag" content="efaa8120e073e2ba1c75026f4e27af66">
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>Nexus Hub</title>
+  <script type="module" src="firebase-init.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+
+
+  <!-- INSTALL POPUP -->
+  <div id="install-popup" style="display:none;">
+    <div class="install-sheet">
+      <div class="install-handle"></div>
+
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="font-size:28px;margin-bottom:8px;">📲</div>
+        <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:var(--gold);letter-spacing:2px;">APP INSTALL KARO</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:6px;line-height:1.5;">
+          Nexus Hub ko apne phone mein install karo — bilkul free!<br/>
+          <span style="color:rgba(0,245,255,0.7);">Ek baar install karo, hamesha app jaisa use karo ✨</span>
+        </div>
+      </div>
+
+      <!-- Benefits -->
+      <div style="background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.12);border-radius:12px;padding:12px 14px;margin-bottom:16px;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:9px;color:rgba(0,245,255,0.6);letter-spacing:2px;margin-bottom:8px;">✦ INSTALL KE FAYDE</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.55);line-height:2;">
+          ⚡ Home screen pe icon — direct open karo<br/>
+          🚀 Full screen experience — browser bar nahi dikhega<br/>
+          🔔 Fast loading — app jaisi speed<br/>
+          💾 Offline bhi kuch features kaam karenge
+        </div>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="install-step">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div class="install-step-num">1</div>
+          <div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--gold);font-weight:700;">Browser Menu Kholo</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Chrome mein upar <b style="color:rgba(255,255,255,0.7);">3 dots (⋮)</b> pe tap karo — neeche screenshot dekho</div>
+          </div>
+        </div>
+        <img src="img1.jpeg" class="install-img" alt="Step 1 - Menu"/>
+        <div style="font-size:10px;color:rgba(255,215,0,0.5);margin-top:8px;text-align:center;letter-spacing:1px;">👆 Menu mein "Add to Home Screen" option dhundo</div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="install-step">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div class="install-step-num">2</div>
+          <div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--gold);font-weight:700;">"Install" Pe Tap Karo</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;"><b style="color:rgba(255,255,255,0.7);">"Install"</b> option select karo — "Create Shortcut" nahi, <b style="color:rgba(225,48,108,0.8);">Install</b> wala chahiye</div>
+          </div>
+        </div>
+        <img src="img2.jpeg" class="install-img" alt="Step 2 - Install"/>
+        <div style="font-size:10px;color:rgba(255,215,0,0.5);margin-top:8px;text-align:center;letter-spacing:1px;">👆 Orange arrow wala "Install" option choose karo</div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="install-step">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="install-step-num">3</div>
+          <div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--gold);font-weight:700;">Done! App Ready Hai 🎉</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Home screen pe <b style="color:rgba(255,255,255,0.7);">Nexus Hub</b> ka icon aa jaayega — ab seedha open karo, browser ki zarurat nahi!</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="install-dismiss-btn" onclick="dismissInstallPopup(false)">✕ Baad mein karta hun</button>
+    </div>
+  </div>
+
+  <!-- SPLASH SCREEN -->
+  <div id="nx-splash">
+    <div class="splash-bg-grid"></div>
+    <div class="splash-glow-1"></div>
+    <div class="splash-glow-2"></div>
+    <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;">
+      <div class="splash-rings">
+        <div class="splash-ring"></div>
+        <div class="splash-ring"></div>
+        <div class="splash-ring"></div>
+        <div class="splash-ring"></div>
+        <div class="splash-logo-circle"><span class="splash-n">N</span></div>
+      </div>
+      <div class="splash-title">NEXUS HUB</div>
+      <div class="splash-subtitle">PREDICTION SYSTEM</div>
+      <div class="splash-tagline">SIGNAL INTELLIGENCE · LIVE ANALYSIS</div>
+    </div>
+    <div class="splash-loader-bar"><div class="splash-loader-fill"></div></div>
+    <div class="splash-status" id="splash-status">INITIALIZING...</div>
+  </div>
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" style="position:fixed;inset:0;background:#020008;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="text-align:center;max-width:320px;width:100%;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:6px;color:#FFD700;opacity:0.6;margin-bottom:8px;">NEXUS INTELLIGENCE</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:36px;font-weight:900;background:linear-gradient(135deg,#FFD700,#FFA500,#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;margin-bottom:6px;">PREDICTION<br/>HUB</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:3px;margin-bottom:40px;">SIGNAL ANALYSIS SYSTEM</div>
+
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px 24px;">
+        <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:24px;line-height:1.6;">
+          Live casino predictions.<br>Sign in to continue.
+        </div>
+
+        <button id="google-login-btn" onclick="googleLogin()"
+          style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:white;border:none;border-radius:14px;padding:14px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:#333;letter-spacing:0.5px;transition:all 0.2s;">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Sign in with Google
+        </button>
+
+        <div id="login-msg" style="font-size:12px;color:rgba(255,45,85,0.8);margin-top:12px;display:none;"></div>
+      </div>
+
+      <div style="font-size:11px;color:rgba(255,255,255,0.15);margin-top:20px;">
+        By signing in, you agree to our terms of service.
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+  <div class="app" id="main-app" style="display:none;">
+
+    <!-- HEADER -->
+    <!-- USER BAR -->
+    <div id="user-bar" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img id="user-avatar" src="" style="width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,215,0,0.3);display:none;"/>
+        <div>
+          <div id="user-name" style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:1px;"></div>
+          <div id="user-email" style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px;"></div>
+        </div>
+      </div>
+      <button onclick="logoutUser()" style="padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;cursor:pointer;">
+        Logout
+      </button>
+    </div>
+
+    <div class="header">
+      <div class="header-logo" id="header-logo-tap" onclick="adminTap()" style="cursor:default;">NEXUS INTELLIGENCE</div>
+      <div class="header-title">PREDICTION<br/>HUB</div>
+      <div class="header-sub">Signal Analysis System</div>
+      <div style="display:flex;justify-content:center">
+        <div class="live-badge"><div class="live-dot"></div>LIVE FEED</div>
+      </div>
+    </div>
+
+    <!-- CREDIT BAR -->
+    <div class="credit-bar" id="main-credit-bar">
+      <div class="credit-top-row">
+        <div class="credit-left">
+          <div class="credit-coin" id="header-coin">🪙</div>
+          <div class="credit-info">
+            <div class="credit-amount" id="header-credits">—</div>
+            <div class="credit-label" id="header-credit-label">CREDITS</div>
+          </div>
+        </div>
+        <!-- VIP badge — sirf jab active ho (right side, Watch Ad/Share ki jagah) -->
+        <div id="header-vip-badge" style="display:none;flex-shrink:0;background:linear-gradient(135deg,rgba(15,10,30,0.95),rgba(10,8,20,0.95));border:1.5px solid var(--gold);border-radius:30px;padding:7px 14px;align-items:center;gap:7px;box-shadow:0 0 14px rgba(255,215,0,0.25),inset 0 0 10px rgba(255,215,0,0.05);">
+          <span style="font-size:16px;line-height:1;">⏳</span>
+          <span style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:900;color:var(--green);letter-spacing:0.5px;white-space:nowrap;" id="header-vip-days">— days left</span>
+        </div>
+        <!-- Normal users ke liye Watch Ad + Share buttons -->
+        <div class="credit-actions" id="header-credit-actions">
+          <div style="position:relative;display:inline-flex;">
+            <span style="position:absolute;top:-7px;right:-4px;background:var(--green);color:#000;font-size:8px;font-weight:900;border-radius:6px;padding:1px 4px;z-index:2;pointer-events:none;">+5</span>
+            <button class="credit-btn earn-btn" id="ad-header-btn" onclick="openAdModal()">▶ Watch Ad</button>
+          </div>
+          <div style="position:relative;display:inline-flex;">
+            <span style="position:absolute;top:-7px;right:-4px;background:var(--gold);color:#000;font-size:8px;font-weight:900;border-radius:6px;padding:1px 4px;z-index:2;pointer-events:none;">+10</span>
+            <button class="credit-btn share-btn" id="share-earn-btn" onclick="doShare()">↗ Share</button>
+          </div>
+        </div>
+      </div>
+      <div id="header-action-btns" style="display:flex;gap:8px;margin-top:2px;">
+        <button onclick="setTab('credits')" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,165,0,0.08));border:1px solid rgba(255,215,0,0.3);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;">
+          🪙 EARN
+        </button>
+        <button onclick="showBuyMenu()" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,165,0,0.06));border:1px solid rgba(255,215,0,0.35);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;">
+          👑 VIP PASS
+        </button>
+      </div>
+    </div>
+
+    <!-- CONTROLS BAR - Start/Stop sabke liye, CODE sirf admin ke liye -->
+    <div class="admin-bar visible" id="admin-bar" style="background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.15);">
+      <div class="admin-label">
+        <span style="color:rgba(0,245,255,0.7);">⚡ SIGNALS</span>
+        <span id="prediction-status-text">Predictions: Running</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="admin-code-btn" onclick="showCodeGenerator()" style="display:none;padding:7px 12px;border-radius:10px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;">🎟️ CODE</button>
+        <button class="start-stop-btn running" id="start-stop-btn" onclick="togglePredictions()">⏹ STOP</button>
+      </div>
+    </div>
+
+    <!-- TOP STATS — sirf signals page pe show hogi via JS -->
+    <div class="stats-bar" id="main-stats-bar">
+      <div class="stat-box"><div class="stat-val" id="stat-total">—</div><div class="stat-label">Total</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-today">—</div><div class="stat-label">Today</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--green);font-size:13px" id="stat-status">LIVE</div><div class="stat-label">Status</div></div>
+    </div>
+
+    <!-- SIGNALS PAGE -->
+    <div id="page-signals" class="page active">
+      <div class="section-title" style="padding-top:8px">Latest Signals</div>
+      <div id="content"></div>
+      <div class="last-updated" id="last-updated"></div>
+    </div>
+
+    <!-- STATS PAGE -->
+    <div id="page-stats" class="page">
+      <div class="section-title" style="padding-top:8px">Performance</div>
+      <div style="padding:0 16px">
+        <div class="accuracy-card">
+          <div class="accuracy-title">OVERALL ACCURACY</div>
+          <div class="accuracy-big" id="acc-pct" style="color:var(--gold)">—%</div>
+          <div class="accuracy-sub" id="acc-sub">No results yet</div>
+          <div class="acc-bar-wrap"><div class="acc-bar" id="acc-bar" style="width:0%"></div></div>
+        </div>
+        <div class="wl-grid">
+          <div class="wl-card">
+            <div class="wl-num" style="color:var(--green)" id="win-count">0</div>
+            <div class="wl-label" style="color:var(--green)">✅ Win</div>
+          </div>
+          <div class="wl-card">
+            <div class="wl-num" style="color:var(--red)" id="loss-count">0</div>
+            <div class="wl-label" style="color:var(--red)">❌ Loss</div>
+          </div>
+        </div>
+        <div class="streak-card">
+          <div><div class="streak-label">🔥 Current Streak</div></div>
+          <div class="streak-val" id="streak-val">—</div>
+        </div>
+        <div class="streak-card">
+          <div><div class="streak-label">📅 Today's Predictions</div></div>
+          <div class="streak-val" id="today-count-s">—</div>
+        </div>
+        <div class="streak-card">
+          <div><div class="streak-label">🎯 Today's Accuracy</div></div>
+          <div class="streak-val" id="today-acc">—%</div>
+        </div>
+
+        <!-- Prediction History -->
+        <div class="section-title" style="padding-top:6px">Prediction History</div>
+        <div class="notif-log" id="notif-log">
+          <div class="empty-alerts">📭 Koi notification abhi tak nahi</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CREDITS PAGE -->
+    <div id="page-credits" class="page">
+      <div class="section-title" style="padding-top:8px">My Credits</div>
+      <div class="credit-history">
+        <div class="credit-summary-card">
+          <div class="credit-big" id="credit-big">—</div>
+          <div class="credit-big-label">AVAILABLE CREDITS</div>
+        </div>
+
+        <!-- BUY CREDITS -->
+        <div style="margin-bottom:14px;">
+          <!-- REDEEM CODE — Hidden input for redeemCode() function, actual UI is in VIP tab -->
+          <div style="display:none;">
+            <input id="redeem-input" type="text" maxlength="24" oninput="this.value=this.value.toUpperCase()"/>
+            <div id="redeem-msg" style="font-size:12px;margin-top:8px;display:none;"></div>
+          </div>
+
+          <!-- VIP PASS ACTIVE BADGE -->
+          <!-- VIP ACTIVE FULL PAGE (sirf VIP users ko dikhega) -->
+          <div id="vip-active-banner" style="display:none;margin-bottom:20px;">
+            <!-- Hero Card -->
+            <div style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(123,47,255,0.12),rgba(0,245,255,0.08));border:1.5px solid rgba(255,215,0,0.5);border-radius:20px;padding:24px 20px;text-align:center;position:relative;overflow:hidden;margin-bottom:14px;">
+              <!-- Glow effect -->
+              <div style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:200px;height:200px;background:radial-gradient(circle,rgba(255,215,0,0.15) 0%,transparent 70%);pointer-events:none;"></div>
+              <div style="font-size:48px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(255,215,0,0.5));">👑</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--gold);letter-spacing:3px;margin-bottom:4px;">YOU ARE VIP!</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,245,255,0.8);letter-spacing:4px;margin-bottom:16px;">NEXUS ELITE MEMBER</div>
+              <!-- Days Left Badge -->
+              <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.4);border-radius:30px;padding:8px 20px;margin-bottom:16px;">
+                <span style="font-size:14px;">⏳</span>
+                <span style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--green);" id="vip-days-badge">— days left</span>
+              </div>
+              <!-- Description -->
+              <div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.7;" id="vip-time-left-text">Unlimited predictions • No credits needed</div>
+            </div>
+            <!-- Benefits Grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+              <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:14px;text-align:center;">
+                <div style="font-size:22px;margin-bottom:6px;">♾️</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--gold);letter-spacing:1px;">UNLIMITED</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Predictions</div>
+              </div>
+              <div style="background:rgba(0,245,255,0.06);border:1px solid rgba(0,245,255,0.2);border-radius:14px;padding:14px;text-align:center;">
+                <div style="font-size:22px;margin-bottom:6px;">⚡</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--neon);letter-spacing:1px;">PRIORITY</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Access</div>
+              </div>
+              <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:14px;padding:14px;text-align:center;">
+                <div style="font-size:22px;margin-bottom:6px;">🎰</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--green);letter-spacing:1px;">LUCKY SPIN</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Included</div>
+              </div>
+              <div style="background:rgba(123,47,255,0.08);border:1px solid rgba(123,47,255,0.25);border-radius:14px;padding:14px;text-align:center;">
+                <div style="font-size:22px;margin-bottom:6px;">🏆</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:#a78bfa;letter-spacing:1px;">ELITE</div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Status</div>
+              </div>
+            </div>
+            <!-- Motivational message -->
+            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;text-align:center;margin-bottom:14px;">
+              <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;">Aap hain Nexus ke <span style="color:var(--gold);font-weight:700;">elite members</span> mein se ek. Aapko credit ki koi chinta nahi — <span style="color:var(--green);font-weight:700;">unlimited predictions</span> enjoy karo aur apna game level karo! 🚀</div>
+            </div>
+          </div>
+          <!-- VIP users ke liye earn/buy section hidden hoga — JS se handle -->
+          <div id="vip-non-member-section">
+
+          <!-- BUY VIP PASS SECTION — credits page pe hide rahega, VIP tab pe jaao -->
+          <div id="credits-vip-buy-section" style="display:none;margin-bottom:14px;"></div>
+
+          <!-- VIP Tab CTA — earn page pe dikhega sirf non-VIP users ko -->
+          <div id="credits-vip-cta" onclick="setTab('vip')" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(123,47,255,0.06));border:1px solid rgba(255,215,0,0.3);border-radius:16px;padding:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="font-size:28px;">👑</div>
+              <div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--gold);">VIP PASS</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Unlimited credits • No deduction</div>
+              </div>
+            </div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--gold);font-weight:700;white-space:nowrap;">VIEW →</div>
+          </div>
+
+        <div class="section-title" style="padding:0 0 10px" id="ways-to-earn-title">Ways to Earn</div>
+        <div class="earn-ways" id="earn-ways-section">
+          <div class="earn-card">
+            <div class="earn-info">
+              <div class="earn-icon">📺</div>
+              <div>
+                <div class="earn-name">Watch Ad</div>
+                <div class="earn-desc">Ek ad dekho aur credit pao</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="earn-amount">+5</div>
+              <button class="do-earn-btn" id="ad-earn-btn" onclick="openAdModal()">Watch</button>
+            </div>
+          </div>
+          <div class="earn-card">
+            <div class="earn-info">
+              <div class="earn-icon">🌅</div>
+              <div>
+                <div class="earn-name">Daily Login</div>
+                <div class="earn-desc">Roz app kholo aur pao</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="earn-amount">+2</div>
+              <button class="do-earn-btn" id="daily-earn-btn" onclick="claimDailyBonus()">Claim</button>
+            </div>
+          </div>
+          <div class="earn-card">
+            <div class="earn-info">
+              <div class="earn-icon">🔗</div>
+              <div>
+                <div class="earn-name">Share App</div>
+                <div class="earn-desc">Dosto ke saath share karo</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="earn-amount">+10</div>
+              <button class="do-earn-btn" onclick="doShare()">Share</button>
+            </div>
+          </div>
+          <div class="earn-card" style="border-color:rgba(255,45,85,0.15)">
+            <div class="earn-info">
+              <div class="earn-icon">📡</div>
+              <div>
+                <div class="earn-name">New Prediction</div>
+                <div class="earn-desc">Har naya signal aane par auto deduct</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="earn-amount minus">-1</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LUCKY SPIN EARN CARD -->
+        <div class="earn-card" id="spin-earn-card" style="border-color:rgba(0,255,136,0.25);background:linear-gradient(135deg,rgba(0,255,136,0.06),rgba(0,200,100,0.04));">
+          <div style="display:flex;flex-direction:column;gap:10px;width:100%;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:44px;height:44px;border-radius:14px;background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.3);display:flex;align-items:center;justify-content:center;font-size:24px;">🎰</div>
+              <div style="flex:1;">
+                <div class="earn-name" style="color:var(--green);">Lucky Spin</div>
+                <div class="earn-desc">Watch Ad karke Spin Token kamao aur wheel spin karo!</div>
+              </div>
+            </div>
+            <button onclick="setTab('spin')" style="width:100%;padding:11px;border-radius:12px;border:1px solid rgba(0,255,136,0.35);background:rgba(0,255,136,0.1);color:var(--green);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;">🎰 OPEN LUCKY SPIN</button>
+          </div>
+        </div>
+
+        <!-- SOCIAL FOLLOW SECTION -->
+        <div class="section-title" style="padding:14px 0 10px">Follow & Join Us</div>
+
+        <!-- Instagram Follow Card -->
+        <div class="earn-card" style="border-color:rgba(225,48,108,0.25);background:linear-gradient(135deg,rgba(225,48,108,0.06),rgba(131,58,180,0.04));margin-bottom:12px;">
+          <div style="display:flex;flex-direction:column;gap:10px;width:100%;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <!-- Instagram SVG Logo -->
+              <div style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div class="earn-name" style="color:#e1306c;">Follow on Instagram</div>
+                <div class="earn-desc" style="font-size:11px;line-height:1.4;margin-top:2px;">Daily earning tricks, prediction strategies & expert match insights. Follow karo aur apni winning game aur bhi strong karo!</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div class="earn-amount" style="color:#e1306c;">+5</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(225,48,108,0.12);">
+              <div id="insta-timer-wrap" style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.5px;display:none;"></div>
+              <div style="flex:1;"></div>
+              <button id="insta-follow-btn" onclick="doInstagramFollow()" class="do-earn-btn" style="background:linear-gradient(135deg,rgba(225,48,108,0.2),rgba(131,58,180,0.15));border-color:rgba(225,48,108,0.4);color:#e1306c;">Follow</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telegram Join Card -->
+        <div class="earn-card" style="border-color:rgba(0,136,204,0.25);background:linear-gradient(135deg,rgba(0,136,204,0.06),rgba(0,85,170,0.04));margin-bottom:12px;">
+          <div style="display:flex;flex-direction:column;gap:10px;width:100%;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <!-- Telegram SVG Logo -->
+              <div style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#0088cc,#0055aa);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                </svg>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div class="earn-name" style="color:#29b6f6;">Join Telegram Channel</div>
+                <div class="earn-desc" style="font-size:11px;line-height:1.4;margin-top:2px;">Hamara official Telegram channel join karo aur daily <span style="color:var(--gold);font-weight:700;">1000 credit code</span> pao! Exclusive signals, VIP tips aur special offers sirf channel members ke liye.</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div class="earn-amount" style="color:#29b6f6;">+5</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(0,136,204,0.12);">
+              <div id="tg-timer-wrap" style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.5px;display:none;"></div>
+              <div style="flex:1;"></div>
+              <button id="tg-join-btn" onclick="doTelegramJoin()" class="do-earn-btn" style="background:linear-gradient(135deg,rgba(0,136,204,0.2),rgba(0,85,170,0.15));border-color:rgba(0,136,204,0.4);color:#29b6f6;">Join</button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- DEVELOPER CONTACT -->
+        <div style="margin-top:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:3px;margin-bottom:14px;">SUPPORT & HELP</div>
+          
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#0055aa);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">💬</div>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.9);">Developer Support</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:3px;">NexusHub Official</div>
+            </div>
+          </div>
+          
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:16px;">
+            Facing any issue with the app? Signals not loading, credits not updating, or anything else? Feel free to contact our developer directly. We're here to help! 🚀
+          </div>
+
+          <div style="background:rgba(0,136,204,0.08);border:1px solid rgba(0,136,204,0.2);border-radius:12px;padding:12px 16px;margin-bottom:12px;">
+            <div style="font-size:11px;color:rgba(0,136,204,0.7);letter-spacing:1px;margin-bottom:4px;">📋 BEFORE CONTACTING</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.6;">
+              • App refresh karo ek baar<br>
+              • Internet connection check karo<br>
+              • Issue ka screenshot lo<br>
+              • Phir contact karo
+            </div>
+          </div>
+
+          <a href="https://telegram.dog/NexusXedit" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,rgba(0,136,204,0.2),rgba(0,85,170,0.2));border:1px solid rgba(0,136,204,0.35);border-radius:14px;padding:14px;text-decoration:none;transition:all 0.2s;">
+            <span style="font-size:20px;">✈️</span>
+            <div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:#0088cc;letter-spacing:1px;">CONTACT DEVELOPER</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">@NexusXedit on Telegram</div>
+            </div>
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+      </div>
+    </div>
+
+        <!-- SUPPORT PAGE -->
+    <div id="page-support" class="page" style="padding-bottom:0">
+      <div class="section-title" style="padding-top:8px">Developer Support</div>
+      <div style="padding:0 16px">
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+            <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#0055aa);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">👨‍💻</div>
+            <div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:rgba(255,255,255,0.9);">NexusHub Developer</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:3px;">@NexusXedit · Telegram</div>
+            </div>
+          </div>
+
+          <div style="font-size:14px;color:rgba(255,255,255,0.55);line-height:1.8;margin-bottom:18px;">
+            Facing any issue with the app? Signals not loading, credits not updating, ads not working, or anything else? Feel free to contact our developer directly — we're here to help! 🚀
+          </div>
+
+          <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.15);border-radius:12px;padding:14px;margin-bottom:16px;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,215,0,0.6);letter-spacing:2px;margin-bottom:10px;">📋 BEFORE CONTACTING</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.8;">
+              ✦ App ek baar refresh karo<br>
+              ✦ Internet connection check karo<br>
+              ✦ Issue ka screenshot lo<br>
+              ✦ Phir developer ko message karo
+            </div>
+          </div>
+
+          <a href="https://telegram.dog/NexusXedit" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:12px;background:linear-gradient(135deg,rgba(0,136,204,0.2),rgba(0,85,170,0.15));border:1px solid rgba(0,136,204,0.4);border-radius:14px;padding:16px;text-decoration:none;">
+            <span style="font-size:24px;">✈️</span>
+            <div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#29b6f6;letter-spacing:1px;">CONTACT DEVELOPER</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:3px;">Telegram pe message karo</div>
+            </div>
+          </a>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:14px;padding:16px;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:2px;margin-bottom:10px;">ℹ️ APP INFO</div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+            <span style="font-size:13px;color:rgba(255,255,255,0.4);">Version</span>
+            <span style="font-size:13px;color:rgba(255,255,255,0.7);font-weight:600;">v3.0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+            <span style="font-size:13px;color:rgba(255,255,255,0.4);">Platform</span>
+            <span style="font-size:13px;color:rgba(255,255,255,0.7);font-weight:600;">Nexus Intelligence</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;">
+            <span style="font-size:13px;color:rgba(255,255,255,0.4);">Support</span>
+            <span style="font-size:13px;color:#29b6f6;font-weight:600;">@NexusXedit</span>
+          </div>
+        </div>
+      </div>
+          </div><!-- end vip-non-member-section -->
+    </div>
+
+    <!-- VIP PAGE (nav se open hota hai) -->
+    <div id="page-vip" class="page">
+      <div class="section-title" style="padding-top:8px">VIP Pass</div>
+      <div style="padding:0 16px;">
+
+        <!-- VIP ACTIVE BANNER (sirf active VIP users ko) -->
+        <div id="vip-page-active-banner" style="display:none;margin-bottom:20px;">
+          <div style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(123,47,255,0.12),rgba(0,245,255,0.08));border:1.5px solid rgba(255,215,0,0.5);border-radius:20px;padding:24px 20px;text-align:center;position:relative;overflow:hidden;margin-bottom:14px;">
+            <div style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:200px;height:200px;background:radial-gradient(circle,rgba(255,215,0,0.15) 0%,transparent 70%);pointer-events:none;"></div>
+            <div style="font-size:48px;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(255,215,0,0.5));">👑</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--gold);letter-spacing:3px;margin-bottom:4px;">YOU ARE VIP!</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,245,255,0.8);letter-spacing:4px;margin-bottom:16px;">NEXUS ELITE MEMBER</div>
+            <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.4);border-radius:30px;padding:8px 20px;margin-bottom:16px;">
+              <span style="font-size:14px;">⏳</span>
+              <span style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--green);" id="vip-page-days-badge">— days left</span>
+            </div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.7;">Unlimited predictions • No credits needed</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:14px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:6px;">♾️</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--gold);letter-spacing:1px;">UNLIMITED</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Predictions</div>
+            </div>
+            <div style="background:rgba(0,245,255,0.06);border:1px solid rgba(0,245,255,0.2);border-radius:14px;padding:14px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:6px;">⚡</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--neon);letter-spacing:1px;">PRIORITY</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Access</div>
+            </div>
+            <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:14px;padding:14px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:6px;">🎰</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--green);letter-spacing:1px;">LUCKY SPIN</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Included</div>
+            </div>
+            <div style="background:rgba(123,47,255,0.08);border:1px solid rgba(123,47,255,0.25);border-radius:14px;padding:14px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:6px;">🏆</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:#a78bfa;letter-spacing:1px;">ELITE</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">Status</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIP PACKS (non-VIP users ke liye, ya page scroll ke liye) -->
+        <div id="vip-page-buy-section">
+          <!-- Limited Time Offer banner -->
+          <div style="background:linear-gradient(135deg,rgba(255,45,85,0.12),rgba(123,47,255,0.08));border:1px dashed rgba(255,45,85,0.4);border-radius:12px;padding:10px 14px;margin-bottom:14px;text-align:center;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:10px;font-weight:900;color:var(--red);letter-spacing:2px;animation:pulse 1.5s ease-in-out infinite;">⏰ LIMITED TIME OFFER — ABHI LO!</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;">Yeh prices sirf kuch time ke liye hain • Badh sakti hain kabhi bhi</div>
+          </div>
+
+          <div class="section-title" style="padding:0 0 12px;">👑 Buy VIP Pass</div>
+
+          <!-- VIP Plan 1 — 1 Month -->
+          <div id="vip-card-1m" onclick="showBuyPopup('vip-1m', 99)" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.4)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
+            <!-- ACTIVE badge slot -->
+            <div id="vip-active-badge-1m" style="display:none;position:absolute;top:-10px;right:14px;background:linear-gradient(135deg,var(--green),#00cc66);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;box-shadow:0 2px 10px rgba(0,255,136,0.4);">✅ ACTIVE</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;">🥉</div>
+                <div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1 Month VIP</div>
+                  <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
+                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;" id="vip-card-1m-sub">30 days valid</div>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹199</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹99</div>
+                <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">50% OFF</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIP Plan 2 — 3 Months -->
+          <div id="vip-card-3m" onclick="showBuyPopup('vip-3m', 199)" style="background:linear-gradient(135deg,rgba(0,245,255,0.05),rgba(123,47,255,0.04));border:1.5px solid rgba(0,245,255,0.25);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(0,245,255,0.5)'" onmouseout="this.style.borderColor='rgba(0,245,255,0.25)'">
+            <div style="position:absolute;top:-9px;left:14px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;">🔥 POPULAR</div>
+            <!-- ACTIVE badge slot -->
+            <div id="vip-active-badge-3m" style="display:none;position:absolute;top:-10px;right:14px;background:linear-gradient(135deg,var(--green),#00cc66);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;box-shadow:0 2px 10px rgba(0,255,136,0.4);">✅ ACTIVE</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.25);display:flex;align-items:center;justify-content:center;font-size:24px;">🥈</div>
+                <div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--neon);">3 Month VIP</div>
+                  <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
+                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;" id="vip-card-3m-sub">90 days valid</div>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹599</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹199</div>
+                <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">67% OFF</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIP Plan 3 — 1 Year -->
+          <div id="vip-card-1y" onclick="showBuyPopup('vip-1y', 699)" style="background:linear-gradient(135deg,rgba(255,215,0,0.07),rgba(255,165,0,0.04));border:1.5px solid rgba(255,215,0,0.35);border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer;transition:all 0.2s;position:relative;" onmouseover="this.style.borderColor='rgba(255,215,0,0.6)'" onmouseout="this.style.borderColor='rgba(255,215,0,0.35)'">
+            <div style="position:absolute;top:-9px;left:14px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;">👑 BEST VALUE</div>
+            <!-- ACTIVE badge slot -->
+            <div id="vip-active-badge-1y" style="display:none;position:absolute;top:-10px;right:14px;background:linear-gradient(135deg,var(--green),#00cc66);color:#000;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;box-shadow:0 2px 10px rgba(0,255,136,0.4);">✅ ACTIVE</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.35);display:flex;align-items:center;justify-content:center;font-size:24px;">🥇</div>
+                <div>
+                  <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">1 Year VIP</div>
+                  <div style="font-size:11px;color:rgba(0,255,136,0.8);margin-top:3px;font-weight:600;">∞ Unlimited Credits</div>
+                  <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px;" id="vip-card-1y-sub">365 days valid</div>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:12px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹1199</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--green);">₹699</div>
+                <div style="font-size:9px;color:var(--red);font-weight:700;margin-top:1px;">42% OFF</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- REDEEM CODE -->
+        <div style="margin-bottom:16px;">
+          <div class="section-title" style="padding:16px 0 12px;">Redeem Code</div>
+          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.2);border-radius:16px;padding:16px;">
+            <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:12px;">Payment ke baad mila code yahan enter karo:</div>
+            <div style="display:flex;gap:8px;">
+              <input id="vip-page-redeem-input" type="text" placeholder="NEXUS-VIP-1M-XXXX" maxlength="24"
+                style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.25);border-radius:12px;padding:12px 14px;color:white;font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:1px;outline:none;"
+                oninput="this.value=this.value.toUpperCase()"/>
+              <button onclick="redeemCodeFromVipPage()"
+                style="padding:12px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;white-space:nowrap;">
+                REDEEM
+              </button>
+            </div>
+            <div id="vip-page-redeem-msg" style="font-size:12px;margin-top:8px;display:none;"></div>
+          </div>
+        </div>
+
+        <!-- SUPPORT -->
+        <div style="margin-bottom:20px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:3px;margin-bottom:14px;">SUPPORT & HELP</div>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0088cc,#0055aa);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">💬</div>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:rgba(255,255,255,0.9);">Developer Support</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:3px;">NexusHub Official</div>
+            </div>
+          </div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:16px;">
+            VIP purchase ke baad code nahi mila? Ya koi aur issue hai? Directly developer se contact karo — hum help karenge! 🚀
+          </div>
+          <a href="https://telegram.dog/NexusXedit" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,rgba(0,136,204,0.2),rgba(0,85,170,0.2));border:1px solid rgba(0,136,204,0.35);border-radius:14px;padding:14px;text-decoration:none;transition:all 0.2s;">
+            <span style="font-size:20px;">✈️</span>
+            <div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:#0088cc;letter-spacing:1px;">CONTACT DEVELOPER</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">@NexusXedit on Telegram</div>
+            </div>
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SPIN PAGE -->
+    <div id="page-spin" class="page">
+      <div class="section-title" style="padding-top:8px">Lucky Spin</div>
+      <div style="padding:0 16px">
+
+        <!-- SPIN TOKENS -->
+        <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:16px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:4px;">SPIN TOKENS</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:32px;font-weight:900;color:var(--green);" id="spin-token-display">0</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:32px;line-height:1;">🎰</div>
+            <div id="spin-token-sub" style="font-size:10px;color:rgba(0,255,136,0.5);letter-spacing:1px;margin-top:4px;font-family:'Orbitron',sans-serif;"></div>
+          </div>
+        </div>
+
+        <!-- SPIN WHEEL - Canvas -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:24px 16px;margin-bottom:16px;text-align:center;position:relative;">
+
+          <!-- Pointer -->
+          <div style="position:relative;display:inline-block;margin-bottom:-12px;z-index:10;">
+            <div style="width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:24px solid var(--gold);filter:drop-shadow(0 0 8px rgba(255,215,0,0.8));margin:0 auto;"></div>
+          </div>
+
+          <!-- Canvas Wheel -->
+          <div style="position:relative;display:inline-block;">
+            <canvas id="spin-canvas" width="280" height="280" style="border-radius:50%;box-shadow:0 0 40px rgba(255,215,0,0.15),0 0 0 4px rgba(255,215,0,0.25);display:block;margin:0 auto;"></canvas>
+            <!-- Center hub -->
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1a0a2e,#020008);border:3px solid rgba(255,215,0,0.6);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:5;box-shadow:0 0 20px rgba(255,215,0,0.3);">🎯</div>
+          </div>
+
+          <!-- Spin Button -->
+          <div style="margin-top:20px;">
+            <button id="spin-btn" onclick="doSpin()" style="width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;letter-spacing:2px;cursor:pointer;box-shadow:0 4px 20px rgba(255,215,0,0.35);transition:all 0.2s;">
+              🎰 SPIN NOW
+            </button>
+
+            <!-- Watch Ad button - sirf 0 tokens par dikhega -->
+            <button id="spin-watch-ad-btn" onclick="openSpinAdModal()" style="display:none;width:100%;margin-top:10px;padding:13px;border-radius:14px;border:1px solid rgba(0,245,255,0.35);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s;">
+              📺 WATCH AD · GET SPIN TOKEN
+            </button>
+
+            <div id="spin-msg" style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:10px;letter-spacing:1px;min-height:18px;"></div>
+          </div>
+        </div>
+
+        <!-- HOW TO EARN SPINS -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px;margin-bottom:16px;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:2px;margin-bottom:12px;">HOW TO EARN SPINS</div>
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+            <span style="font-size:20px;">🆓</span>
+            <div><div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);">First Spin Free</div><div style="font-size:11px;color:rgba(255,255,255,0.35);">Sirf pehli baar</div></div>
+            <div style="margin-left:auto;font-family:'Orbitron',sans-serif;font-size:13px;color:var(--green);font-weight:700;">+1 Spin</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0;">
+            <span style="font-size:20px;">📺</span>
+            <div><div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.8);">Watch Ad</div><div style="font-size:11px;color:rgba(255,255,255,0.35);">20 sec ad dekhne par</div></div>
+            <div style="margin-left:auto;font-family:'Orbitron',sans-serif;font-size:13px;color:var(--green);font-weight:700;">+1 Spin</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ALERTS PAGE -->
+    <div id="page-alerts" class="page">
+      <div class="section-title" style="padding-top:8px">Alert Settings</div>
+      <div style="padding:0 16px">
+        <div class="alert-card">
+          <div class="alert-row">
+            <div class="alert-info">
+              <div class="alert-name">🔔 New Signal Alert</div>
+              <div class="alert-desc">Vibration + sound jab naya signal aaye</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="toggle-sound" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="divider"></div>
+          <div class="alert-row">
+            <div class="alert-info">
+              <div class="alert-name">🔔 Notifications</div>
+              <div class="alert-desc">Naya signal aane par notification aaye</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="toggle-notif" checked onchange="saveSettings(); handleNotifToggle()"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="divider"></div>
+          <div class="alert-row">
+            <div class="alert-info">
+              <div class="alert-name">📊 High Confidence Only</div>
+              <div class="alert-desc">Sirf is confidence se upar dikhao</div>
+            </div>
+          </div>
+          <div class="conf-filter-row" id="conf-chips">
+            <div class="conf-chip active" onclick="setConf(0,this)">All</div>
+            <div class="conf-chip" onclick="setConf(70,this)">70%+</div>
+            <div class="conf-chip" onclick="setConf(80,this)">80%+</div>
+            <div class="conf-chip" onclick="setConf(90,this)">90%+</div>
+          </div>
+        </div>
+        <!-- Transaction History (moved from Earn page) -->
+        <div class="section-title" style="padding-top:14px">Transaction History</div>
+        <div class="txn-list" id="txn-list">
+          <div class="empty-txn">📭 Koi transaction abhi tak nahi</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .app -->
+
+  <!-- LEADERBOARD PAGE (outside .app for nav access, inside main-app) -->
+  <div id="page-leaderboard" class="page" style="padding:0 16px 100px;">
+    <div class="section-title" style="padding-top:8px">🏆 Ad Watch Leaderboard</div>
+
+    <!-- Countdown Card -->
+    <div class="lb-countdown-card" id="lb-countdown-card">
+      <div class="lb-countdown-label">COMPETITION ENDS IN</div>
+      <div class="lb-countdown-timer" id="lb-countdown">--:--:--</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:8px;letter-spacing:1px;">Jitne zyada ads dekho — top pe raho!</div>
+    </div>
+
+    <!-- Prize Cards -->
+    <div class="section-title" style="padding:0 0 10px">🎁 Weekly Prizes</div>
+    <div class="lb-prizes">
+      <div class="lb-prize-card gold">
+        <div class="lb-prize-icon">🥇</div>
+        <div class="lb-prize-rank" style="color:var(--gold);">1st Place</div>
+        <div class="lb-prize-val">👑 1 Month<br>VIP Pass</div>
+      </div>
+      <div class="lb-prize-card silver">
+        <div class="lb-prize-icon">🥈</div>
+        <div class="lb-prize-rank" style="color:#C0C0C0;">2nd Place</div>
+        <div class="lb-prize-val" style="color:#C0C0C0;">💰 1000<br>Credits</div>
+      </div>
+      <div class="lb-prize-card bronze">
+        <div class="lb-prize-icon">🥉</div>
+        <div class="lb-prize-rank" style="color:#CD7F32;">3rd Place</div>
+        <div class="lb-prize-val" style="color:#CD7F32;">🪙 500<br>Credits</div>
+      </div>
+    </div>
+
+    <!-- My Rank Card -->
+    <div class="lb-my-rank-card" id="lb-my-rank-card" style="display:none;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,245,255,0.6);letter-spacing:2px;margin-bottom:6px;">YOUR RANK</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+        <div>
+          <div class="lb-rank" id="lb-my-rank-num" style="font-size:28px;color:var(--neon);">—</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;letter-spacing:1px;">RANK</div>
+        </div>
+        <div style="width:1px;height:40px;background:rgba(255,255,255,0.1);"></div>
+        <div>
+          <div class="lb-count" id="lb-my-ad-count" style="color:var(--neon);">0</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;letter-spacing:1px;">ADS WATCHED</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 100 List -->
+    <div class="section-title" style="padding:4px 0 10px">📋 Top 100 Rankings</div>
+    <div class="lb-list" id="lb-list">
+      <div class="lb-empty">⏳ Leaderboard load ho raha hai...</div>
+    </div>
+
+    <!-- Watch Ad Button -->
+    <div style="margin-top:16px;margin-bottom:20px;">
+      <button onclick="openAdModal()" style="width:100%;padding:15px;border-radius:14px;border:1px solid rgba(255,215,0,0.35);background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,165,0,0.08));color:var(--gold);font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;">
+        📺 WATCH AD · CLIMB THE RANKS
+      </button>
+    </div>
+  </div>
+
+  <!-- FAB -->
+
+  <button class="fab" id="fab-btn" onclick="doRefresh()">
+    <span class="fab-icon">🔄</span>
+    <span class="fab-new" id="fab-new">0</span>
+  </button>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-signals" onclick="setTab('signals')">
+      <span class="nav-icon">📡</span>Signals
+    </button>
+    <button class="nav-btn" id="nav-stats" onclick="setTab('stats')">
+      <span class="nav-icon">📊</span>Stats
+    </button>
+    <button class="nav-btn" id="nav-credits" onclick="setTab('credits')">
+      <span class="nav-icon">🪙</span>Earn
+    </button>
+    <button class="nav-btn" id="nav-leaderboard" onclick="setTab('leaderboard')">
+      <span class="nav-icon">🏆</span>Board
+    </button>
+    <button class="nav-btn" id="nav-alerts" onclick="setTab('alerts')">
+      <span class="nav-icon">🔔</span>Alerts
+      <span class="nav-badge" id="alert-badge"></span>
+    </button>
+    <button class="nav-btn" id="nav-vip" onclick="setTab('vip')">
+      <span class="nav-icon">👑</span>VIP
+    </button>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- AD MODAL -->
+  <div class="modal-backdrop" id="ad-modal" onclick="closeAdModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">📺 WATCH AD · EARN +10 CREDITS</div>
+      <div class="modal-ad-box">
+        <div class="modal-ad-icon">🎯</div>
+        <div class="modal-ad-text">Yahan aapka ad dikhega<br/><small style="opacity:0.5">(AdSense / AdMob code yahan lagao)</small></div>
+      </div>
+      <div class="modal-progress">
+        <div class="modal-progress-bar" id="modal-prog-bar" style="width:0%"></div>
+      </div>
+      <div class="modal-progress-label" id="modal-prog-label">Ad load ho raha hai... 0s</div>
+      <button class="modal-close-btn" id="modal-close-btn" disabled onclick="claimAdReward()">Pehle poora dekho...</button>
+    </div>
+  </div>
+
+  <!-- App Scripts — load order matters -->
+  <script src="state.js"></script>
+  <script src="leaderboard.js"></script>
+  <script src="firebase.js"></script>
+  <script src="credits.js"></script>
+  <script src="admin.js"></script>
+  <script src="ui.js"></script>
+  <script src="predictions.js"></script>
+</body>
+</html>
