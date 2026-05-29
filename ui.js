@@ -361,6 +361,19 @@
       badge.style.display = 'inline';
     }
 
+    // predictions.js ke liye global expose karo
+    window.updateStats = updateStats;
+    window.addNotif = addNotif;
+    window.cleanPrediction = cleanPrediction;
+    window.escapeHtml = escapeHtml;
+    window.showToast = showToast;
+    window.playAlert = playAlert;
+    window.isPromoMessage = isPromoMessage;
+    window.extractPeriod = extractPeriod;
+    window.extractConfidence = extractConfidence;
+    window.autoDetectResult = autoDetectResult;
+    window.renderNotifLog = renderNotifLog;
+
     // ==================== NOTIFICATIONS ====================
     async function requestNotifPermission() {
       if (!('Notification' in window)) return;
