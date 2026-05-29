@@ -401,7 +401,31 @@
     // Start game API poller
     gameApiPoller();
 
-        // reconcileLossSet — ab _resultMap use karta hai, _lossSet nahi
+        // isPromoMessage — ui.js se copy, predictions.js mein bhi chahiye
+    function isPromoMessage(text) {
+      const t = text.toLowerCase();
+      const hasPeriod = t.includes('period') || t.includes('round') ||
+                        /\.\.\.\d+/.test(t) ||
+                        t.includes('wingo') || t.includes('win go') || t.includes('1m') || t.includes('5m') || t.includes('3m');
+      const hasPrediction = t.includes('big') || t.includes('small') ||
+                            t.includes('b i g') || t.includes('s m a l l') ||
+                            t.includes('confidence') || t.includes('lucky');
+      const isPrediction = hasPeriod && hasPrediction;
+      const isResult = t.includes('result') && (t.includes('period') || t.includes('number') ||
+                       t.includes('colour') || t.includes('color') || t.includes('size') || /\.\.\.\d+/.test(t));
+      return !isPrediction && !isResult;
+    }
+
+    // extractPeriod — ui.js se copy
+    function extractPeriod(text) {
+      const m = text.match(/\.\.\.?(\d+)/);
+      if (m) return m[1];
+      const m2 = text.match(/period[:\s]+[\.]*?(\d+)/i);
+      if (m2) return m2[1];
+      return null;
+    }
+
+    // reconcileLossSet — ab _resultMap use karta hai, _lossSet nahi
     function reconcileLossSet() {
       // _resultMap mein win hai toh _lossSet se remove karo
       if (!window._lossSet || window._lossSet.size === 0) return;
