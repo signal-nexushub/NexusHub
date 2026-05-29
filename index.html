@@ -217,36 +217,35 @@
 
     <!-- SIGNALS PAGE -->
     <div id="page-signals" class="page active">
-      <div class="section-title" style="padding-top:8px">Latest Signals</div>
+      <!-- Live Game Card — signals page pe -->
+      <div style="padding:12px 16px 4px">
+        <div style="background:linear-gradient(135deg,rgba(0,245,255,0.06),rgba(123,47,255,0.06));border:1px solid rgba(0,245,255,0.15);border-radius:14px;padding:12px 14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,245,255,0.7);letter-spacing:2px;">🎮 LIVE GAME</span>
+            <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.4);" id="game-timer-display">--s</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:8px 10px;">
+              <div style="font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:1px;">NEXT PERIOD</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:#fff;margin-top:2px;" id="game-next-period">...</div>
+            </div>
+            <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:8px 10px;">
+              <div style="font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:1px;">NEXT RESULT</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:14px;margin-top:2px;" id="game-last-result">...</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">
+            <div id="game-timer-bar" style="height:100%;width:100%;background:linear-gradient(90deg,var(--neon),var(--purple));transition:width 1s linear;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="section-title" style="padding-top:4px">Latest Signals</div>
       <div id="content"></div>
       <div class="last-updated" id="last-updated"></div>
     </div>
 
     <!-- STATS PAGE -->
     <div id="page-stats" class="page">
-      <!-- Game API Live Card -->
-      <div style="padding:12px 16px 0">
-        <div style="background:linear-gradient(135deg,rgba(0,245,255,0.08),rgba(123,47,255,0.08));border:1px solid rgba(0,245,255,0.2);border-radius:16px;padding:14px 16px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,245,255,0.7);letter-spacing:2px;">🎮 LIVE GAME</span>
-            <span style="font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(255,255,255,0.4);" id="game-timer-display">--s</span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:8px 10px;">
-              <div style="font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:1px;">NEXT PERIOD</div>
-              <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:#fff;margin-top:2px;" id="game-next-period">...</div>
-            </div>
-            <div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:8px 10px;">
-              <div style="font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:1px;">LAST RESULT</div>
-              <div style="font-family:'Orbitron',sans-serif;font-size:14px;margin-top:2px;" id="game-last-result">...</div>
-            </div>
-          </div>
-          <!-- Timer bar -->
-          <div style="margin-top:10px;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
-            <div id="game-timer-bar" style="height:100%;width:100%;background:linear-gradient(90deg,var(--neon),var(--purple));transition:width 1s linear;"></div>
-          </div>
-        </div>
-      </div>
       <div class="section-title" style="padding-top:8px">Performance</div>
       <div style="padding:0 16px">
         <div class="accuracy-card">
@@ -278,11 +277,8 @@
           <div class="streak-val" id="today-acc">—%</div>
         </div>
 
-        <!-- Prediction History -->
-        <div class="section-title" style="padding-top:6px">Prediction History</div>
-        <div class="notif-log" id="notif-log">
-          <div class="empty-alerts">📭 Koi notification abhi tak nahi</div>
-        </div>
+        <!-- notif-log hidden — Alerts tab mein dikhega -->
+        <div id="notif-log" style="display:none;"></div>
 
       </div>
     </div>

@@ -472,8 +472,9 @@
         const now = new Date();
         document.getElementById('last-updated').textContent = `Last updated: ${now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
       } catch(e) {
-        document.getElementById('stat-status').textContent = 'ERR';
-        document.getElementById('stat-status').style.color = 'var(--red)';
+        // ERR nahi dikhana — LIVE hi rakhna
+        document.getElementById('stat-status').textContent = 'LIVE';
+        document.getElementById('stat-status').style.color = 'var(--green)';
         if (isFirstLoad) content.innerHTML = `<div class="error-box">⚠️ Connection error. Retry karo.<br><small style="opacity:0.6">${e.message}</small></div>`;
       }
 
