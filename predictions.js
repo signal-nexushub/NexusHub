@@ -373,9 +373,20 @@
       if (timerDisplay) timerDisplay.textContent = gameData.timerRemaining + 's';
       if (nextPeriodEl) nextPeriodEl.textContent = '...' + gameData.nextPeriod;
       if (lastResultEl) {
-        const isB = gameData.latestSize === 'BIG';
-        lastResultEl.textContent = gameData.latestNumber + ' · ' + gameData.latestSize;
-        lastResultEl.style.color = isB ? 'var(--red)' : 'var(--green)';
+        // Latest TG prediction se BIG/SMALL dikhao
+        const latestTgPred = allPredictions.find(p => {
+          const t = (p.text || '').toLowerCase();
+          return (t.includes('wingo') || t.includes('...')) &&
+                 (t.includes('big') || t.includes('small') || t.includes('b i g') || t.includes('s m a l l'));
+        });
+        if (latestTgPred) {
+          const t = (latestTgPred.text || '').toLowerCase();
+          const isBig = t.includes('b i g') || (t.includes('big') && !t.includes('result'));
+          const size = isBig ? 'BIG' : 'SMALL';
+          const period = extractPeriod(latestTgPred.text || '') || '...';
+          lastResultEl.textContent = '...' + period.slice(-4) + ' · ' + size;
+          lastResultEl.style.color = isBig ? 'var(--red)' : 'var(--green)';
+        }
       }
       if (timerBar) timerBar.style.width = ((gameData.timerRemaining / 60) * 100) + '%';
 
