@@ -267,8 +267,19 @@
       document.getElementById('today-count-s').textContent = todayPreds.length;
       const tRated = tWins + tLoss;
       document.getElementById('today-acc').textContent = tRated > 0 ? Math.round((tWins/tRated)*100) + '%' : '—%';
+      // Total: sirf prediction count
       document.getElementById('stat-total').textContent = total;
-      document.getElementById('stat-today').textContent = todayPreds.length;
+      // Accuracy: overall win/loss se
+      const rated = wins + losses;
+      const accPct = rated > 0 ? Math.round((wins / rated) * 100) : null;
+      const statToday = document.getElementById('stat-today');
+      if (accPct !== null) {
+        statToday.textContent = accPct + '%';
+        statToday.style.color = accPct >= 70 ? 'var(--green)' : accPct >= 50 ? 'var(--gold)' : 'var(--red)';
+      } else {
+        statToday.textContent = '—%';
+        statToday.style.color = 'var(--green)';
+      }
     }
 
     // ==================== NOTIF LOG ====================
