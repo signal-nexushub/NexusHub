@@ -270,8 +270,8 @@
       // Total: sirf prediction count
       document.getElementById('stat-total').textContent = total;
       // Accuracy: overall win/loss se
-      const rated = wins + losses;
-      const accPct = rated > 0 ? Math.round((wins / rated) * 100) : null;
+      const ratedTotal = wins + losses;
+      const accPct = ratedTotal > 0 ? Math.round((wins / ratedTotal) * 100) : null;
       const statToday = document.getElementById('stat-today');
       if (accPct !== null) {
         statToday.textContent = accPct + '%';
