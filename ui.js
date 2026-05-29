@@ -222,16 +222,16 @@
 
       let wins = 0, losses = 0;
       allPredictions.forEach(p => {
-        const r = autoDetectResult(p.text || '');
-        // Win result message se detect karo
-        if (r === 'auto-win') { wins++; return; }
-        if (r === 'auto-loss') { losses++; return; }
-        // Timer-based loss: _lossSet mein hai aur prediction card hai
         const t = (p.text || '').toLowerCase();
-        const isPred = (t.includes('wingo') || t.includes('period') || t.includes('...')) && (t.includes('big') || t.includes('small') || t.includes('confidence') || t.includes('b i g') || t.includes('s m a l l'));
-        if (isPred && window._lossSet && window._lossSet.has(String(p.message_id))) losses++;
+        const isPred = (t.includes('wingo') || t.includes('period') || t.includes('...')) &&
+                       (t.includes('big') || t.includes('small') || t.includes('b i g') || t.includes('s m a l l') || t.includes('confidence'));
+        if (!isPred) return;
+        // Game API se result check karo
+        const gameRes = window._resultMap && window._resultMap[String(p.message_id)];
+        if (gameRes === 'win') wins++;
+        else if (gameRes === 'loss') losses++;
       });
-      // Win/loss sirf result messages se ya _lossSet se, total sirf predictions se
+      // Win/loss game API se — 100% accurate
 
       const rated = wins + losses;
       const acc = rated > 0 ? Math.round((wins / rated) * 100) : 0;
@@ -245,15 +245,13 @@
 
       let streak = 0, streakType = '';
       for (let p of allPredictions) {
-        let r = autoDetectResult(p.text || '');
-        // Timer-based loss bhi check karo
-        if (!r) {
-          const t = (p.text || '').toLowerCase();
-          const isPred = (t.includes('wingo') || t.includes('period') || t.includes('...')) && (t.includes('big') || t.includes('small') || t.includes('confidence') || t.includes('b i g') || t.includes('s m a l l'));
-          if (isPred && window._lossSet && window._lossSet.has(String(p.message_id))) r = 'auto-loss';
-        }
-        if (!r) break;
-        const isWin = r === 'auto-win';
+        const t = (p.text || '').toLowerCase();
+        const isPred = (t.includes('wingo') || t.includes('period') || t.includes('...')) &&
+                       (t.includes('big') || t.includes('small') || t.includes('b i g') || t.includes('s m a l l') || t.includes('confidence'));
+        if (!isPred) continue;
+        const gameRes = window._resultMap && window._resultMap[String(p.message_id)];
+        if (!gameRes) break;
+        const isWin = gameRes === 'win';
         if (streak === 0) { streakType = isWin ? 'W' : 'L'; streak = 1; }
         else if ((isWin && streakType === 'W') || (!isWin && streakType === 'L')) streak++;
         else break;
@@ -262,9 +260,9 @@
 
       let tWins = 0, tLoss = 0;
       todayPreds.forEach(p => {
-        const r = autoDetectResult(p.text || '');
-        if (r === 'auto-win') tWins++;
-        else if (r === 'auto-loss') tLoss++;
+        const gameRes = window._resultMap && window._resultMap[String(p.message_id)];
+        if (gameRes === 'win') tWins++;
+        else if (gameRes === 'loss') tLoss++;
       });
       document.getElementById('today-count-s').textContent = todayPreds.length;
       const tRated = tWins + tLoss;

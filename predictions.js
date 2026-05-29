@@ -142,52 +142,27 @@
         let resultHTML = '';
         const isResultCard = (p.text || '').toLowerCase().includes('result');
 
-        // Timer: sirf prediction cards pe (result cards pe nahi)
+        // Timer: sirf pending prediction cards pe — game API se sync hoga
         let timerHTML = '';
-        if (!isResultCard) {
-          const cardTime = p.date * 1000; // ms
-          // Next message aane ka time calculate karo — messages ke beech average interval se
-          const onlyPredMsgs = predictions.filter(q => {
-            const qt = (q.text || '').toLowerCase();
-            return (qt.includes('period') || qt.includes('round')) &&
-                   (qt.includes('big') || qt.includes('small') || qt.includes('confidence') || qt.includes('lucky') || qt.includes('wingo'));
-          });
-          // Sort by date ascending
-          const sorted = [...onlyPredMsgs].sort((a, b) => a.date - b.date);
-          let avgInterval = 5 * 60 * 1000; // default 5 min
-          if (sorted.length >= 2) {
-            const gaps = [];
-            for (let k = 1; k < Math.min(sorted.length, 6); k++) {
-              const gap = (sorted[k].date - sorted[k-1].date) * 1000;
-              if (gap > 10000 && gap < 30 * 60 * 1000) gaps.push(gap); // 10s to 30min
-            }
-            if (gaps.length > 0) {
-              avgInterval = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-            }
-          }
-          const nextMsgTime = cardTime + avgInterval;
-          const remaining = Math.max(0, nextMsgTime - Date.now());
-          const remSec = Math.round(remaining / 1000);
-          if (remaining > 0) {
-            timerHTML = `<span class="pred-timer" data-born="${cardTime}" data-interval="${Math.round(avgInterval)}" data-msgid="${msgId}"><span class="timer-dot"></span><span class="timer-txt">${remSec > 60 ? Math.ceil(remSec/60)+'m '+( remSec%60)+'s' : remSec+'s'}</span></span>`;
-          } else {
-            timerHTML = `<span class="pred-timer timer-done"><span class="timer-txt">⏱ Next soon</span></span>`;
+        const isPredCard = !isResultCard;
+        if (isPredCard) {
+          // Result already resolved hai?
+          const resolvedResult = checkPredictionResult(msgId, p.text || '');
+          if (!resolvedResult) {
+            // Still pending — timer dikhao (gameApiPoller update karega)
+            const nowSec = new Date().getSeconds();
+            const rem = 60 - nowSec;
+            timerHTML = `<span class="pred-timer${rem <= 10 ? ' timer-urgent' : ''}" data-msgid="${msgId}"><span class="timer-dot"></span><span class="timer-txt">${rem}s</span></span>`;
           }
         }
-        // Win detect hua toh _lossSet se remove karo (win result message aaya = not a loss)
-        if (autoRes === 'auto-win' && window._lossSet && window._lossSet.has(String(msgId))) {
-          window._lossSet.delete(String(msgId));
-          localStorage.setItem('nx_loss_set', JSON.stringify([...window._lossSet]));
-        }
-        // Loss check: _lossSet mein hai toh loss (timer expire + message deleted)
-        const isLost = window._lossSet && window._lossSet.has(String(msgId));
-        const finalResult = isLost ? 'auto-loss' : autoRes;
+        // Game API se result check karo — 100% accurate
+        const gameResult = !isResultCard ? checkPredictionResult(msgId, p.text || '') : null;
 
         if (isResultCard) {
           resultHTML = '';
-        } else if (finalResult === 'auto-win') {
+        } else if (gameResult === 'win') {
           resultHTML = `<span class="result-tag auto-win">✅ WIN</span>`;
-        } else if (finalResult === 'auto-loss') {
+        } else if (gameResult === 'loss') {
           resultHTML = `<span class="result-tag auto-loss">❌ LOSS</span>`;
         } else {
           resultHTML = `<span class="result-tag pending" data-pred-msgid="${msgId}">⏳ PENDING</span>`;
@@ -244,122 +219,174 @@
       }
     }
 
-    // ==================== PREDICTION CARD TIMER ENGINE ====================
-    // Loss detection set — jinhe loss mark kiya gaya
-    window._lossSet = window._lossSet || new Set(JSON.parse(localStorage.getItem('nx_loss_set') || '[]'));
+    // ==================== GAME API ENGINE ====================
+    // Game API se real results fetch karo — win/loss 100% accurate
+    const GAME_API = 'https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json';
 
-    // _lossSet ko allPredictions ke win results se reconcile karo
-    function reconcileLossSet() {
-      if (!window._lossSet || window._lossSet.size === 0) return;
-      let changed = false;
-      window._lossSet.forEach(msgId => {
-        // Koi bhi prediction jiska win result hai usse remove karo
-        const pred = allPredictions.find(p => String(p.message_id) === msgId);
-        if (!pred) return;
-        const period = extractPeriod(pred.text || '');
-        if (!period) return;
-        const hasWin = allPredictions.some(p => {
-          const t = (p.text || '').toLowerCase();
-          return t.includes('result') && t.includes(period) && (t.includes('win') || t.includes('✅'));
+    // Results store — period (last 4 digits) → {number, size, fetched}
+    window._gameResults = window._gameResults || {};
+    // Win/Loss override store — msgId → 'win' | 'loss'
+    window._resultMap = window._resultMap || JSON.parse(localStorage.getItem('nx_result_map') || '{}');
+
+    function saveResultMap() {
+      // Sirf last 200 entries rakhho
+      const keys = Object.keys(window._resultMap);
+      if (keys.length > 200) {
+        const toDelete = keys.slice(0, keys.length - 200);
+        toDelete.forEach(k => delete window._resultMap[k]);
+      }
+      localStorage.setItem('nx_result_map', JSON.stringify(window._resultMap));
+    }
+
+    // Game API fetch karo
+    async function fetchGameResults() {
+      try {
+        const res = await fetch(GAME_API);
+        const data = await res.json();
+        const list = data.data.list;
+        if (!list || !list.length) return null;
+
+        // Last 20 results store karo
+        list.forEach(item => {
+          const period4 = String(item.issueNumber).slice(-4);
+          const num = parseInt(item.number);
+          window._gameResults[period4] = {
+            number: num,
+            size: num >= 5 ? 'BIG' : 'SMALL',
+            colour: item.colour || ''
+          };
         });
-        if (hasWin) {
-          window._lossSet.delete(msgId);
-          changed = true;
+
+        // Latest result return karo
+        const latest = list[0];
+        const nextIssue = (BigInt(latest.issueNumber) + 1n).toString().slice(-4);
+        const nowSec = new Date().getSeconds();
+        const remaining = 60 - nowSec;
+
+        return {
+          latestPeriod: String(latest.issueNumber).slice(-4),
+          nextPeriod: nextIssue,
+          latestNumber: parseInt(latest.number),
+          latestSize: parseInt(latest.number) >= 5 ? 'BIG' : 'SMALL',
+          timerRemaining: remaining
+        };
+      } catch(e) {
+        return null;
+      }
+    }
+
+    // Prediction card ke liye result check karo
+    function checkPredictionResult(msgId, predText) {
+      // Already resolved?
+      if (window._resultMap[String(msgId)]) return window._resultMap[String(msgId)];
+
+      // Period extract karo
+      const period = extractPeriod(predText);
+      if (!period) return null;
+
+      // Game results mein dhundho
+      const gameRes = window._gameResults[period];
+      if (!gameRes) return null;
+
+      // Prediction BIG/SMALL extract karo
+      const t = predText.toLowerCase();
+      const predBig = t.includes('b i g') || (t.includes('big') && !t.includes('result'));
+      const predSmall = t.includes('s m a l l') || (t.includes('small') && !t.includes('result'));
+      if (!predBig && !predSmall) return null;
+
+      const predSize = predBig ? 'BIG' : 'SMALL';
+      const isWin = predSize === gameRes.size;
+
+      const result = isWin ? 'win' : 'loss';
+      window._resultMap[String(msgId)] = result;
+      saveResultMap();
+      return result;
+    }
+
+    // Timer UI update — real game clock se sync
+    function updateGameTimer(remaining) {
+      const timers = document.querySelectorAll('.pred-timer');
+      timers.forEach(el => {
+        const txt = el.querySelector('.timer-txt');
+        if (!txt) return;
+        if (remaining <= 0) {
+          el.classList.add('timer-done');
+          el.classList.remove('timer-urgent');
+          txt.textContent = '⏱ Result aane wala...';
+        } else {
+          el.classList.remove('timer-done');
+          txt.textContent = remaining + 's';
+          if (remaining <= 10) el.classList.add('timer-urgent');
+          else el.classList.remove('timer-urgent');
         }
       });
-      if (changed) localStorage.setItem('nx_loss_set', JSON.stringify([...window._lossSet]));
     }
 
-    // Telegram se message exist check karo
-    async function checkMsgExists(msgId) {
-      try {
-        const chatId = CHANNEL.replace('@', '');
-        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage?chat_id=${chatId}&from_chat_id=${chatId}&message_id=${msgId}`);
-        const data = await res.json();
-        // agar 400 "message to forward not found" → deleted → loss
-        if (!data.ok && data.description && data.description.includes('not found')) return false;
-        return true;
-      } catch(e) { return true; } // network error pe assume exists
-    }
+    // Game API poller — har 3 sec pe check karo
+    let _lastGamePeriod = null;
+    async function gameApiPoller() {
+      const gameData = await fetchGameResults();
+      if (!gameData) { setTimeout(gameApiPoller, 3000); return; }
 
-    (function startTimerEngine() {
-      setInterval(async () => {
-        const timers = document.querySelectorAll('.pred-timer[data-born]');
-        timers.forEach(async el => {
-          const born = parseInt(el.getAttribute('data-born'));
-          const interval = parseInt(el.getAttribute('data-interval') || '300000');
-          const nextTime = born + interval;
-          const remaining = Math.max(0, nextTime - Date.now());
-          const txt = el.querySelector('.timer-txt');
-          if (!txt) return;
-          if (remaining <= 0) {
-            el.classList.remove('timer-urgent');
-            el.classList.add('timer-done');
-            el.removeAttribute('data-born');
-            txt.textContent = '⏱ Checking...';
+      // Timer sync karo
+      updateGameTimer(gameData.timerRemaining);
 
-            // Timer expire hua — check karo prediction still pending hai ya win/loss hua
-            const msgId = el.getAttribute('data-msgid');
-            if (msgId && !window._lossSet.has(String(msgId))) {
-              // Sirf tab check karo jab result tag pending ho
-              const card = document.querySelector(`.pred-card[data-msgid="${msgId}"]`);
-              const pendingTag = card && card.querySelector('.result-tag.pending');
-              if (pendingTag) {
-                // Pehle check karo - allPredictions mein is period ka win result hai?
-                const thisCard = allPredictions.find(p => p.message_id == msgId);
-                const thisPeriod = thisCard ? extractPeriod(thisCard.text || '') : null;
-                const hasWinResult = thisPeriod && allPredictions.some(p => {
-                  const t = (p.text || '').toLowerCase();
-                  return t.includes('result') && t.includes(thisPeriod) && (t.includes('win') || t.includes('✅'));
-                });
-                if (hasWinResult) {
-                  // Win result aa gaya - pending hatao, win dikhao
-                  pendingTag.className = 'result-tag auto-win';
-                  pendingTag.textContent = '✅ WIN';
-                  card.classList.add('result-win');
-                  return;
-                }
-                // Telegram se check karo — agar message delete hua toh loss
-                const exists = await checkMsgExists(parseInt(msgId));
-                if (!exists) {
-                  // Message delete hua = LOSS
-                  window._lossSet.add(String(msgId));
-                  localStorage.setItem('nx_loss_set', JSON.stringify([...window._lossSet]));
-                  // Card update karo
-                  if (pendingTag) {
-                    pendingTag.className = 'result-tag auto-loss';
-                    pendingTag.textContent = '❌ LOSS';
-                    card.classList.add('result-loss');
-                  }
-                  // History update
-                  addNotif('❌ LOSS — SIG-' + String(msgId).slice(-4), '❌');
-                } else {
-                  txt.textContent = '⏱ Next soon';
-                }
-              } else {
-                txt.textContent = '⏱ Next soon';
-              }
-            }
-          } else {
-            const remSec = Math.ceil(remaining / 1000);
-            if (remSec > 60) {
-              const m = Math.floor(remSec / 60);
-              const s = remSec % 60;
-              txt.textContent = m + 'm ' + (s > 0 ? s + 's' : '');
-            } else {
-              txt.textContent = remSec + 's';
-            }
-            if (remSec <= 30) {
-              el.classList.add('timer-urgent');
-            } else {
-              el.classList.remove('timer-urgent');
-            }
+      // Naya result aaya?
+      if (_lastGamePeriod && _lastGamePeriod !== gameData.latestPeriod) {
+        // Naya result — sabhi pending cards check karo
+        document.querySelectorAll('.pred-card').forEach(card => {
+          const msgId = card.dataset.msgid;
+          if (!msgId) return;
+          const pendingTag = card.querySelector('.result-tag.pending');
+          if (!pendingTag) return;
+
+          // Is card ka prediction text dhundho
+          const pred = allPredictions.find(p => String(p.message_id) === msgId);
+          if (!pred) return;
+
+          const result = checkPredictionResult(msgId, pred.text || '');
+          if (result === 'win') {
+            pendingTag.className = 'result-tag auto-win';
+            pendingTag.textContent = '✅ WIN';
+            card.classList.add('result-win');
+            card.classList.remove('result-loss');
+            addNotif('✅ WIN — SIG-' + String(msgId).slice(-4), '✅');
+            updateStats();
+          } else if (result === 'loss') {
+            pendingTag.className = 'result-tag auto-loss';
+            pendingTag.textContent = '❌ LOSS';
+            card.classList.add('result-loss');
+            card.classList.remove('result-win');
+            addNotif('❌ LOSS — SIG-' + String(msgId).slice(-4), '❌');
+            updateStats();
           }
         });
-      }, 1000);
-    })();
+        // Cards re-render karo updated results ke saath
+        renderCards(allPredictions);
+      }
 
-    // ==================== FETCH ====================
+      // Stats tab UI update karo
+      const timerDisplay = document.getElementById('game-timer-display');
+      const nextPeriodEl = document.getElementById('game-next-period');
+      const lastResultEl = document.getElementById('game-last-result');
+      const timerBar = document.getElementById('game-timer-bar');
+      if (timerDisplay) timerDisplay.textContent = gameData.timerRemaining + 's';
+      if (nextPeriodEl) nextPeriodEl.textContent = '...' + gameData.nextPeriod;
+      if (lastResultEl) {
+        const isB = gameData.latestSize === 'BIG';
+        lastResultEl.textContent = gameData.latestNumber + ' · ' + gameData.latestSize;
+        lastResultEl.style.color = isB ? 'var(--red)' : 'var(--green)';
+      }
+      if (timerBar) timerBar.style.width = ((gameData.timerRemaining / 60) * 100) + '%';
+
+      _lastGamePeriod = gameData.latestPeriod;
+      setTimeout(gameApiPoller, 3000);
+    }
+
+    // Start game API poller
+    gameApiPoller();
+
+        // ==================== FETCH ====================
     // Channel se recent messages fetch karo (history)
     async function fetchChannelHistory() {
       try {
