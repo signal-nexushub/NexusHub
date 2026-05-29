@@ -361,7 +361,7 @@
       badge.style.display = 'inline';
     }
 
-    // predictions.js ke liye global expose karo
+    // predictions.js ke liye global expose karo — turant assign karo
     window.updateStats = updateStats;
     window.addNotif = addNotif;
     window.cleanPrediction = cleanPrediction;
@@ -373,6 +373,8 @@
     window.extractConfidence = extractConfidence;
     window.autoDetectResult = autoDetectResult;
     window.renderNotifLog = renderNotifLog;
+    window.renderTxnList = renderTxnList;
+    window.updateCreditUI = updateCreditUI;
 
     // ==================== NOTIFICATIONS ====================
     async function requestNotifPermission() {

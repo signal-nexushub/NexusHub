@@ -90,7 +90,7 @@
 
     // ==================== RENDER CARDS ====================
     function renderCards(predictions) {
-      if (currentTab !== 'signals') { updateStats(); return; }
+      if (currentTab !== 'signals') { (window.updateStats || function(){})(); return; }
       const content = document.getElementById('content');
 
       if (!predictionsRunning) {
@@ -119,7 +119,7 @@
         filtered = filtered.filter(p => extractConfidence(p.text || '') >= confFilter);
       }
 
-      updateStats();
+      (window.updateStats || function(){})();
 
       if (!filtered.length) {
         content.innerHTML = `<div class="center-state"><div class="state-icon">🔍</div><div class="state-title">NO SIGNALS</div><div class="state-sub">${confFilter}%+ confidence filter active</div></div>`;
@@ -351,14 +351,14 @@
             card.classList.add('result-win');
             card.classList.remove('result-loss');
             addNotif('✅ WIN — SIG-' + String(msgId).slice(-4), '✅');
-            updateStats();
+            (window.updateStats || function(){})();
           } else if (result === 'loss') {
             pendingTag.className = 'result-tag auto-loss';
             pendingTag.textContent = '❌ LOSS';
             card.classList.add('result-loss');
             card.classList.remove('result-win');
             addNotif('❌ LOSS — SIG-' + String(msgId).slice(-4), '❌');
-            updateStats();
+            (window.updateStats || function(){})();
           }
         });
         // Cards re-render karo updated results ke saath
@@ -478,8 +478,8 @@
             const brandNew = newPosts.filter(p => !existingIds.has(p.message_id));
             if (brandNew.length > 0) {
               allPredictions = [...brandNew, ...allPredictions].slice(0, 100);
-              brandNew.forEach(p => addNotif(cleanPrediction(p.text || ''), '📡'));
-              playAlert(cleanPrediction(brandNew[0]?.text || ""));
+              brandNew.forEach(p => (window.addNotif||function(){})(window.cleanPrediction ? window.cleanPrediction(p.text || '') : p.text, '📡'));
+              (window.playAlert||function(){})(window.cleanPrediction ? window.cleanPrediction(brandNew[0]?.text || "") : "");
               newCount += brandNew.length;
               const badge = document.getElementById('fab-new');
               badge.textContent = newCount;
@@ -530,7 +530,7 @@
           if (brandNew.length > 0) {
             allPredictions = [...brandNew, ...allPredictions].slice(0, 100);
             renderCards(allPredictions);
-            brandNew.forEach(p => addNotif(cleanPrediction(p.text || ''), '📡'));
+            brandNew.forEach(p => (window.addNotif||function(){})(window.cleanPrediction ? window.cleanPrediction(p.text || '') : p.text, '📡'));
             playAlert(cleanPrediction(brandNew[0]?.text || ''));
             document.getElementById('fab-btn').classList.add('spinning');
             setTimeout(() => document.getElementById('fab-btn').classList.remove('spinning'), 500);
