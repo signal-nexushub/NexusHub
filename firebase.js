@@ -123,13 +123,11 @@
         const userRef = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
         // Server se current values padho - stale data se overwrite na ho
         const snap = await window.fbGetDoc(userRef);
-        const serverCredits = snap.exists() ? (snap.data().credits ?? 0) : 0;
         const serverAdCount = snap.exists() ? (snap.data().adWatchCount ?? 0) : 0;
-        // Local value sirf tab use karo jab woh server se zyada ho
-        const safeCredits = Math.max(credits, serverCredits);
+        // adWatchCount sirf badhna chahiye — credits jo bhi local hai wahi sahi hai
         const safeAdCount = Math.max(adWatchCount, serverAdCount);
         await window.fbSetDoc(userRef, {
-          credits: safeCredits,
+          credits: credits,
           transactions: transactions.slice(0, 50),
           results: results,
           lastLogin: serverState.lastLogin || '',
@@ -153,8 +151,7 @@
           weekKey: getCurrentWeekKey(),
           updatedAt: new Date().toISOString()
         }, { merge: true });
-        // Memory bhi safe values se update karo
-        credits = safeCredits;
+        // adWatchCount memory update karo
         adWatchCount = safeAdCount;
       } catch(e) {
         console.error('Firestore save error:', e);
