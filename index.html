@@ -966,12 +966,2851 @@
     </div>
   </div>
 
-  <!-- App Scripts — v=5 -->
-  <script src="state.js?v=5"></script>
-  <script src="leaderboard.js?v=5"></script>
-  <script src="firebase.js?v=5"></script>
-  <script src="credits.js?v=5"></script>
-  <script src="admin.js?v=5"></script>
-  <script src="app.js?v=5"></script>
+  <script>
+// ==================== CONFIG ====================
+    const BOT_TOKEN = "8832791200:AAH04nOTrPDbeSAinaHtX7oersZhjMz0sr4";
+    const CHANNEL = "@tgvilenxedit";
+    const AD_DURATION = 15; // seconds for ad timer
+
+    // ==================== STATE ====================
+    let allPredictions = [];
+    let results = {};
+    let updateOffset = null;
+    let isFirstLoad = true;
+    let newCount = 0;
+    let confFilter = 0;
+    let notifLog = [];
+    let currentTab = 'signals';
+    let predictionsRunning = true;
+    let unlockedCards = new Set();
+    let credits = 0;
+    let spinTokens = 0;
+    let freeSpinUsed = false;
+    let spinAnimating = false; // starting credits
+    let transactions = [];
+    let adTimer = null;
+    let adEligible = true;
+    let lastAdTime = 0;
+    const AD_COOLDOWN = 60 * 1000; // 1 min cooldown between ads
+
+    // VIP Pass state
+    let vipState = {
+      active: false,
+      plan: '',       // 'vip-1m', 'vip-3m', 'vip-1y'
+      startDate: '',  // ISO string
+      endDate: '',    // ISO string
+      daysLeft: 0
+    };
+
+    // Ad Watch Leaderboard
+    let adWatchCount = 0; // Current week ka count
+// ==================== LEADERBOARD HELPERS ====================
+    // Week key — Monday se Sunday (ISO week)
+    function getCurrentWeekKey() {
+      const now = new Date();
+      const day = now.getDay(); // 0=Sun
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+      const monday = new Date(now.setDate(diff));
+      return monday.toISOString().split('T')[0]; // YYYY-MM-DD
+    }
+
+    // Week end time (Sunday 23:59:59)
+    function getWeekEndTime() {
+      const now = new Date();
+      const day = now.getDay();
+      const daysUntilSunday = day === 0 ? 0 : 7 - day;
+      const sunday = new Date();
+      sunday.setDate(sunday.getDate() + daysUntilSunday);
+      sunday.setHours(23, 59, 59, 999);
+      return sunday;
+    }
+
+    function formatCountdown(ms) {
+      if (ms <= 0) return '00:00:00';
+      const totalSec = Math.floor(ms / 1000);
+      const d = Math.floor(totalSec / 86400);
+      const h = Math.floor((totalSec % 86400) / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      if (d > 0) return d + 'd ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+      return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+
+    // Countdown ticker
+    let _lbCountdownTicker = null;
+    function startLbCountdown() {
+      if (_lbCountdownTicker) return;
+      _lbCountdownTicker = setInterval(() => {
+        const el = document.getElementById('lb-countdown');
+        if (!el) return;
+        const remaining = getWeekEndTime() - Date.now();
+        el.textContent = formatCountdown(remaining);
+        if (remaining <= 0) {
+          clearInterval(_lbCountdownTicker);
+          _lbCountdownTicker = null;
+          el.textContent = '🎉 Week Ended!';
+          checkWeekWinners();
+        }
+      }, 1000);
+    }
+
+    // ==================== WEEK PRIZE DISTRIBUTION ====================
+    // Yeh sirf admin ke browser se chalega — Firestore rules mein admin ko special write access dena hoga
+    async function checkWeekWinners() {
+      if (!window.currentUser) return;
+      try {
+        const colRef = window.fbCollection(window.fbDb, 'users');
+        const snap = await window.fbGetDocs(colRef);
+        const entries = [];
+        snap.forEach(d => {
+          const data = d.data();
+          if ((data.adWatchCount || 0) > 0) {
+            entries.push({ uid: d.id, name: data.displayName || 'User', count: data.adWatchCount || 0 });
+          }
+        });
+        entries.sort((a, b) => b.count - a.count);
+        const myUid = window.currentUser.uid;
+        const myIdx = entries.findIndex(e => e.uid === myUid);
+
+        // Agar admin login hai — prizes do
+        if (adminUnlocked && entries.length > 0) {
+          await distributePrizes(entries);
+        }
+
+        // Sirf current user ka notification
+        if (myIdx === 0) showToast('🥇 Aap #1 hain! Prize processing... 👑', 'green');
+        else if (myIdx === 1) showToast('🥈 Aap #2 hain! Prize processing... 💰', 'green');
+        else if (myIdx === 2) showToast('🥉 Aap #3 hain! Prize processing... 🪙', 'green');
+      } catch(e) {
+        console.error('Week check error:', e);
+      }
+    }
+
+    // Admin ke browser se prizes distribute karo
+    async function distributePrizes(entries) {
+      const weekKey = getCurrentWeekKey();
+      const prizeWeekField = 'prizeGiven_' + weekKey;
+
+      for (let i = 0; i < Math.min(entries.length, 3); i++) {
+        const winner = entries[i];
+        const userRef = window.fbDoc(window.fbDb, 'users', winner.uid);
+
+        // Check karo is week prize already diya ya nahi
+        const snap = await window.fbGetDoc(userRef);
+        if (snap.exists() && snap.data()[prizeWeekField]) continue; // Already diya
+
+        try {
+          if (i === 0) {
+            // 1st: 1 Month VIP
+            const now = new Date();
+            const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+            await window.fbSetDoc(userRef, {
+              vip: { plan: 'vip-1m', startDate: now.toISOString(), endDate: end.toISOString() },
+              [prizeWeekField]: '1st-vip-1m',
+              prizeNotify: '🥇 Aapne 1st prize jeeta! 1 Month VIP active ho gaya! 👑'
+            }, { merge: true });
+            console.log('✅ 1st prize given to:', winner.name);
+
+          } else if (i === 1) {
+            // 2nd: 1000 credits
+            const cur = snap.exists() ? (snap.data().credits || 0) : 0;
+            await window.fbSetDoc(userRef, {
+              credits: cur + 1000,
+              [prizeWeekField]: '2nd-1000-credits',
+              prizeNotify: '🥈 Aapne 2nd prize jeeta! +1000 Credits mile! 💰'
+            }, { merge: true });
+            console.log('✅ 2nd prize given to:', winner.name);
+
+          } else if (i === 2) {
+            // 3rd: 500 credits
+            const cur = snap.exists() ? (snap.data().credits || 0) : 0;
+            await window.fbSetDoc(userRef, {
+              credits: cur + 500,
+              [prizeWeekField]: '3rd-500-credits',
+              prizeNotify: '🥉 Aapne 3rd prize jeeta! +500 Credits mile! 🪙'
+            }, { merge: true });
+            console.log('✅ 3rd prize given to:', winner.name);
+          }
+        } catch(e) {
+          console.error('Prize error for', winner.name, e);
+        }
+      }
+      showToast('✅ Prizes distribute ho gaye!', 'green');
+    }
+
+    // ===== ATOMIC AD COUNT — race condition free =====
+    async function atomicAdCount() {
+      if (!window.currentUser) return;
+      try {
+        const userRef = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
+        await window.fbSetDoc(userRef, {
+          adWatchCount: window.fbIncrement(1),
+          weekKey: getCurrentWeekKey(),
+          displayName: window.currentUser.displayName || '',
+          photoURL: window.currentUser.photoURL || '',
+          email: window.currentUser.email || '',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch(e) {
+        console.error('atomicAdCount err:', e);
+      }
+    }
+
+    async function loadLeaderboard() {
+      const listEl = document.getElementById('lb-list');
+      const myRankCard = document.getElementById('lb-my-rank-card');
+      if (!listEl) return;
+      listEl.innerHTML = '<div class="lb-empty"><div class="loader" style="width:28px;height:28px;"></div></div>';
+      try {
+        const colRef = window.fbCollection(window.fbDb, 'users');
+        const snap = await window.fbGetDocs(colRef);
+        const entries = [];
+
+        snap.forEach(doc => {
+          const d = doc.data();
+          // Sabhi registered users dikhao — adWatchCount 0 wale bhi
+          if (d.displayName || d.email) {
+            entries.push({
+              uid: doc.id,
+              name: d.displayName || 'Anonymous',
+              photoURL: d.photoURL || '',
+              count: d.adWatchCount || 0
+            });
+          }
+        });
+
+        // Ad count ke hisaab se sort
+        entries.sort((a, b) => b.count - a.count);
+        const top100 = entries.slice(0, 100);
+
+        // Mera rank dikhao
+        const myUid = window.currentUser ? window.currentUser.uid : null;
+        const myIdx = myUid ? entries.findIndex(e => e.uid === myUid) : -1;
+        if (myRankCard) {
+          if (myIdx >= 0) {
+            myRankCard.style.display = 'block';
+            document.getElementById('lb-my-rank-num').textContent = '#' + (myIdx + 1);
+            document.getElementById('lb-my-ad-count').textContent = entries[myIdx].count;
+          } else if (adWatchCount > 0) {
+            myRankCard.style.display = 'block';
+            document.getElementById('lb-my-rank-num').textContent = '#' + (entries.length + 1);
+            document.getElementById('lb-my-ad-count').textContent = adWatchCount;
+          } else {
+            myRankCard.style.display = 'none';
+          }
+        }
+
+        if (!top100.length) {
+          listEl.innerHTML = '<div class="lb-empty">📭 Abhi koi user nahi — login karo aur credits kamao!</div>';
+          return;
+        }
+
+        const rankEmoji = ['🥇','🥈','🥉'];
+        listEl.innerHTML = top100.map((e, i) => {
+          const rank = i + 1;
+          const isMe = myUid && e.uid === myUid;
+          const rankClass = rank <= 3 ? 'rank-' + rank : '';
+          const meClass = isMe ? 'lb-me' : '';
+          const rankDisplay = rank <= 3
+            ? `<span style="font-size:20px;">${rankEmoji[i]}</span>`
+            : `<span class="lb-rank" style="color:${rank<=10?'var(--gold)':'rgba(255,255,255,0.35)'}">#${rank}</span>`;
+          const avatarHTML = e.photoURL
+            ? `<img src="${e.photoURL}" alt="" onerror="this.parentElement.textContent='👤'">`
+            : '👤';
+          // Prize tag top 3 ke liye
+          const prizeTag = rank === 1
+            ? `<span style="font-size:9px;background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.4);color:var(--gold);padding:2px 7px;border-radius:20px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">👑 VIP 1M</span>`
+            : rank === 2
+            ? `<span style="font-size:9px;background:rgba(192,192,192,0.1);border:1px solid rgba(192,192,192,0.3);color:#C0C0C0;padding:2px 7px;border-radius:20px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">+1000 🪙</span>`
+            : rank === 3
+            ? `<span style="font-size:9px;background:rgba(205,127,50,0.1);border:1px solid rgba(205,127,50,0.3);color:#CD7F32;padding:2px 7px;border-radius:20px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">+500 🪙</span>`
+            : '';
+          return `<div class="lb-item ${rankClass} ${meClass}">
+            ${rankDisplay}
+            <div class="lb-avatar">${avatarHTML}</div>
+            <div class="lb-info">
+              <div class="lb-name">${escapeHtml(e.name)}${isMe ? ' <span style="font-size:10px;color:var(--neon);">(You)</span>' : ''}</div>
+              <div style="margin-top:3px;">${prizeTag}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div class="lb-count">${e.count}</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1px;">ADS</div>
+            </div>
+          </div>`;
+        }).join('');
+
+      } catch(e) {
+        listEl.innerHTML = '<div class="lb-empty">⚠️ Load error. Retry karo.</div>';
+        console.error('Leaderboard error:', e);
+      }
+    }
+
+    // Server state - Firestore se aata hai, localStorage pe depend nahi
+    let serverState = {
+      lastLogin: '',
+      lastShare: '',
+      lastAdClaim: '',
+      usedCodes: [],
+      instaFollowed: false,
+      tgJoined: false
+    };
+
+    // ==================== LOAD SAVED ====================
+    try { results = JSON.parse(localStorage.getItem('nx_results') || '{}'); } catch(e) {}
+    try { notifLog = JSON.parse(localStorage.getItem('nx_notifs') || '[]'); } catch(e) {}
+    try { confFilter = parseInt(localStorage.getItem('nx_conf') || '0'); } catch(e) {}
+    // Credits loaded from Firestore only - localStorage not trusted
+    credits = 0;
+    try { transactions = JSON.parse(localStorage.getItem('nx_txns') || '[]'); } catch(e) {}
+    try { unlockedCards = new Set(JSON.parse(localStorage.getItem('nx_unlocked') || '[]')); } catch(e) {}
+    try { predictionsRunning = JSON.parse(localStorage.getItem('nx_pred_running') !== null ? localStorage.getItem('nx_pred_running') : 'true'); } catch(e) {}
+    try { lastAdTime = parseInt(localStorage.getItem('nx_last_ad') || '0'); } catch(e) {}
+    try {
+      const s = JSON.parse(localStorage.getItem('nx_settings') || '{}');
+      if (s.sound !== undefined) document.getElementById('toggle-sound').checked = s.sound;
+      if (s.notif !== undefined) document.getElementById('toggle-notif').checked = s.notif;
+    } catch(e) {}
+
+    if (confFilter > 0) {
+      document.querySelectorAll('.conf-chip').forEach(c => {
+        c.classList.remove('active');
+        if (c.textContent === confFilter+'%+') c.classList.add('active');
+      });
+    }
+// ==================== FIREBASE AUTH & FIRESTORE ====================
+    async function googleLogin() {
+      const btn = document.getElementById('google-login-btn');
+      const msg = document.getElementById('login-msg');
+      btn.textContent = 'Signing in...';
+      btn.disabled = true;
+      try {
+        await window.fbSignInWithPopup(window.fbAuth, window.fbGoogleProvider);
+      } catch(e) {
+        msg.style.display = 'block';
+        msg.textContent = 'Login failed! Try again. (' + e.code + ')';
+        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Sign in with Google';
+        btn.disabled = false;
+      }
+    }
+
+    async function logoutUser() {
+      await window.fbSignOut(window.fbAuth);
+    }
+
+    window.onUserLoggedIn = async function(user) {
+      // Show main app, hide login
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+
+      // Set user info in UI
+      document.getElementById('user-name').textContent = user.displayName || 'User';
+      document.getElementById('user-email').textContent = user.email || '';
+      const avatar = document.getElementById('user-avatar');
+      if (user.photoURL) { avatar.src = user.photoURL; avatar.style.display = 'block'; }
+
+      // Load user data from Firestore
+      await loadUserFromFirestore(user.uid);
+
+      // Init app
+      initAdmin();
+      checkDailyBonus();
+      fetchPredictions();
+      setTimeout(longPoll, 2000);
+      setInterval(() => fetchPredictions(true), 10000);
+      // Week end check
+      if (getWeekEndTime() - Date.now() < 0) checkWeekWinners();
+    };
+
+    window.onUserLoggedOut = function() {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('main-app').style.display = 'none';
+    };
+
+    async function loadUserFromFirestore(uid) {
+      try {
+        const userRef = window.fbDoc(window.fbDb, 'users', uid);
+        const snap = await window.fbGetDoc(userRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          // Always use server value - localStorage is not trusted
+          credits = data.credits ?? 0;
+          transactions = data.transactions ?? [];
+          results = data.results ?? {};
+          const today = new Date().toDateString();
+          // Server state mein store karo - yahi trusted source hai
+          serverState.lastLogin = data.lastLogin || '';
+          serverState.lastShare = data.lastShare || '';
+          serverState.lastAdClaim = data.lastAdClaim || '';
+          serverState.usedCodes = data.usedCodes || [];
+          serverState.instaFollowed = data.instaFollowed || false;
+          serverState.tgJoined = data.tgJoined || false;
+          if (data.unlockedCards) unlockedCards = new Set(data.unlockedCards);
+          spinTokens = data.spinTokens ?? 0;
+          freeSpinUsed = data.freeSpinUsed ?? false;
+          // Free spin pehli baar
+          if (!freeSpinUsed) { spinTokens = Math.max(spinTokens, 1); }
+          // AdWatchCount - week match karo
+          const savedWeekKey = data.weekKey || '';
+          const currentWK = getCurrentWeekKey();
+          adWatchCount = (savedWeekKey === currentWK) ? (data.adWatchCount ?? 0) : 0;
+          // VIP Pass load karo
+          if (data.vip) {
+            vipState.plan = data.vip.plan || '';
+            vipState.startDate = data.vip.startDate || '';
+            vipState.endDate = data.vip.endDate || '';
+            checkVipExpiry();
+          } else {
+            vipState.active = false;
+          }
+          updateCreditUI();
+          updateDailyBtnState();
+          updateShareBtnState();
+          updateAdBtnState();
+          updateSpinUI();
+          updateInstaBtnState();
+          updateTgBtnState();
+          updateVipBadgeUI();
+          // Firestore load ke baad UI update karo — transactions fresh dikhenge
+          updateCreditUI();
+          // Prize notification check
+          if (data.prizeNotify) {
+            setTimeout(() => {
+              showToast(data.prizeNotify, 'green');
+              // Clear notification after showing
+              window.fbSetDoc(window.fbDoc(window.fbDb, 'users', uid), { prizeNotify: null }, { merge: true }).catch(()=>{});
+            }, 2000);
+          }
+        } else {
+          // New user - give 5 credits + 1 free spin
+          credits = 0;
+          transactions = [];
+          spinTokens = 1;
+          freeSpinUsed = false;
+          adWatchCount = 0;
+          await saveToFirestore();
+          _ac(0, '🎉 Welcome to Nexus Hub!');
+        }
+      } catch(e) {
+        console.error('Firestore load error:', e);
+        // Fallback - show 0, will retry
+        credits = 0;
+        showToast('Connection error - credits may not load', 'red');
+      }
+    }
+
+    async function saveToFirestore() {
+      if (!window.currentUser) return;
+      try {
+        const userRef = window.fbDoc(window.fbDb, 'users', window.currentUser.uid);
+        // Server se current values padho - stale data se overwrite na ho
+        const snap = await window.fbGetDoc(userRef);
+        const serverAdCount = snap.exists() ? (snap.data().adWatchCount ?? 0) : 0;
+        // adWatchCount sirf badhna chahiye — credits jo bhi local hai wahi sahi hai
+        const safeAdCount = Math.max(adWatchCount, serverAdCount);
+        await window.fbSetDoc(userRef, {
+          credits: credits,
+          transactions: transactions.slice(0, 50),
+          results: results,
+          lastLogin: serverState.lastLogin || '',
+          lastShare: serverState.lastShare || '',
+          lastAdClaim: serverState.lastAdClaim || '',
+          usedCodes: serverState.usedCodes || [],
+          instaFollowed: serverState.instaFollowed || false,
+          tgJoined: serverState.tgJoined || false,
+          unlockedCards: [...unlockedCards],
+          spinTokens: spinTokens,
+          freeSpinUsed: freeSpinUsed,
+          adWatchCount: safeAdCount,
+          vip: vipState.plan ? {
+            plan: vipState.plan,
+            startDate: vipState.startDate,
+            endDate: vipState.endDate
+          } : null,
+          displayName: window.currentUser.displayName || '',
+          email: window.currentUser.email || '',
+          photoURL: window.currentUser.photoURL || '',
+          weekKey: getCurrentWeekKey(),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        // adWatchCount memory update karo
+        adWatchCount = safeAdCount;
+      } catch(e) {
+        console.error('Firestore save error:', e);
+      }
+    }
+
+    // ==================== CREDITS ====================
+    function saveCredits() {
+      saveToFirestore();
+      updateCreditUI();
+    }
+// ==================== VIP PASS SYSTEM ====================
+    function checkVipExpiry() {
+      if (!vipState.endDate) { vipState.active = false; return; }
+      const now = new Date();
+      const end = new Date(vipState.endDate);
+      const diffMs = end - now;
+      if (diffMs > 0) {
+        vipState.active = true;
+        vipState.daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      } else {
+        vipState.active = false;
+        vipState.daysLeft = 0;
+        // Expired — clear from DB
+        if (window.currentUser) {
+          window.fbDoc && window.fbSetDoc(window.fbDoc(window.fbDb, 'users', window.currentUser.uid), { vip: null }, { merge: true }).catch(() => {});
+        }
+      }
+    }
+
+    function updateVipBadgeUI() {
+      const banner = document.getElementById('vip-active-banner');
+      const headerBadge = document.getElementById('header-vip-badge');
+      const headerDays = document.getElementById('header-vip-days');
+      const timeLeftText = document.getElementById('vip-time-left-text');
+      const daysBadge = document.getElementById('vip-days-badge');
+      const nonMemberSection = document.getElementById('vip-non-member-section');
+      const earnWays = document.getElementById('earn-ways-section');
+      const earnTitle = document.getElementById('ways-to-earn-title');
+      const spinEarnCard = document.getElementById('spin-earn-card');
+
+      checkVipExpiry();
+      const headerCreditActions = document.getElementById('header-credit-actions');
+      const headerActionBtns = document.getElementById('header-action-btns');
+      const creditVipCta = document.getElementById('credits-vip-cta');
+      if (vipState.active) {
+        const d = vipState.daysLeft;
+        const txt = d === 1 ? '1 day left' : d + ' days left';
+        if (banner) banner.style.display = 'block';
+        if (headerBadge) { headerBadge.style.display = 'inline-flex'; }
+        if (headerDays) headerDays.textContent = txt;
+        if (timeLeftText) timeLeftText.textContent = 'Aap ek VIP user hain — unlimited predictions, zero credit tension! 🚀';
+        if (daysBadge) daysBadge.textContent = txt;
+        // VIP users ke liye buy/earn section hide karo
+        if (nonMemberSection) nonMemberSection.style.display = 'none';
+        if (earnWays) earnWays.style.display = 'none';
+        if (earnTitle) earnTitle.style.display = 'none';
+        if (spinEarnCard) spinEarnCard.style.display = 'none';
+        // Home page buttons hide karo — Watch Ad, Share, Earn, VIP Pass
+        if (headerCreditActions) headerCreditActions.style.display = 'none';
+        if (headerActionBtns) headerActionBtns.style.display = 'none';
+        if (creditVipCta) creditVipCta.style.display = 'none';
+        // Nav VIP button gold color
+        const navVip = document.getElementById('nav-vip');
+        if (navVip) navVip.style.color = 'var(--gold)';
+      } else {
+        if (banner) banner.style.display = 'none';
+        if (headerBadge) headerBadge.style.display = 'none';
+        if (nonMemberSection) nonMemberSection.style.display = 'block';
+        if (earnWays) earnWays.style.display = 'flex';
+        if (earnTitle) earnTitle.style.display = 'block';
+        if (spinEarnCard) spinEarnCard.style.display = 'block';
+        // Normal users ke liye buttons wapas dikhao
+        if (headerCreditActions) headerCreditActions.style.display = 'flex';
+        if (headerActionBtns) headerActionBtns.style.display = 'flex';
+        if (creditVipCta) creditVipCta.style.display = 'flex';
+      }
+      updateCreditUI();
+      if (currentTab === 'vip') syncVipPage();
+    }
+
+    // ==================== VIP PAGE SYNC ====================
+    function syncVipPage() {
+      checkVipExpiry();
+      const activeBanner = document.getElementById('vip-page-active-banner');
+      const buySection = document.getElementById('vip-page-buy-section');
+      const daysBadge = document.getElementById('vip-page-days-badge');
+
+      // Pehle sabhi cards ko default state mein reset karo
+      const planKeys = ['1m', '3m', '1y'];
+      const defaultBorders = {
+        '1m': 'rgba(255,255,255,0.1)',
+        '3m': 'rgba(0,245,255,0.25)',
+        '1y': 'rgba(255,215,0,0.35)'
+      };
+      planKeys.forEach(k => {
+        const badge = document.getElementById('vip-active-badge-' + k);
+        const card = document.getElementById('vip-card-' + k);
+        if (badge) badge.style.display = 'none';
+        if (card) card.style.borderColor = defaultBorders[k];
+        // mouseover/mouseout listeners reset (border color overridden by active state below)
+      });
+
+      if (vipState.active) {
+        if (activeBanner) activeBanner.style.display = 'block';
+        if (buySection) buySection.style.display = 'block';
+        if (daysBadge) {
+          const d = vipState.daysLeft;
+          daysBadge.textContent = d === 1 ? '1 day left' : d + ' days left';
+        }
+
+        // Active plan detect karo
+        const activePlanKey = vipState.plan; // 'vip-1m', 'vip-3m', 'vip-1y'
+        const shortKey = activePlanKey ? activePlanKey.replace('vip-', '') : '';  // '1m', '3m', '1y'
+
+        if (shortKey) {
+          const activeBadge = document.getElementById('vip-active-badge-' + shortKey);
+          const activeCard = document.getElementById('vip-card-' + shortKey);
+          const subEl = document.getElementById('vip-card-' + shortKey + '-sub');
+
+          if (activeBadge) activeBadge.style.display = 'block';
+          if (activeCard) {
+            // Green glow border for active card
+            activeCard.style.borderColor = 'rgba(0,255,136,0.7)';
+            activeCard.style.boxShadow = '0 0 18px rgba(0,255,136,0.18), inset 0 0 18px rgba(0,255,136,0.04)';
+            // mouseover pe bhi green rakho
+            activeCard.onmouseover = null;
+            activeCard.onmouseout = null;
+          }
+          // Sub text mein days left dikhao
+          if (subEl && vipState.daysLeft > 0) {
+            subEl.innerHTML = '<span style="color:var(--green);font-weight:700;">⏳ ' + vipState.daysLeft + ' days left</span>';
+          }
+        }
+      } else {
+        if (activeBanner) activeBanner.style.display = 'none';
+        if (buySection) buySection.style.display = 'block';
+        // Cards reset already done above
+      }
+    }
+
+    // VIP page ka apna redeem function (credits page wale se alag input)
+    async function redeemCodeFromVipPage() {
+      const input = document.getElementById('vip-page-redeem-input');
+      const msg = document.getElementById('vip-page-redeem-msg');
+      if (!input || !msg) return;
+      // Credits page ke input mein bhi sync karo toh original redeemCode() kaam kare
+      const codeInput = document.getElementById('redeem-input');
+      if (codeInput) codeInput.value = input.value;
+      const result = await redeemCode();
+      // Copy message from original redeem-msg
+      const origMsg = document.getElementById('redeem-msg');
+      if (origMsg) {
+        msg.style.display = origMsg.style.display;
+        msg.style.color = origMsg.style.color;
+        msg.textContent = origMsg.textContent;
+      }
+    }
+
+    // VIP Pass redeem — called from redeemCode when NEXUS-VIP-* code detected
+    async function activateVipPass(plan, code) {
+      const planDays = { 'VIP-1M': 30, 'VIP-3M': 90, 'VIP-1Y': 365 };
+      const days = planDays[plan] || 30;
+      const planKey = plan === 'VIP-1M' ? 'vip-1m' : plan === 'VIP-3M' ? 'vip-3m' : 'vip-1y';
+
+      const now = new Date();
+      const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+      // Agar pehle se VIP active hai toh extend karo
+      if (vipState.active && vipState.endDate) {
+        const existingEnd = new Date(vipState.endDate);
+        if (existingEnd > now) {
+          end.setTime(existingEnd.getTime() + days * 24 * 60 * 60 * 1000);
+        }
+      }
+
+      vipState.plan = planKey;
+      vipState.startDate = now.toISOString();
+      vipState.endDate = end.toISOString();
+      vipState.active = true;
+      vipState.daysLeft = days;
+
+      await saveToFirestore();
+      updateVipBadgeUI();
+      updateCreditUI();
+
+      const planNames = { 'VIP-1M': '1 Month', 'VIP-3M': '3 Months', 'VIP-1Y': '1 Year' };
+      return planNames[plan] || plan;
+    }
+
+    // Console hack band - random key se lock hai
+    const _ck = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    function addCredit(amount, desc, _key) {
+      if (_key !== _ck) return; // Direct console call block
+      if (typeof amount !== 'number' || isNaN(amount)) return;
+      if (amount > 1000) return;
+      credits += amount;
+      if (credits < 0) credits = 0;
+      const txn = {
+        amount, desc,
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+      };
+      transactions.unshift(txn);
+      saveCredits();
+      showToast((amount > 0 ? '+' + amount : amount) + ' Credit ' + (amount > 0 ? '💰' : ''), amount > 0 ? 'green' : 'red');
+    }
+    // Internal wrapper - yahi use hoga har jagah
+    function _ac(amount, desc) { addCredit(amount, desc, _ck); }
+
+    function deductCreditForNewPrediction(msgId, idStr, msgText) {
+      // Only deduct once per prediction message
+      if (unlockedCards.has(msgId)) return;
+      // VIP active hai toh credit deduct nahi hoga — mark as seen only
+      if (vipState.active) {
+        unlockedCards.add(msgId);
+        return;
+      }
+      if (credits < 1) return;
+      // Result messages pe credit deduct nahi hoga - sirf predictions pe
+      const isResult = (msgText || '').toLowerCase().includes('result');
+      if (isResult) {
+        unlockedCards.add(msgId); // mark as seen but no deduct
+        localStorage.setItem('nx_unlocked', JSON.stringify([...unlockedCards]));
+        return;
+      }
+      unlockedCards.add(msgId);
+      localStorage.setItem('nx_unlocked', JSON.stringify([...unlockedCards]));
+      _ac(-1, '📡 Prediction SIG-' + idStr);
+      // Alerts tab mein bhi dikhao
+      addNotif('📡 Prediction SIG-' + idStr + ' unlocked (-1 credit)', '📡');
+      checkCreditAutoStop();
+    }
+
+    function updateCreditUI() {
+      if (vipState.active) {
+        document.getElementById('header-credits').textContent = '∞';
+        document.getElementById('header-credit-label').textContent = 'UNLIMITED';
+        document.getElementById('header-coin').textContent = '👑';
+      } else {
+        document.getElementById('header-credits').textContent = credits;
+        document.getElementById('header-credit-label').textContent = 'CREDITS';
+        document.getElementById('header-coin').textContent = '🪙';
+      }
+      const bigEl = document.getElementById('credit-big');
+      if (bigEl) bigEl.textContent = vipState.active ? '∞' : credits;
+      renderTxnList();
+    }
+
+    function renderTxnList() {
+      const el = document.getElementById('txn-list');
+      if (!transactions.length) { el.innerHTML = '<div class="empty-txn">📭 Koi transaction abhi tak nahi</div>'; return; }
+      el.innerHTML = transactions.slice(0, 30).map(t => `
+        <div class="txn-item">
+          <div>
+            <div class="txn-desc">${escapeHtml(t.desc)}</div>
+            <div class="txn-time">${t.date} · ${t.time}</div>
+          </div>
+          <div class="txn-amount ${t.amount > 0 ? 'plus' : 'minus'}">${t.amount > 0 ? '+' : ''}${t.amount}</div>
+        </div>`).join('');
+    }
+
+    // ==================== DAILY BONUS ====================
+    function checkDailyBonus() {
+      const btn = document.getElementById('daily-earn-btn');
+      if (btn) btn.disabled = (serverState.lastLogin === new Date().toDateString());
+    }
+
+    function claimDailyBonus() {
+      const today = new Date().toDateString();
+      if (serverState.lastLogin === today) {
+        showToast('Aaj ka bonus le chuke ho! Kal aana 😊', 'red');
+        return;
+      }
+      serverState.lastLogin = today;
+      _ac(2, '🌅 Daily Login Bonus');
+      document.getElementById('daily-earn-btn').disabled = true;
+    }
+
+    // ==================== AD MODAL ====================
+    let _adTicker = null;
+    let _adListener = null;
+
+    function _cleanupAd() {
+      if (_adTicker) { clearInterval(_adTicker); _adTicker = null; }
+      if (_adListener) { document.removeEventListener('visibilitychange', _adListener); _adListener = null; }
+    }
+
+    function _updateAdBtns(text, disabled) {
+      const b1 = document.getElementById('ad-earn-btn');
+      const b2 = document.getElementById('ad-header-btn');
+      if (b1) { b1.textContent = text; b1.disabled = disabled; }
+      if (b2) { b2.textContent = text === '▶ Watch Ad' ? '▶ Watch Ad' : text; b2.disabled = disabled; }
+    }
+
+    function openAdModal() {
+      const WAIT_SEC = 20;
+      _cleanupAd();
+
+      // ---- In-app floating panel banana ----
+      let existing = document.getElementById('ad-watch-panel');
+      if (existing) existing.remove();
+
+      const panel = document.createElement('div');
+      panel.id = 'ad-watch-panel';
+      panel.style.cssText = [
+        'position:fixed','bottom:90px','left:50%','transform:translateX(-50%)',
+        'width:calc(100% - 32px)','max-width:448px',
+        'background:linear-gradient(135deg,#0d0818,#020008)',
+        'border:1.5px solid rgba(255,215,0,0.35)',
+        'border-radius:20px','padding:18px 16px',
+        'z-index:300','box-shadow:0 8px 40px rgba(0,0,0,0.7)',
+        'transition:all 0.3s'
+      ].join(';');
+      panel.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--gold);letter-spacing:2px;">📺 WATCH AD</div>
+          <div id="adp-status" style="font-family:'Orbitron',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:1px;">⏱ 20s baaki</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:10px;height:8px;overflow:hidden;margin-bottom:12px;">
+          <div id="adp-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--purple),var(--neon));border-radius:10px;transition:width 0.9s linear;"></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button id="adp-open-btn" onclick="window.open('https://omg10.com/4/11048781','_blank')" style="flex:1;padding:12px;border-radius:12px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;">🔗 Ad Kholo</button>
+          <button id="adp-claim-btn" disabled style="flex:2;padding:12px;border-radius:12px;border:1px solid rgba(255,215,0,0.2);background:rgba(255,215,0,0.05);color:rgba(255,215,0,0.3);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:not-allowed;">🔒 20s baad claim karo</button>
+        </div>
+        <div style="text-align:center;font-size:10px;color:rgba(255,255,255,0.2);margin-top:8px;letter-spacing:1px;">Ad tab mein 20s poore dekho — phir yahan Claim dabao</div>
+      `;
+      document.body.appendChild(panel);
+
+      let _adViewed = 0;
+      let _adReady = false;
+
+      function updatePanel() {
+        const pct = Math.min((_adViewed / WAIT_SEC) * 100, 100);
+        const left = Math.max(0, WAIT_SEC - _adViewed);
+        const bar = document.getElementById('adp-bar');
+        const status = document.getElementById('adp-status');
+        const claimBtn = document.getElementById('adp-claim-btn');
+        if (bar) bar.style.width = pct + '%';
+        if (status) status.textContent = left > 0 ? `⏱ ${left}s baaki` : '✅ Ready!';
+        if (claimBtn) {
+          if (_adReady) {
+            claimBtn.disabled = false;
+            claimBtn.style.cssText = 'flex:2;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#000;font-family:Orbitron,sans-serif;font-size:13px;font-weight:900;letter-spacing:1px;cursor:pointer;animation:pulse 1s ease-in-out infinite;';
+            claimBtn.textContent = '🎉 CLAIM +5 CREDITS';
+            claimBtn.onclick = claimAdReward;
+          } else {
+            claimBtn.textContent = left > 0 ? `🔒 ${left}s baad claim karo` : '✅ Claim karo!';
+          }
+        }
+      }
+
+      // Global claim function
+      window.claimAdReward = function() {
+        if (!_adReady) { showToast('20s poore nahi hue! ⏱', 'red'); return; }
+        _cleanupAd();
+        const p = document.getElementById('ad-watch-panel');
+        if (p) p.remove();
+        // Pehle adWatchCount increment karo memory mein
+        adWatchCount++;
+        spinTokens++;
+        freeSpinUsed = true;
+        // _ac credits add karta hai aur saveToFirestore call karta hai
+        // Ab saveToFirestore mein adWatchCount bhi hai — sab ek saath save hoga
+        _ac(5, '📺 Ad Watch Reward');
+        updateSpinUI();
+        _updateAdBtns('▶ Watch Ad', false);
+        showToast('🎉 +5 Credits + Leaderboard +1!', 'green');
+      };
+
+      function startTicking() {
+        if (_adTicker) return;
+        _adTicker = setInterval(() => {
+          _adViewed++;
+          updatePanel();
+          if (_adViewed >= WAIT_SEC) {
+            _cleanupAd();
+            _adReady = true;
+            updatePanel();
+          }
+        }, 1000);
+      }
+
+      _adListener = function() {
+        if (document.hidden) {
+          startTicking();
+        } else {
+          if (_adTicker) { clearInterval(_adTicker); _adTicker = null; }
+          if (!_adReady) updatePanel();
+        }
+      };
+
+      document.addEventListener('visibilitychange', _adListener);
+      window.open('https://omg10.com/4/11048781', '_blank');
+      _updateAdBtns('⏱ Ad chal raha hai...', true);
+
+      setTimeout(() => { if (document.hidden) startTicking(); }, 300);
+
+      return;
+    }
+
+    function closeAdModal(event) {
+      if (event && event.target !== document.getElementById('ad-modal')) return;
+      if (adTimer) clearInterval(adTimer);
+      document.getElementById('ad-modal').classList.remove('open');
+    }
+
+    function claimAdReward() {
+      if (adTimer) clearInterval(adTimer);
+      document.getElementById('ad-modal').classList.remove('open');
+      // Old modal - unused, no credit given here
+    }
+
+    // ==================== SHARE ====================
+    function doShare() {
+      const todayStr = new Date().toDateString();
+      if (serverState.lastShare === todayStr) {
+        showToast('Aaj share ho chuka hai! Kal dobara karo 📅', 'red');
+        return;
+      }
+      const text = '🔥 Nexus Hub - Free Prediction App dekho! Live signals, high accuracy.\nhttps://signal-nexushub.github.io/NexusHub/';
+      const MIN_SHARE_TIME = 3000; // 3 seconds — itne se kam mein share ho hi nahi sakta
+
+      if (navigator.share) {
+        const shareStart = Date.now();
+        navigator.share({ title: 'Nexus Hub', text: text })
+          .then(() => {
+            const timeSpent = Date.now() - shareStart;
+            if (timeSpent < MIN_SHARE_TIME) {
+              // Bahut jaldi — share nahi kiya
+              showToast('Pehle kisi ko actually share karo! 📤', 'red');
+            } else {
+              // Real share hua — credit do
+              serverState.lastShare = todayStr;
+              _ac(10, '🔗 App Share Reward');
+              updateShareBtnState();
+              showToast('Shared! +10 Credits 🎉 (Kal dobara milega)', 'green');
+            }
+          })
+          .catch((err) => {
+            if (err.name !== 'AbortError') {
+              showToast('Share nahi hua 😅', 'red');
+            }
+          });
+      } else {
+        // Clipboard fallback — no credit without actual share
+        navigator.clipboard.writeText(text)
+          .then(() => showToast('Link copy hua! Kisi ko bhejo — credit share karne ke baad milega 📋', 'green'))
+          .catch(() => showToast('Share nahi ho paya 😅', 'red'));
+      }
+    }
+
+    function updateShareBtnState() {
+      const btn = document.getElementById('share-earn-btn');
+      if (!btn) return;
+      const todayStr = new Date().toDateString();
+      if (serverState.lastShare === todayStr) {
+        btn.disabled = true;
+        btn.style.opacity = '0.35';
+        btn.style.cursor = 'not-allowed';
+        btn.textContent = '✓ Shared';
+      } else {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.textContent = '↗ Share';
+      }
+    }
+
+    // ==================== INSTAGRAM FOLLOW ====================
+    const INSTA_WAIT_SEC = 2;
+    let _instaTimer = null;
+    let _instaElapsed = 0;
+    let _instaOnTab = false;
+
+    function updateInstaBtnState() {
+      const btn = document.getElementById('insta-follow-btn');
+      const wrap = document.getElementById('insta-timer-wrap');
+      if (!btn) return;
+      if (serverState.instaFollowed) {
+        btn.disabled = true;
+        btn.style.opacity = '0.45';
+        btn.style.cursor = 'not-allowed';
+        btn.textContent = '✓ Followed';
+        if (wrap) { wrap.style.display = 'flex'; wrap.textContent = '✅ Credit Claimed'; wrap.style.color = 'rgba(0,255,136,0.6)'; }
+      } else {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.textContent = 'Follow';
+      }
+    }
+
+    function doInstagramFollow() {
+      if (serverState.instaFollowed) {
+        showToast('Aap pehle hi follow kar chuke ho! Credit life mein ek baar milta hai 📸', 'red');
+        return;
+      }
+      const wrap = document.getElementById('insta-timer-wrap');
+      const btn = document.getElementById('insta-follow-btn');
+      if (wrap) { wrap.style.display = 'flex'; wrap.textContent = '⏱ Instagram page pe jao, follow karo...'; wrap.style.color = 'rgba(225,48,108,0.7)'; }
+      if (_instaTimer) { clearInterval(_instaTimer); _instaTimer = null; }
+      _instaElapsed = 0;
+      _instaOnTab = false;
+
+      function giveInstaReward() {
+        if (serverState.instaFollowed) return;
+        if (_instaTimer) { clearInterval(_instaTimer); _instaTimer = null; }
+        serverState.instaFollowed = true;
+        _ac(5, '📸 Instagram Follow Reward');
+        saveToFirestore();
+        updateInstaBtnState();
+        showToast('Instagram follow reward! +5 Credits 🎉', 'green');
+      }
+
+      function instaPoll() {
+        const hidden = document.hidden || document.webkitHidden;
+        if (hidden) {
+          _instaOnTab = true;
+          _instaElapsed++;
+          const left = Math.max(0, INSTA_WAIT_SEC - _instaElapsed);
+          if (wrap) wrap.textContent = `⏱ ${left}s baaki — follow karo aur wapas aao`;
+          if (_instaElapsed >= INSTA_WAIT_SEC) { clearInterval(_instaTimer); _instaTimer = null; giveInstaReward(); }
+        } else if (_instaOnTab) {
+          clearInterval(_instaTimer); _instaTimer = null;
+          if (_instaElapsed < INSTA_WAIT_SEC) {
+            const left = INSTA_WAIT_SEC - _instaElapsed;
+            if (wrap) wrap.textContent = `⏱ ${left}s baaki — wapas Instagram pe jao`;
+            showToast(`${left}s baaki hai — Instagram follow karo ⏱`, 'red');
+          }
+        }
+      }
+
+      _instaTimer = setInterval(instaPoll, 1000);
+      window.open('https://www.instagram.com/nexus.prediction?igsh=MTNwa3owOG56a29vMQ==', '_blank');
+    }
+
+    // ==================== TELEGRAM JOIN ====================
+    const TG_WAIT_SEC = 2;
+    let _tgTimer = null;
+    let _tgElapsed = 0;
+    let _tgOnTab = false;
+
+    function updateTgBtnState() {
+      const btn = document.getElementById('tg-join-btn');
+      const wrap = document.getElementById('tg-timer-wrap');
+      if (!btn) return;
+      if (serverState.tgJoined) {
+        btn.disabled = true;
+        btn.style.opacity = '0.45';
+        btn.style.cursor = 'not-allowed';
+        btn.textContent = '✓ Joined';
+        if (wrap) { wrap.style.display = 'flex'; wrap.textContent = '✅ Credit Claimed'; wrap.style.color = 'rgba(0,255,136,0.6)'; }
+      } else {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.textContent = 'Join';
+      }
+    }
+
+    function doTelegramJoin() {
+      if (serverState.tgJoined) {
+        showToast('Aap pehle hi join kar chuke ho! Credit life mein ek baar milta hai ✈️', 'red');
+        return;
+      }
+      const wrap = document.getElementById('tg-timer-wrap');
+      const btn = document.getElementById('tg-join-btn');
+      if (wrap) { wrap.style.display = 'flex'; wrap.textContent = '⏱ Telegram channel pe jao, join karo...'; wrap.style.color = 'rgba(41,182,246,0.7)'; }
+      if (_tgTimer) { clearInterval(_tgTimer); _tgTimer = null; }
+      _tgElapsed = 0;
+      _tgOnTab = false;
+
+      function giveTgReward() {
+        if (serverState.tgJoined) return;
+        if (_tgTimer) { clearInterval(_tgTimer); _tgTimer = null; }
+        serverState.tgJoined = true;
+        _ac(5, '✈️ Telegram Channel Join Reward');
+        saveToFirestore();
+        updateTgBtnState();
+        showToast('Telegram join reward! +5 Credits 🎉', 'green');
+      }
+
+      function tgPoll() {
+        const hidden = document.hidden || document.webkitHidden;
+        if (hidden) {
+          _tgOnTab = true;
+          _tgElapsed++;
+          const left = Math.max(0, TG_WAIT_SEC - _tgElapsed);
+          if (wrap) wrap.textContent = `⏱ ${left}s baaki — channel join karo aur wapas aao`;
+          if (_tgElapsed >= TG_WAIT_SEC) { clearInterval(_tgTimer); _tgTimer = null; giveTgReward(); }
+        } else if (_tgOnTab) {
+          clearInterval(_tgTimer); _tgTimer = null;
+          if (_tgElapsed < TG_WAIT_SEC) {
+            const left = TG_WAIT_SEC - _tgElapsed;
+            if (wrap) wrap.textContent = `⏱ ${left}s baaki — wapas Telegram pe jao`;
+            showToast(`${left}s baaki hai — Telegram join karo ⏱`, 'red');
+          }
+        }
+      }
+
+      _tgTimer = setInterval(tgPoll, 1000);
+      window.open('https://telegram.me/nexuspredictionss', '_blank');
+    }
+
+    function showBuyMenu() {
+      const overlay = document.createElement('div');
+      overlay.id = 'buy-menu-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+      overlay.innerHTML = `
+        <div style="background:#0d0d1a;border:1px solid rgba(255,215,0,0.2);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;">
+          <div style="text-align:center;margin-bottom:4px;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--gold);letter-spacing:2px;">👑 BUY VIP PASS</div>
+            <div style="font-size:10px;color:rgba(255,45,85,0.8);letter-spacing:1px;font-weight:700;margin-top:4px;animation:pulse 1.5s ease-in-out infinite;">⏰ LIMITED TIME OFFER</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin:14px 0 16px;">
+            <div onclick="showBuyPopup('vip-1m',99);document.getElementById('buy-menu-overlay').remove();" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all 0.2s;">
+              <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">🥉</span><div><div style="font-family:'Orbitron',sans-serif;font-size:13px;color:var(--gold);">1 Month VIP</div><div style="font-size:10px;color:rgba(0,255,136,0.7);">∞ Unlimited • 30 days</div></div></div>
+              <div style="text-align:right;"><div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹199</div><div style="font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900;color:var(--green);">₹99</div></div>
+            </div>
+            <div onclick="showBuyPopup('vip-3m',199);document.getElementById('buy-menu-overlay').remove();" style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.2);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all 0.2s;position:relative;">
+              <div style="position:absolute;top:-8px;left:12px;background:var(--neon);color:#000;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:2px 8px;border-radius:20px;">🔥 POPULAR</div>
+              <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">🥈</span><div><div style="font-family:'Orbitron',sans-serif;font-size:13px;color:var(--neon);">3 Month VIP</div><div style="font-size:10px;color:rgba(0,255,136,0.7);">∞ Unlimited • 90 days</div></div></div>
+              <div style="text-align:right;"><div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹599</div><div style="font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900;color:var(--green);">₹199</div></div>
+            </div>
+            <div onclick="showBuyPopup('vip-1y',699);document.getElementById('buy-menu-overlay').remove();" style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all 0.2s;position:relative;">
+              <div style="position:absolute;top:-8px;left:12px;background:var(--gold);color:#000;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:2px 8px;border-radius:20px;">👑 BEST VALUE</div>
+              <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">🥇</span><div><div style="font-family:'Orbitron',sans-serif;font-size:13px;color:var(--gold);">1 Year VIP</div><div style="font-size:10px;color:rgba(0,255,136,0.7);">∞ Unlimited • 365 days</div></div></div>
+              <div style="text-align:right;"><div style="font-size:11px;color:rgba(255,255,255,0.3);text-decoration:line-through;font-family:'Orbitron',sans-serif;">₹1199</div><div style="font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900;color:var(--green);">₹699</div></div>
+            </div>
+          </div>
+          <button onclick="document.getElementById('buy-menu-overlay').remove()" style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Cancel</button>
+        </div>`;
+      overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+      document.body.appendChild(overlay);
+    }
+
+    // ==================== BUY VIP PASS ====================
+    function showBuyPopup(plan, price) {
+      const upi = 'preregisterbgmi-1@oksbi';
+      // Plan details
+      const planMap = {
+        'vip-1m': { label: '1 Month VIP Pass', days: 30, orig: 199, icon: '🥉', desc: '30 days • Unlimited Credits' },
+        'vip-3m': { label: '3 Month VIP Pass', days: 90, orig: 599, icon: '🥈', desc: '90 days • Unlimited Credits' },
+        'vip-1y': { label: '1 Year VIP Pass', days: 365, orig: 1199, icon: '🥇', desc: '365 days • Unlimited Credits' },
+      };
+      const info = planMap[plan] || { label: plan, days: 30, orig: price, icon: '👑', desc: '' };
+      const overlay = document.createElement('div');
+      overlay.id = 'buy-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+      overlay.innerHTML = `
+        <div style="background:#0d0d1a;border:1px solid rgba(255,215,0,0.3);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;">
+          <div style="text-align:center;margin-bottom:20px;">
+            <div style="font-size:36px;margin-bottom:8px;">${info.icon}</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--gold);">${info.label}</div>
+            <div style="font-size:12px;color:rgba(0,255,136,0.8);margin-top:4px;font-weight:600;">∞ ${info.desc}</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;">
+              <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:rgba(255,255,255,0.3);text-decoration:line-through;">₹${info.orig}</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:26px;font-weight:900;color:var(--green);">₹${price}</div>
+            </div>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:16px;margin-bottom:16px;">
+            <div style="font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:10px;font-family:'Orbitron',sans-serif;">PAYMENT STEPS</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.65);line-height:1.8;">
+              1️⃣ UPI se ₹${price} bhejo<br>
+              2️⃣ Screenshot lo<br>
+              3️⃣ Developer ko Telegram pe bhejo<br>
+              4️⃣ VIP Pass code milega ✅
+            </div>
+          </div>
+
+          <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:14px;margin-bottom:16px;">
+            <div style="font-size:11px;color:rgba(255,215,0,0.5);letter-spacing:2px;margin-bottom:8px;font-family:'Orbitron',sans-serif;">UPI ID</div>
+            <div style="font-size:15px;font-weight:700;color:white;letter-spacing:0.5px;">${upi}</div>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button onclick="document.getElementById('buy-overlay').remove()"
+              style="flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
+              Cancel
+            </button>
+            <a href="https://telegram.dog/NexusXedit" target="_blank"
+              onclick="document.getElementById('buy-overlay').remove()"
+              style="flex:1;padding:12px;border-radius:12px;border:1px solid rgba(0,136,204,0.4);background:rgba(0,136,204,0.12);color:#29b6f6;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;">
+              ✈️ Contact
+            </a>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+    }
+// ==================== ADMIN UNLOCK ====================
+    let adminTapCount = 0;
+    let adminTapTimer = null;
+    let adminUnlocked = localStorage.getItem('nx_admin') === 'true';
+
+    function initAdmin() {
+      // Admin sirf specific UID ke liye - hardcoded admin UID
+      // Pehli baar aap login karo, apna UID console mein dikhega
+      const ADMIN_UID = localStorage.getItem('nx_admin_uid') || '';
+      const currentUID = window.currentUser ? window.currentUser.uid : '';
+      
+      if (currentUID && ADMIN_UID && currentUID === ADMIN_UID) {
+        adminUnlocked = true;
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = 'block';
+      } else {
+        adminUnlocked = false;
+        localStorage.removeItem('nx_admin');
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = 'none';
+      }
+    }
+
+    function adminTap() {
+      adminTapCount++;
+      clearTimeout(adminTapTimer);
+      if (adminTapCount >= 5) {
+        adminTapCount = 0;
+        showAdminLogin();
+      } else {
+        adminTapTimer = setTimeout(() => { adminTapCount = 0; }, 2000);
+      }
+    }
+
+    function showAdminLogin() {
+      if (adminUnlocked) {
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = codeBtn.style.display === 'none' ? 'block' : 'none';
+        return;
+      }
+      const overlay = document.createElement('div');
+      overlay.id = 'admin-login-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+      overlay.innerHTML = `
+        <div style="background:#0d0d1a;border:1px solid rgba(123,47,255,0.4);border-radius:20px;padding:28px 24px;max-width:300px;width:100%;text-align:center;">
+          <div style="font-size:32px;margin-bottom:12px;">🔐</div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#7B2FFF;letter-spacing:2px;margin-bottom:20px;">ADMIN ACCESS</div>
+          <input id="admin-pass-input" type="password" placeholder="Password enter karo"
+            style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(123,47,255,0.3);border-radius:12px;padding:12px 14px;color:white;font-size:14px;outline:none;margin-bottom:16px;text-align:center;"/>
+          <div style="display:flex;gap:10px;">
+            <button onclick="document.getElementById('admin-login-overlay').remove()"
+              style="flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
+              Cancel
+            </button>
+            <button onclick="checkAdminPass()"
+              style="flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#7B2FFF,#5500cc);color:white;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
+              Enter
+            </button>
+          </div>
+          <div id="admin-pass-msg" style="font-size:12px;color:var(--red);margin-top:10px;display:none;">❌ Wrong password!</div>
+        </div>`;
+      document.body.appendChild(overlay);
+      document.getElementById('admin-pass-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') checkAdminPass();
+      });
+    }
+
+    function hashPass(str) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) {
+        h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+      }
+      return (h >>> 0).toString(16).toUpperCase().padStart(8, '0');
+    }
+
+    function checkAdminPass() {
+      const pass = document.getElementById('admin-pass-input').value;
+      if (hashPass(pass) === '51A79B76') {
+        document.getElementById('admin-login-overlay').remove();
+        adminUnlocked = true;
+        const uid = window.currentUser ? window.currentUser.uid : '';
+        localStorage.setItem('nx_admin', 'true');
+        localStorage.setItem('nx_admin_uid', uid);
+        const codeBtn = document.getElementById('admin-code-btn');
+        if (codeBtn) codeBtn.style.display = 'block';
+        showToast('✅ Admin mode ON!', 'green');
+      } else {
+        document.getElementById('admin-pass-msg').style.display = 'block';
+      }
+    }
+
+    // ==================== CODE GENERATOR (ADMIN ONLY) ====================
+    function showCodeGenerator() {
+      const overlay = document.createElement('div');
+      overlay.id = 'code-gen-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+      overlay.innerHTML = `
+        <div style="background:#0d0d1a;border:1px solid rgba(255,215,0,0.35);border-radius:20px;padding:24px 20px;max-width:340px;width:100%;margin:auto;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;margin-bottom:20px;text-align:center;">🎟️ GENERATE CODE</div>
+
+          <!-- Credit Codes -->
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;letter-spacing:1px;">CREDIT CODES:</div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button onclick="genCode(100)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.08);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">100</button>
+            <button onclick="genCode(400)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">400</button>
+            <button onclick="genCode(1000)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,215,0,0.5);background:rgba(255,215,0,0.12);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">1000</button>
+          </div>
+
+          <!-- VIP Pass Codes -->
+          <div style="font-size:11px;color:rgba(255,215,0,0.6);margin-bottom:6px;letter-spacing:1px;font-weight:700;">👑 VIP PASS CODES:</div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button onclick="genVipCode('VIP-1M')" style="flex:1;padding:9px 4px;border-radius:10px;border:1px solid rgba(255,215,0,0.35);background:rgba(255,215,0,0.1);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;cursor:pointer;line-height:1.3;">1M<br><span style="font-size:8px;opacity:0.7;">30 days</span></button>
+            <button onclick="genVipCode('VIP-3M')" style="flex:1;padding:9px 4px;border-radius:10px;border:1px solid rgba(0,245,255,0.35);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;cursor:pointer;line-height:1.3;">3M<br><span style="font-size:8px;opacity:0.7;">90 days</span></button>
+            <button onclick="genVipCode('VIP-1Y')" style="flex:1;padding:9px 4px;border-radius:10px;border:1px solid rgba(255,215,0,0.6);background:rgba(255,215,0,0.15);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;cursor:pointer;line-height:1.3;">1Y<br><span style="font-size:8px;opacity:0.7;">365 days</span></button>
+          </div>
+
+          <div id="gen-result" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;display:none;">
+            <div style="font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:8px;">GENERATED CODE</div>
+            <div id="gen-code-text" style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:var(--gold);letter-spacing:1px;word-break:break-all;"></div>
+            <button id="gen-copy-btn" onclick="copyGenCode()" style="margin-top:12px;padding:8px 20px;border-radius:10px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.1);color:var(--gold);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📋 Copy</button>
+          </div>
+
+          <button onclick="document.getElementById('code-gen-overlay').remove()"
+            style="width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
+            Close
+          </button>
+        </div>`;
+      document.body.appendChild(overlay);
+    }
+
+    function genVipCode(plan) {
+      const code = generateAdminVipCode(plan);
+      document.getElementById('gen-result').style.display = 'block';
+      document.getElementById('gen-code-text').textContent = code;
+      document.getElementById('gen-copy-btn').textContent = '📋 Copy';
+    }
+
+    function genCode(credits) {
+      const code = generateAdminCode(credits);
+      document.getElementById('gen-result').style.display = 'block';
+      document.getElementById('gen-code-text').textContent = code;
+      document.getElementById('gen-copy-btn').textContent = '📋 Copy';
+    }
+
+    function copyGenCode() {
+      const code = document.getElementById('gen-code-text').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        document.getElementById('gen-copy-btn').textContent = '✅ Copied!';
+      });
+    }
+
+    // ==================== REDEEM CODE SYSTEM ====================
+    // Secret codes — admin generates these
+    // Format: NEXUS-{CREDITS}-{RANDOM4}
+    // Codes are stored in localStorage after use (to prevent reuse)
+
+    // ==================== CODE SECURITY SYSTEM ====================
+    // Secret key — multi-layer obfuscated, runtime mein reconstruct hota hai
+    // 4 parts ko XOR + reverse ke saath combine kiya — DevTools mein directly readable nahi
+    const _s1 = [78,88,50,48,50,52];          // part A
+    const _s2 = [74,65,76,87,65,57,51];        // part B (reversed)
+    const _s3 = [0x4e,0x58,0x53,0x45,0x43];   // part C (hex)
+    const _s4 = [113,105,108,109,110,107];     // part D (XOR'd with 1)
+    function _ks() {
+      const a = _s1.map(c => String.fromCharCode(c)).join('');
+      const b = _s2.map(c => String.fromCharCode(c)).reverse().join('');
+      const c = _s3.map(c => String.fromCharCode(c ^ 0x01)).join('');
+      const d = _s4.map(c => String.fromCharCode(c ^ 1)).join('');
+      return a + b + c + d;
+    }
+
+    // Strong hash — FNV-1a 32-bit, much better avalanche than djb2
+    function _fnv32(str) {
+      let h = 0x811c9dc5;
+      for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 0x01000193) >>> 0;
+      }
+      return h;
+    }
+
+    // Double-round hash — run FNV-1a twice with different salt to increase entropy
+    function generateCodeHash(credits, r2) {
+      const secret = _ks();
+      const round1 = _fnv32(credits + '||' + r2 + '||' + secret);
+      const round2 = _fnv32(secret + '||' + round1.toString(16) + '||' + r2);
+      // Take 4 chars from base-36 — gives 36^4 = 1,679,616 combinations
+      return ((round1 ^ round2) >>> 0).toString(36).toUpperCase().padStart(6, '0').substring(0, 4);
+    }
+
+    function generateVipCodeHash(plan, r2) {
+      const secret = _ks();
+      const round1 = _fnv32('VIP||' + plan + '||' + r2 + '||' + secret);
+      const round2 = _fnv32(secret + '||' + plan + '||' + round1.toString(16));
+      return ((round1 ^ round2) >>> 0).toString(36).toUpperCase().padStart(6, '0').substring(0, 4);
+    }
+
+    function isValidCode(credits, random4) {
+      if (!random4 || random4.length !== 4) return false;
+      const r2 = random4.substring(0, 2);
+      const h2 = random4.substring(2, 4);
+      const expected = generateCodeHash(credits, r2).substring(0, 2);
+      // Constant-time comparison (anti-timing attack)
+      if (h2.length !== expected.length) return false;
+      let diff = 0;
+      for (let i = 0; i < h2.length; i++) diff |= h2.charCodeAt(i) ^ expected.charCodeAt(i);
+      return diff === 0;
+    }
+
+    function isValidVipCode(plan, random4) {
+      if (!random4 || random4.length !== 4) return false;
+      const r2 = random4.substring(0, 2);
+      const h2 = random4.substring(2, 4);
+      const expected = generateVipCodeHash(plan, r2).substring(0, 2);
+      let diff = 0;
+      for (let i = 0; i < h2.length; i++) diff |= h2.charCodeAt(i) ^ expected.charCodeAt(i);
+      return diff === 0;
+    }
+
+    function generateAdminVipCode(plan) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let r2 = '';
+      for (let i = 0; i < 2; i++) r2 += chars[Math.floor(Math.random() * chars.length)];
+      const h4 = generateVipCodeHash(plan, r2);
+      const h2 = h4.substring(0, 2);
+      return 'NEXUS-' + plan + '-' + r2 + h2;
+    }
+
+    function generateAdminCode(credits) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let r2 = '';
+      for (let i = 0; i < 2; i++) r2 += chars[Math.floor(Math.random() * chars.length)];
+      const h4 = generateCodeHash(credits, r2);
+      const h2 = h4.substring(0, 2);
+      return 'NEXUS-' + credits + '-' + r2 + h2;
+    }
+
+    async function redeemCode() {
+      const input = document.getElementById('redeem-input');
+      const msgEl = document.getElementById('redeem-msg');
+      const redeemBtn = document.querySelector('[onclick="redeemCode()"]');
+      const code = (input.value || '').trim().toUpperCase();
+
+      function showMsg(text, color) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = color === 'green' ? 'var(--green)' : color === 'red' ? 'var(--red)' : 'var(--gold)';
+        msgEl.textContent = text;
+      }
+
+      if (!code) { showMsg('Code enter karo!', 'red'); return; }
+
+      // VIP Pass code format: NEXUS-VIP-1M-XXXX / NEXUS-VIP-3M-XXXX / NEXUS-VIP-1Y-XXXX
+      const vipMatch = code.match(/^NEXUS-(VIP-(?:1M|3M|1Y))-([A-Z0-9]{4})$/);
+      if (vipMatch) {
+        const vipPlan = vipMatch[1]; // e.g. 'VIP-1M'
+        const vipRand = vipMatch[2];
+
+        // Validate VIP code hash
+        if (!isValidVipCode(vipPlan, vipRand)) {
+          showMsg('❌ Invalid ya expired VIP code!', 'red'); return;
+        }
+
+        if (redeemBtn) { redeemBtn.disabled = true; redeemBtn.textContent = 'Checking...'; }
+        showMsg('⏳ VIP Pass verify ho raha hai...', 'gold');
+
+        try {
+          const globalRef = window.fbDoc(window.fbDb, 'redeemedCodes', code);
+          const globalSnap = await window.fbGetDoc(globalRef);
+          if (globalSnap.exists()) {
+            showMsg('❌ Yeh VIP code already use ho chuka hai!', 'red');
+            if (redeemBtn) { redeemBtn.disabled = false; redeemBtn.textContent = 'REDEEM'; }
+            return;
+          }
+          // Mark globally used
+          await window.fbSetDoc(globalRef, {
+            usedBy: window.currentUser.uid,
+            usedByEmail: window.currentUser.email || '',
+            usedAt: new Date().toISOString(),
+            type: 'vip',
+            plan: vipPlan
+          });
+          // Activate VIP
+          serverState.usedCodes.push(code);
+          const planName = await activateVipPass(vipPlan, code);
+          input.value = '';
+          showMsg(`✅ ${planName} VIP Pass active ho gaya! 👑 Unlimited credits!`, 'green');
+          showToast(`👑 VIP Pass active! ${vipState.daysLeft} days unlimited credits!`, 'green');
+          setTimeout(() => { msgEl.style.display = 'none'; }, 5000);
+        } catch(e) {
+          showMsg('❌ Network error, dobara try karo', 'red');
+          console.error('VIP Redeem error:', e);
+        } finally {
+          if (redeemBtn) { redeemBtn.disabled = false; redeemBtn.textContent = 'REDEEM'; }
+        }
+        return;
+      }
+
+      // Normal credit code format: NEXUS-{CREDITS}-XXXX
+      const parts = code.split('-');
+      if (parts.length !== 3 || parts[0] !== 'NEXUS') {
+        showMsg('❌ Invalid code format!', 'red'); return;
+      }
+
+      const codeCredits = parseInt(parts[1]);
+      const random4 = parts[2];
+
+      if (isNaN(codeCredits) || codeCredits <= 0) {
+        showMsg('❌ Invalid code!', 'red'); return;
+      }
+
+      // Hash validation
+      if (random4.length !== 4 || !isValidCode(codeCredits, random4)) {
+        showMsg('❌ Invalid ya expired code!', 'red'); return;
+      }
+
+      // Loading state
+      if (redeemBtn) { redeemBtn.disabled = true; redeemBtn.textContent = 'Checking...'; }
+      showMsg('⏳ Verify ho raha hai...', 'gold');
+
+      try {
+        // GLOBAL check — Firestore mein dekho koi aur account pe use hua ya nahi
+        const globalRef = window.fbDoc(window.fbDb, 'redeemedCodes', code);
+        const globalSnap = await window.fbGetDoc(globalRef);
+
+        if (globalSnap.exists()) {
+          showMsg('❌ Yeh code already use ho chuka hai!', 'red');
+          if (redeemBtn) { redeemBtn.disabled = false; redeemBtn.textContent = 'REDEEM'; }
+          return;
+        }
+
+        // Code valid aur unused — global mark karo
+        await window.fbSetDoc(globalRef, {
+          usedBy: window.currentUser.uid,
+          usedByEmail: window.currentUser.email || '',
+          usedAt: new Date().toISOString(),
+          credits: codeCredits
+        });
+
+        // User ke record mein bhi save karo
+        serverState.usedCodes.push(code);
+        _ac(codeCredits, '🎟️ Code Redeemed: ' + code);
+        input.value = '';
+        showMsg('✅ ' + codeCredits + ' Credits mil gaye!', 'green');
+        setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+
+      } catch(e) {
+        showMsg('❌ Network error, dobara try karo', 'red');
+        console.error('Redeem error:', e);
+      } finally {
+        if (redeemBtn) { redeemBtn.disabled = false; redeemBtn.textContent = 'REDEEM'; }
+      }
+    }
+
+    // ==================== LUCKY SPIN ====================
+    const SPIN_SEGMENTS = [
+      { label: '5',    credits: 5,    color: '#FF2D55', prob: 42.9 },
+      { label: '10',   credits: 10,   color: '#FF6B35', prob: 30.0 },
+      { label: '20',   credits: 20,   color: '#FFD700', prob: 18.0 },
+      { label: '50',   credits: 50,   color: '#00F5FF', prob: 7.0  },
+      { label: '100',  credits: 100,  color: '#7B2FFF', prob: 2.0  },
+      { label: '1000', credits: 1000, color: '#00FF88', prob: 0.1  },
+    ];
+    let currentWheelAngle = 0;
+
+    function drawWheel(angle) {
+      const canvas = document.getElementById('spin-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const cx = canvas.width / 2, cy = canvas.height / 2;
+      const r = cx - 4;
+      const total = SPIN_SEGMENTS.length;
+      const sliceAngle = (2 * Math.PI) / total;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      SPIN_SEGMENTS.forEach((seg, i) => {
+        const startAngle = angle + i * sliceAngle;
+        const endAngle = startAngle + sliceAngle;
+
+        // Segment fill
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = seg.color;
+        ctx.fill();
+
+        // Segment border
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, endAngle);
+        ctx.closePath();
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Text
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(startAngle + sliceAngle / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 6;
+
+        // Credit emoji
+        ctx.font = 'bold 13px Orbitron, sans-serif';
+        ctx.fillText('🪙', r - 14, 5);
+
+        // Credit number
+        const fontSize = seg.label.length > 3 ? 12 : 15;
+        ctx.font = `900 ${fontSize}px Orbitron, sans-serif`;
+        ctx.fillText(seg.label, r - 28, 5);
+
+        ctx.restore();
+      });
+
+      // Outer ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(255,215,0,0.5)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+    }
+
+    function initWheel() {
+      currentWheelAngle = -Math.PI / 2; // start from top
+      drawWheel(currentWheelAngle);
+    }
+
+    function updateSpinUI() {
+      const display = document.getElementById('spin-token-display');
+      const sub = document.getElementById('spin-token-sub');
+      const badge = document.getElementById('spin-badge');
+      const fabBadge = document.getElementById('spin-fab-badge');
+      const fabBtn = document.getElementById('spin-fab-btn');
+      const fabIcon = document.getElementById('spin-fab-icon');
+      const btn = document.getElementById('spin-btn');
+      const watchAdBtn = document.getElementById('spin-watch-ad-btn');
+      const msg = document.getElementById('spin-msg');
+
+      if (display) display.textContent = spinTokens;
+      if (sub) sub.textContent = spinTokens > 0 ? 'READY TO SPIN' : 'NO TOKENS';
+
+      if (badge) { badge.textContent = spinTokens; badge.style.display = spinTokens > 0 ? 'inline' : 'none'; }
+      if (fabBadge) { fabBadge.textContent = spinTokens; fabBadge.style.display = spinTokens > 0 ? 'inline' : 'none'; }
+      if (fabBtn) {
+        if (spinTokens > 0) { fabBtn.classList.add('has-tokens'); if (fabIcon) fabIcon.style.animation = 'spinFabRotate 2s linear infinite'; }
+        else { fabBtn.classList.remove('has-tokens'); if (fabIcon) fabIcon.style.animation = 'none'; }
+      }
+
+      if (spinTokens > 0) {
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; btn.textContent = '🎰 SPIN NOW'; }
+        if (watchAdBtn) watchAdBtn.style.display = 'none';
+        if (msg) { msg.textContent = spinTokens + ' spin' + (spinTokens > 1 ? 's' : '') + ' available'; msg.style.color = 'rgba(0,255,136,0.6)'; }
+      } else {
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.35'; btn.style.cursor = 'not-allowed'; btn.textContent = '🎰 SPIN NOW'; }
+        if (watchAdBtn) watchAdBtn.style.display = 'block';
+        if (msg) { msg.textContent = 'Ad dekho aur spin token pao! 🎯'; msg.style.color = 'rgba(255,165,0,0.6)'; }
+      }
+    }
+
+    function getSpinResult() {
+      const rand = Math.random() * 100;
+      let cumulative = 0;
+      for (const seg of SPIN_SEGMENTS) {
+        cumulative += seg.prob;
+        if (rand < cumulative) return seg;
+      }
+      return SPIN_SEGMENTS[0];
+    }
+
+    function doSpin() {
+      if (spinAnimating || spinTokens <= 0) return;
+      spinAnimating = true;
+      spinTokens--;
+      if (!freeSpinUsed) freeSpinUsed = true;
+
+      const btn = document.getElementById('spin-btn');
+      const msg = document.getElementById('spin-msg');
+      const canvas = document.getElementById('spin-canvas');
+      if (btn) { btn.disabled = true; btn.textContent = '🎰 Spinning...'; }
+      if (msg) { msg.textContent = 'Good luck! 🍀'; msg.style.color = 'var(--gold)'; }
+
+      const prize = getSpinResult();
+      const prizeIndex = SPIN_SEGMENTS.indexOf(prize);
+      const sliceAngle = (2 * Math.PI) / SPIN_SEGMENTS.length;
+
+      // Calculate target angle - pointer at top (angle = 0), target segment center at top
+      const extraRotations = (5 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
+      const targetSegmentCenter = prizeIndex * sliceAngle + sliceAngle / 2;
+      const targetAngle = extraRotations - targetSegmentCenter - Math.PI / 2;
+
+      // Animate with requestAnimationFrame
+      const duration = 4000;
+      const startTime = performance.now();
+      const startAngle = currentWheelAngle;
+
+      function animate(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const angle = startAngle + (targetAngle - startAngle) * eased;
+        currentWheelAngle = angle;
+        drawWheel(angle);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Done!
+          spinAnimating = false;
+          currentWheelAngle = angle;
+          _ac(prize.credits, '🎰 Lucky Spin: +' + prize.credits + ' Credits');
+          saveToFirestore();
+          updateSpinUI();
+
+          // Result popup
+          const overlay = document.createElement('div');
+          overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;';
+          overlay.innerHTML = `
+            <div style="background:linear-gradient(135deg,#1a0a2e,#0d0818);border:1px solid ${prize.color};border-radius:24px;padding:36px 28px;text-align:center;max-width:300px;width:90%;box-shadow:0 0 60px ${prize.color}40,0 20px 60px rgba(0,0,0,0.5);">
+              <div style="font-size:52px;margin-bottom:12px;">🎉</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:3px;margin-bottom:8px;">YOU WON</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:52px;font-weight:900;color:${prize.color};line-height:1;text-shadow:0 0 30px ${prize.color}80;">+${prize.credits}</div>
+              <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--gold);letter-spacing:2px;margin-top:6px;">CREDITS</div>
+              <div style="height:1px;background:rgba(255,255,255,0.08);margin:20px 0;"></div>
+              <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,${prize.color},${prize.color}99);color:#000;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:900;letter-spacing:2px;cursor:pointer;">
+                🎰 AWESOME!
+              </button>
+            </div>`;
+          document.body.appendChild(overlay);
+          setTimeout(() => overlay.remove(), 4000);
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    // Spin Ad Modal
+    let spinAdTimer = null;
+    const SPIN_AD_DURATION = 20;
+    let _spinAdWatching = false;
+    let _spinAdListener = null;
+
+    function openSpinAdModal() {
+      // Cleanup any previous session
+      _spinAdWatching = false;
+      if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+      if (_spinAdListener) { document.removeEventListener('visibilitychange', _spinAdListener); _spinAdListener = null; }
+
+      let elapsed = 0;
+      let isOnAdTab = false;
+
+      const overlay = document.createElement('div');
+      overlay.id = 'spin-ad-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+      overlay.innerHTML = `
+        <div style="width:100%;max-width:480px;background:#0d0818;border:1px solid rgba(0,245,255,0.2);border-radius:24px 24px 0 0;padding:24px 20px 40px;">
+          <div style="width:36px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin:0 auto 20px;"></div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--neon);letter-spacing:2px;text-align:center;margin-bottom:20px;">📺 WATCH AD · GET SPIN TOKEN</div>
+          <div style="background:rgba(0,245,255,0.05);border:1px solid rgba(0,245,255,0.15);border-radius:16px;padding:28px;text-align:center;margin-bottom:16px;">
+            <div style="font-size:36px;margin-bottom:10px;">🎰</div>
+            <div style="font-size:14px;color:rgba(255,255,255,0.6);">Ad poora dekho aur<br/>1 Spin Token pao!</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border-radius:10px;height:6px;overflow:hidden;margin-bottom:8px;">
+            <div id="spin-ad-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--neon),#0088ff);border-radius:10px;transition:width 0.2s linear;"></div>
+          </div>
+          <div id="spin-ad-label" style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:16px;">0s / ${SPIN_AD_DURATION}s</div>
+          <button id="spin-ad-claim-btn" style="width:100%;padding:14px;border-radius:14px;border:1px solid rgba(0,245,255,0.3);background:rgba(0,245,255,0.08);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:not-allowed;opacity:0.4;">Pehle poora dekho...</button>
+        </div>`;
+      document.body.appendChild(overlay);
+
+      const getBtn = () => document.getElementById('spin-ad-claim-btn');
+      const getBar = () => document.getElementById('spin-ad-bar');
+      const getLabel = () => document.getElementById('spin-ad-label');
+
+      function setRetryMode() {
+        const left = SPIN_AD_DURATION - elapsed;
+        const btn = getBtn();
+        if (getLabel()) getLabel().textContent = `⏱ ${left}s baaki`;
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+          btn.textContent = '📺 Dobara Ad Dekho';
+          btn.style.background = 'rgba(255,165,0,0.15)';
+          btn.style.borderColor = 'rgba(255,165,0,0.4)';
+          btn.style.color = 'var(--gold)';
+          btn.onclick = function() {
+            elapsed = 0;
+            isOnAdTab = false;
+            btn.disabled = true;
+            btn.style.opacity = '0.4';
+            btn.style.cursor = 'not-allowed';
+            btn.textContent = 'Pehle poora dekho...';
+            btn.style.background = 'rgba(0,245,255,0.08)';
+            btn.style.borderColor = 'rgba(0,245,255,0.3)';
+            btn.style.color = 'var(--neon)';
+            btn.onclick = null;
+            window.open('https://omg10.com', '_blank');
+            // Polling dobara start karo
+            if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+            spinAdTimer = setInterval(pollFn, 1000);
+          };
+        }
+      }
+
+      function setClaimMode() {
+        const btn = getBtn();
+        if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+        _spinAdWatching = true;
+        if (getBar()) getBar().style.width = '100%';
+        if (getLabel()) getLabel().textContent = '✅ Claim karo!';
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+          btn.textContent = '🎰 Claim Spin Token!';
+          btn.style.background = 'rgba(0,245,255,0.18)';
+          btn.style.borderColor = 'rgba(0,245,255,0.3)';
+          btn.style.color = 'var(--neon)';
+          btn.onclick = claimSpinAd;
+        }
+      }
+
+      // Polling function - named taaki restart ho sake
+      function pollFn() {
+        const hidden = document.hidden || document.webkitHidden;
+        if (hidden && !isOnAdTab) isOnAdTab = true;
+        if (hidden) {
+          elapsed++;
+          const pct = Math.min((elapsed / SPIN_AD_DURATION) * 100, 100);
+          if (getBar()) getBar().style.width = pct + '%';
+          if (getLabel()) getLabel().textContent = elapsed + 's / ' + SPIN_AD_DURATION + 's';
+          if (elapsed >= SPIN_AD_DURATION) setClaimMode();
+        } else if (isOnAdTab) {
+          if (elapsed < SPIN_AD_DURATION) {
+            clearInterval(spinAdTimer);
+            spinAdTimer = null;
+            setRetryMode();
+          }
+        }
+      }
+
+      spinAdTimer = setInterval(pollFn, 1000);
+
+      // Ad kholo
+      window.open('https://omg10.com', '_blank');
+    }
+
+    function claimSpinAd() {
+      if (!_spinAdWatching) {
+        console.warn('Ad poora dekho pehle!');
+        return;
+      }
+      if (spinAdTimer) { clearInterval(spinAdTimer); spinAdTimer = null; }
+      if (_spinAdListener) { document.removeEventListener('visibilitychange', _spinAdListener); _spinAdListener = null; }
+      _spinAdWatching = false;
+      const overlay = document.getElementById('spin-ad-overlay');
+      if (overlay) overlay.remove();
+      spinTokens++;
+      adWatchCount++;
+      // _ac credits add karta hai aur saveToFirestore call karta hai
+      // saveToFirestore mein adWatchCount bhi hai — sab ek saath save hoga
+      _ac(5, '📺 Spin Ad Watch Reward');
+      updateSpinUI();
+      showToast('+1 Spin Token + 5 Credits! 🎰', 'green');
+    }
+// ==================== TOAST ====================
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast' + (type ? ' ' + type : '');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    // ==================== ADMIN ====================
+    function togglePredictions() {
+      if (!predictionsRunning) {
+        // Trying to START — need credits
+        if (credits < 1) {
+          showToast('Credit nahi hai! Ad dekho ya share karo 💸', 'red');
+          setTab('credits');
+          return;
+        }
+      }
+      predictionsRunning = !predictionsRunning;
+      localStorage.setItem('nx_pred_running', JSON.stringify(predictionsRunning));
+      updateAdminUI();
+      renderCards(allPredictions);
+      showToast(predictionsRunning ? '▶ Predictions STARTED' : '⏹ Predictions STOPPED', predictionsRunning ? 'green' : 'red');
+    }
+
+    function checkCreditAutoStop() {
+      if (vipState.active) return; // VIP users ke liye auto-stop nahi
+      if (credits <= 0 && predictionsRunning) {
+        predictionsRunning = false;
+        localStorage.setItem('nx_pred_running', JSON.stringify(false));
+        updateAdminUI();
+        renderCards(allPredictions);
+        showToast('Credit khatam! Predictions band ho gayi 💸', 'red');
+      }
+    }
+
+    function updateAdminUI() {
+      const btn = document.getElementById('start-stop-btn');
+      const txt = document.getElementById('prediction-status-text');
+      if (predictionsRunning) {
+        btn.textContent = '⏹ STOP';
+        btn.className = 'start-stop-btn running';
+        txt.textContent = 'Predictions: Running ▶';
+      } else {
+        btn.textContent = '▶ START';
+        btn.className = 'start-stop-btn stopped';
+        txt.textContent = 'Predictions: Stopped ⏹';
+      }
+    }
+
+    // ==================== SETTINGS ====================
+    function saveSettings() {
+      localStorage.setItem('nx_settings', JSON.stringify({
+        sound: document.getElementById('toggle-sound').checked,
+        notif: document.getElementById('toggle-notif').checked
+      }));
+    }
+
+    function setConf(val, el) {
+      confFilter = val;
+      localStorage.setItem('nx_conf', val);
+      document.querySelectorAll('.conf-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      renderCards(allPredictions);
+    }
+
+    function setTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + tab).classList.add('active');
+      const navEl = document.getElementById('nav-' + tab);
+      if (navEl) navEl.classList.add('active');
+      // Stats bar sirf signals page pe dikhe
+      const statsBar = document.getElementById('main-stats-bar');
+      if (statsBar) statsBar.style.display = (tab === 'signals') ? '' : 'none';
+      if (tab === 'stats') { updateStats(); renderNotifLog(); }
+      if (tab === 'alerts') renderNotifLog();
+      if (tab === 'spin') { updateSpinUI(); setTimeout(initWheel, 50); }
+      if (tab === 'credits') { updateCreditUI(); updateDailyBtnState(); updateShareBtnState(); updateVipBadgeUI(); }
+      if (tab === 'vip') { syncVipPage(); }
+      if (tab === 'leaderboard') {
+        startLbCountdown();
+        loadLeaderboard();
+      }
+    }
+
+    function updateDailyBtnState() {
+      const btn = document.getElementById('daily-earn-btn');
+      if (btn) btn.disabled = (serverState.lastLogin === new Date().toDateString());
+    }
+
+    function updateAdBtnState() {
+      const b1 = document.getElementById('ad-earn-btn');
+      const b2 = document.getElementById('ad-header-btn');
+      // Panel already open hai toh button state change mat karo
+      const panelOpen = !!document.getElementById('ad-watch-panel');
+      if (b1) { b1.disabled = panelOpen; b1.textContent = panelOpen ? '⏱ Ad chal raha hai...' : '▶ Watch Ad'; }
+      if (b2) { b2.disabled = panelOpen; b2.textContent = panelOpen ? '⏱ Ad chal raha hai...' : '▶ Watch Ad'; }
+    }
+
+    // ==================== HELPERS ====================
+    function formatTime(ts) {
+      return new Date(ts * 1000).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    function formatDate(ts) {
+      const d = new Date(ts * 1000), today = new Date();
+      if (d.toDateString() === today.toDateString()) return 'Today';
+      const y = new Date(today); y.setDate(today.getDate()-1);
+      if (d.toDateString() === y.toDateString()) return 'Yesterday';
+      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    }
+
+    function autoDetectResult(text) {
+      const t = text.toLowerCase();
+      // Result message se detect karo
+      const isResultMsg = t.includes('result');
+      if (isResultMsg) {
+        if (t.includes('agli baar') || t.includes('gli baar')) return 'auto-loss';
+        if (t.includes('loss') || t.includes('l o s s') || t.includes('❌')) return 'auto-loss';
+        if (t.includes('win') && !t.includes('wingo')) return 'auto-win';
+        if (t.includes('✅')) return 'auto-win';
+        return null;
+      }
+      return null;
+    }
+
+    // Ek prediction ka result fetch karo Telegram se - exist karta hai ya delete hua
+    async function checkPredictionDeleted(msgId) {
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMessages?chat_id=@${CHANNEL_USERNAME}&message_ids=${msgId}`);
+        const data = await res.json();
+        // Agar message exist nahi karta ya empty array aaya → deleted → LOSS
+        if (data.ok && (!data.result || data.result.length === 0)) return true;
+        return false;
+      } catch(e) { return false; }
+    }
+
+    function extractPeriod(text) {
+      // ...1187 ya period: 1187 format se period number nikalo
+      const m = text.match(/\.\.\.?(\d+)/);
+      if (m) return m[1];
+      const m2 = text.match(/period[:\s]+[\.]*(\d+)/i);
+      if (m2) return m2[1];
+      return null;
+    }
+
+    function extractConfidence(text) {
+      const m = text.match(/confidence[:\s]+(\d+)%/i) || text.match(/(\d+)%/);
+      return m ? parseInt(m[1]) : 0;
+    }
+
+    function getSignal(text) {
+      const t = text.toLowerCase();
+      if (t.includes('big') || t.includes('🔴')) return 'hot';
+      if (t.includes('small') || t.includes('🟢')) return 'safe';
+      return 'active';
+    }
+
+    function signalHTML(type) {
+      const map = { hot: ['signal-hot','🔥','HIGH SIGNAL'], safe: ['signal-safe','✅','SAFE ZONE'], active: ['signal-active','⚡','ACTIVE'] };
+      const [cls, icon, label] = map[type] || map.active;
+      return `<span class="signal-badge ${cls}">${icon} ${label}</span>`;
+    }
+
+    function isPromoMessage(text) {
+      const t = text.toLowerCase();
+      // Prediction message check — naye aur purane dono formats support karo
+      const hasPeriod = t.includes('period') || t.includes('round') ||
+                        /\.\.\.\d+/.test(t) || // ...1174 format
+                        t.includes('wingo') || t.includes('win go') || t.includes('1m') || t.includes('5m') || t.includes('3m');
+      const hasPrediction = t.includes('big') || t.includes('small') ||
+                            t.includes('b i g') || t.includes('s m a l l') ||
+                            t.includes('confidence') || t.includes('lucky');
+      const isPrediction = hasPeriod && hasPrediction;
+      // Result message check
+      const isResult = t.includes('result') && (t.includes('period') || t.includes('number') ||
+                       t.includes('colour') || t.includes('color') || t.includes('size') || /\.\.\.\d+/.test(t));
+      return !isPrediction && !isResult;
+    }
+
+    function cleanPrediction(text) {
+      const blocked = [
+        'open game link','t.me','http','join now','join karo','telegram.me',
+        'subscribe','channel join','free mein','earning','help desk','vip tips',
+        'daily free','win rate','latest updates','next level','premium bot','automation',
+        'click to join','click here','join here','join us','abhi join','channel ko join',
+        'tap to join','press to join','follow us','whatsapp','invite',
+        'ny prediction bot','prediction bot','@ny_auto','@auto_predict'
+      ];
+      const lines = text.split('\n').filter(line => {
+        const l = line.toLowerCase().trim();
+        if (!l) return false;
+        // Box drawing characters wali lines hide karo (decorative only)
+        if (/^[╔╚║╗┌└│┐├┤▰▱◄►═\-\s\u2500-\u257F]+$/.test(line.trim())) return false;
+        return !blocked.some(kw => l.includes(kw));
+      });
+      while (lines.length && !lines[lines.length-1].trim()) lines.pop();
+      return lines.join('\n').trim();
+    }
+
+    function escapeHtml(t) {
+      return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // (unlock per-card removed — credit deducts automatically per new prediction)
+
+    // ==================== STATS ====================
+    function updateStats() {
+      // Sirf actual prediction messages count karo (result/promo nahi)
+      const onlyPreds = allPredictions.filter(p => {
+        const t = (p.text || '').toLowerCase();
+        const hasPeriod = t.includes('period') || t.includes('round') || t.includes('wingo') || t.includes('win go') || /\.\.\.\d+/.test(t);
+        const hasPred = t.includes('big') || t.includes('small') || t.includes('b i g') || t.includes('s m a l l') || t.includes('confidence') || t.includes('lucky');
+        return hasPeriod && hasPred;
+      });
+      const total = onlyPreds.length;
+      const today = new Date().toDateString();
+      const todayPreds = onlyPreds.filter(p => new Date(p.date*1000).toDateString() === today);
+
+      let wins = 0, losses = 0;
+      allPredictions.forEach(p => {
+        const t = (p.text || '').toLowerCase();
+        const isPred = (t.includes('wingo') || t.includes('period') || t.includes('...')) &&
+                       (t.includes('big') || t.includes('small') || t.includes('b i g') || t.includes('s m a l l') || t.includes('confidence'));
+        if (!isPred) return;
+        // Game API se result check karo
+        const gameRes = window._resultMap && window._resultMap[String(p.message_id)];
+        if (gameRes === 'win') wins++;
+        else if (gameRes === 'loss') losses++;
+      });
+      // Win/loss game API se — 100% accurate
+
+      const rated = wins + losses;
+      const acc = rated > 0 ? Math.round((wins / rated) * 100) : 0;
+
+      document.getElementById('acc-pct').textContent = rated > 0 ? acc + '%' : '—%';
+      document.getElementById('acc-pct').style.color = acc >= 70 ? 'var(--green)' : acc >= 50 ? 'var(--gold)' : 'var(--red)';
+      document.getElementById('acc-sub').textContent = rated > 0 ? `${wins} wins · ${losses} losses · ${rated} rated` : 'Auto-detecting from signals...';
+      document.getElementById('acc-bar').style.width = acc + '%';
+      document.getElementById('win-count').textContent = wins;
+      document.getElementById('loss-count').textContent = losses;
+
+      let streak = 0, streakType = '';
+      for (let p of allPredictions) {
+        const t = (p.text || '').toLowerCase();
+        const isPred = (t.includes('wingo') || t.includes('period') || t.includes('...')) &&
+                       (t.includes('big') || t.includes('small') || t.includes('b i g') || t.includes('s m a l l') || t.includes('confidence'));
+        if (!isPred) continue;
+        const gameRes = window._resultMap && window._resultMap[String(p.message_id)];
+        if (!gameRes) break;
+        const isWin = gameRes === 'win';
+        if (streak === 0) { streakType = isWin ? 'W' : 'L'; streak = 1; }
+        else if ((isWin && streakType === 'W') || (!isWin && streakType === 'L')) streak++;
+        else break;
+      }
+      document.getElementById('streak-val').textContent = streak > 0 ? `${streak} ${streakType === 'W' ? '✅' : '❌'}` : '—';
+
+      let tWins = 0, tLoss = 0;
+      todayPreds.forEach(p => {
+        const gameRes = window._resultMap && window._resultMap[String(p.message_id)];
+        if (gameRes === 'win') tWins++;
+        else if (gameRes === 'loss') tLoss++;
+      });
+      document.getElementById('today-count-s').textContent = todayPreds.length;
+      const tRated = tWins + tLoss;
+      document.getElementById('today-acc').textContent = tRated > 0 ? Math.round((tWins/tRated)*100) + '%' : '—%';
+      // Total: sirf prediction count
+      document.getElementById('stat-total').textContent = total;
+      // Accuracy: overall win/loss se
+      const rated = wins + losses;
+      const accPct = rated > 0 ? Math.round((wins / rated) * 100) : null;
+      const statToday = document.getElementById('stat-today');
+      if (accPct !== null) {
+        statToday.textContent = accPct + '%';
+        statToday.style.color = accPct >= 70 ? 'var(--green)' : accPct >= 50 ? 'var(--gold)' : 'var(--red)';
+      } else {
+        statToday.textContent = '—%';
+        statToday.style.color = 'var(--green)';
+      }
+    }
+
+    // ==================== NOTIF LOG ====================
+    function renderNotifLog() {
+      const el = document.getElementById('notif-log');
+      if (!notifLog.length) { el.innerHTML = '<div class="empty-alerts">📭 Koi notification abhi tak nahi</div>'; return; }
+      el.innerHTML = notifLog.slice(0,30).map(n => {
+        const isWin = n.icon === '✅';
+        const isLoss = n.icon === '❌';
+        const isBig = n.icon === '🔴';
+        const isSmall = n.icon === '🟢';
+        let titleColor = 'rgba(255,255,255,0.85)';
+        if (isWin || isSmall) titleColor = 'var(--green)';
+        else if (isLoss || isBig) titleColor = 'var(--red)';
+        return `
+        <div class="notif-item">
+          <div class="notif-icon">${n.icon || '📡'}</div>
+          <div style="flex:1">
+            <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:${titleColor};">${escapeHtml(n.title || '')}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:2px;">${escapeHtml(n.sub || '')}</div>
+            <div class="notif-time">${n.time}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function extractNotifInfo(rawText) {
+      const t = rawText || '';
+      const tl = t.toLowerCase();
+
+      // Period number extract karo
+      const periodMatch = t.match(/period\s*[:\s]+[.]*(\d+)/i) || t.match(/\.\.\.(\d+)/);
+      const period = periodMatch ? periodMatch[1] : '';
+
+      // Result message check — WIN/LOSS dono properly detect karo
+      const isResult = tl.includes('result') || tl.includes('l o s s') || tl.includes('w i n');
+      const isLoss = tl.includes('❌') || tl.includes('loss') || tl.includes('l o s s') || tl.includes('agli baar');
+      const isWin = !isLoss && (tl.includes('✅') || ((tl.includes('win') || tl.includes('w i n')) && !tl.includes('wingo')));
+
+      if (isResult && (isWin || isLoss)) {
+        // Result msg: WIN/LOSS clearly show karo
+        return {
+          icon: isWin ? '✅' : '❌',
+          title: isWin ? '✅ WIN' : '❌ LOSS',
+          sub: period ? `Period: ...${period}` : 'Result aaya'
+        };
+      } else if (!isResult || (!isWin && !isLoss && tl.includes('result'))) {
+        // Prediction msg: BIG/SMALL + Period
+        const isBig = tl.includes('b i g') || (tl.includes('big') && !tl.includes('result'));
+        const isSmall = tl.includes('s m a l l') || (tl.includes('small') && !tl.includes('result'));
+        const call = isBig ? '🔴 BIG' : isSmall ? '🟢 SMALL' : '📡 Signal';
+        // Confidence
+        const confMatch = t.match(/(\d+)%/);
+        const conf = confMatch ? ` · ${confMatch[1]}% conf` : '';
+        return {
+          icon: isBig ? '🔴' : isSmall ? '🟢' : '📡',
+          title: call,
+          sub: (period ? `Period: ...${period}` : 'Naya signal') + conf
+        };
+      } else {
+        // Fallback
+        return { icon: '📋', title: '📋 RESULT', sub: period ? `Period: ...${period}` : 'Result aaya' };
+      }
+    }
+
+    function addNotif(rawText, icon) {
+      const now = new Date();
+      const info = extractNotifInfo(rawText);
+      notifLog.unshift({
+        icon: info.icon,
+        title: info.title,
+        sub: info.sub,
+        time: formatDate(now.getTime()/1000) + ' · ' + formatTime(now.getTime()/1000)
+      });
+      notifLog = notifLog.slice(0,50);
+      localStorage.setItem('nx_notifs', JSON.stringify(notifLog));
+      const badge = document.getElementById('alert-badge');
+      badge.textContent = notifLog.length;
+      badge.style.display = 'inline';
+    }
+
+    // predictions.js ke liye global expose karo — turant assign karo
+    window.updateStats = updateStats;
+    window.addNotif = addNotif;
+    window.cleanPrediction = cleanPrediction;
+    window.escapeHtml = escapeHtml;
+    window.showToast = showToast;
+    window.playAlert = playAlert;
+    window.isPromoMessage = isPromoMessage;
+    window.extractPeriod = extractPeriod;
+    window.extractConfidence = extractConfidence;
+    window.autoDetectResult = autoDetectResult;
+    window.renderNotifLog = renderNotifLog;
+    window.renderTxnList = renderTxnList;
+    window.updateCreditUI = updateCreditUI;
+
+    // ==================== NOTIFICATIONS ====================
+    async function requestNotifPermission() {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+    }
+
+    function handleNotifToggle() {
+      const on = document.getElementById('toggle-notif')?.checked;
+      if (on) requestNotifPermission();
+    }
+
+    function sendPushNotif(title, body) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      // Service Worker ready hone par notification bhejo
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(reg => {
+          // Controller se try karo pehle
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'SHOW_NOTIFICATION', title, body });
+          } else {
+            // Directly registration se dikhao
+            reg.showNotification(title, {
+              body, icon: 'icon-192.png', badge: 'icon-192.png',
+              tag: 'nexus-signal', renotify: true,
+              vibrate: [200, 100, 200],
+              data: { url: location.origin }
+            });
+          }
+        }).catch(() => {
+          // Fallback: direct notification
+          try { new Notification(title, { body, icon: 'icon-192.png', tag: 'nexus-signal', renotify: true }); } catch(e) {}
+        });
+        return;
+      }
+      // Non-SW fallback
+      try {
+        new Notification(title, {
+          body, icon: 'icon-192.png', badge: 'icon-192.png',
+          tag: 'nexus-signal', renotify: true
+        });
+      } catch(e) {}
+    }
+
+    function playAlert(msgText) {
+      const soundOn = document.getElementById('toggle-sound')?.checked;
+      const notifOn = document.getElementById('toggle-notif')?.checked ?? true;
+      if (!notifOn) return; // User ne notification band kiya hai
+
+      if (soundOn) {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          [600, 800, 1000].forEach((freq, i) => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.frequency.value = freq; o.type = 'sine';
+            g.gain.setValueAtTime(0.15, ctx.currentTime + i*0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.1 + 0.2);
+            o.start(ctx.currentTime + i*0.1);
+            o.stop(ctx.currentTime + i*0.1 + 0.2);
+          });
+        } catch(e) {}
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      }
+      // Signal text se period aur prediction extract karo
+      let notifBody = 'Naya signal aaya!';
+      if (msgText) {
+        const lines = msgText.split('\n').map(l => l.trim()).filter(Boolean);
+        let period = '', prediction = '';
+        for (const line of lines) {
+          const ll = line.toLowerCase();
+          if (!period && (ll.includes('period') || ll.includes('round'))) {
+            period = line.includes(':') ? line.split(':').slice(1).join(':').trim() : line.replace(/period|round/gi,'').trim();
+          }
+          if (!prediction) {
+            if (ll.includes('b i g') || (ll.includes('big') && (line.includes('🔴') || line.includes('>>>')))) prediction = '🔴 BIG';
+            else if (ll.includes('s m a l l') || (ll.includes('small') && (line.includes('🟢') || line.includes('>>>')))) prediction = '🟢 SMALL';
+          }
+        }
+        if (period && prediction) notifBody = `Period: ${period} — ${prediction}`;
+        else if (period) notifBody = `Period: ${period}`;
+        else if (prediction) notifBody = prediction;
+        else notifBody = msgText.substring(0, 80) + (msgText.length > 80 ? '...' : '');
+      }
+      sendPushNotif('🎯 Nexus Prediction — New Signal!', notifBody);
+    }
+// ==================== STYLED PREDICTION BODY ====================
+    function formatPredictionBody(rawText) {
+      const cleaned = cleanPrediction(rawText);
+      const text = cleaned.replace(/NY\s*PREDICTION\s*(BOT)?\s*(V[\d.]+)?/gi, '').trim();
+      const lines = text.split('\n').filter(l => l.trim());
+      const fullLower = text.toLowerCase();
+      const isResult = fullLower.includes('result');
+
+      let shownResult = false;
+      const styledLines = lines.map(line => {
+        const l = line.trim();
+        if (!l) return '';
+        const ll = l.toLowerCase();
+        // Header/branding lines — hide karo
+        if (ll.includes('server') || ll.includes('engine') || ll.includes('mode') || ll.includes('bot v') ||
+            ll.includes('ny prediction') || ll.includes('prediction bot') || ll.includes('badsha') ||
+            ll.includes('ultra pro') || ll.includes('ny ultra') ||
+            /v\d+\.\d+/.test(ll) || // v11.0, v10.0 etc
+            l.includes('╔') || l.includes('╚') || l.includes('║') ||
+            l.includes('▓') || l.includes('◄') || l.includes('►')) {
+          return ''; // Hide completely
+        }
+        // Period / WinGo round detect karo — naye format mein "WinGo 1M  📌 ...1174"
+        if (ll.includes('period') || ll.includes('round') ||
+            (ll.includes('wingo') || ll.includes('win go')) && /\.\.\.\d+/.test(l)) {
+          // Extract period number from ...1174 format
+          const periodMatch = l.match(/\.\.\.?(\d+)/);
+          const val = periodMatch ? '...' + periodMatch[1] : (l.includes(':') ? l.split(':').slice(1).join(':').trim() : l);
+          return `<div class="msg-row"><span class="msg-key">📍 PERIOD</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        // WinGo type line — "WinGo 1M" etc
+        if ((ll.includes('wingo') || ll.includes('win go')) && !ll.includes('confidence')) {
+          const periodMatch = l.match(/\.\.\.?(\d+)/);
+          const val = periodMatch ? '...' + periodMatch[1] : l.replace(/[╔╚║┌└│▓◈◄►]/g, '').trim();
+          return `<div class="msg-row"><span class="msg-key">📍 PERIOD</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        if (ll.includes('time') && !ll.includes('real')) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">⏱ TIME</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        if (!isResult && (ll.includes('b i g') || (ll.includes('big') && (l.includes('🔴') || l.includes('>>>'))))) {
+          return `<div class="msg-predict big-predict">🔴 &nbsp; B I G</div>`;
+        }
+        if (!isResult && (ll.includes('s m a l l') || (ll.includes('small') && (l.includes('🟢') || l.includes('>>>'))))) {
+          return `<div class="msg-predict small-predict">🟢 &nbsp; S M A L L</div>`;
+        }
+        if (ll.includes('lucky') || (ll.includes('number') && !isResult)) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">🍀 LUCKY</span><span class="msg-val lucky-val">${escapeHtml(val)}</span></div>`;
+        }
+        if (ll.includes('confidence')) {
+          const m = l.match(/(\d+)%/);
+          const pct = m ? parseInt(m[1]) : 0;
+          const color = pct >= 90 ? 'var(--green)' : pct >= 70 ? 'var(--gold)' : 'var(--red)';
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">📊 CONF</span><span class="msg-val" style="color:${color};font-weight:800;font-size:16px">${escapeHtml(val)}</span></div>`;
+        }
+        if (isResult && (ll.includes('win') || ll.includes('w i n')) && !ll.includes('wingo')) {
+          if (shownResult) return ''; // Sirf ek baar dikhao
+          shownResult = true;
+          return `<div class="msg-result win-result">✅ &nbsp; W I N</div>`;
+        }
+        if (isResult && (ll.includes('loss') || ll.includes('l o s s') || ll.includes('agli baar'))) {
+          if (shownResult) return ''; // Sirf ek baar dikhao
+          shownResult = true;
+          return `<div class="msg-result loss-result">❌ &nbsp; L O S S</div>`;
+        }
+        if ((ll.includes('colour') || ll.includes('color')) && isResult) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">🎨 COLOR</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        if (ll.includes('size') && isResult) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          const isBig = val.toLowerCase().includes('big');
+          return `<div class="msg-row"><span class="msg-key">📐 SIZE</span><span class="msg-val" style="color:${isBig?'var(--red)':'var(--green)'}">${escapeHtml(val)}</span></div>`;
+        }
+        if (ll.includes('predict') && isResult) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">🎯 PREDICTED</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        if (ll.includes('number') && isResult) {
+          const val = l.includes(':') ? l.split(':').slice(1).join(':').trim() : l;
+          return `<div class="msg-row"><span class="msg-key">🔢 NUMBER</span><span class="msg-val">${escapeHtml(val)}</span></div>`;
+        }
+        return `<div class="msg-plain">${escapeHtml(l)}</div>`;
+      }).filter(Boolean);
+
+      return '<div class="pred-msg-body">' + styledLines.join('') + '</div>';
+    }
+
+    // ==================== RENDER CARDS ====================
+    function renderCards(predictions) {
+      if (currentTab !== 'signals') { (window.updateStats || function(){})(); return; }
+      const content = document.getElementById('content');
+
+      if (!predictionsRunning) {
+        content.innerHTML = `<div class="center-state">
+          <div class="state-icon">⏸</div>
+          <div class="state-title">PREDICTIONS PAUSED</div>
+          <div class="state-sub" style="margin-top:16px">
+            ${credits < 1 && !vipState.active
+              ? 'Credit khatam ho gaya. Earn karo aur dobara shuru karo.'
+              : 'Start button dabao predictions shuru karne ke liye.'
+            }
+          </div>
+          ${credits < 1 && !vipState.active ? `<button onclick="setTab('credits')" style="margin-top:18px;padding:10px 24px;border-radius:12px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);color:var(--gold);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;">🪙 EARN CREDITS</button>` : ''}
+        </div>`;
+        return;
+      }
+
+      if (!predictions.length) {
+        content.innerHTML = `<div class="center-state"><div class="state-icon">📡</div><div class="state-title">NO SIGNALS YET</div><div class="state-sub">Waiting for predictions...</div></div>`;
+        return;
+      }
+
+      // Pehle promo filter karo
+      let filtered = predictions.filter(p => !isPromoMessage(p.text || ''));
+      if (confFilter > 0) {
+        filtered = filtered.filter(p => extractConfidence(p.text || '') >= confFilter);
+      }
+
+      (window.updateStats || function(){})();
+
+      if (!filtered.length) {
+        content.innerHTML = `<div class="center-state"><div class="state-icon">🔍</div><div class="state-title">NO SIGNALS</div><div class="state-sub">${confFilter}%+ confidence filter active</div></div>`;
+        return;
+      }
+
+      // Silent update - sirf naye cards add karo, screen flash nahi hoga
+      const html = `<div class="card-list">` + filtered.map((p, i) => {
+        const msgId = p.message_id;
+        const autoRes = autoDetectResult(p.text || '');
+        const sig = getSignal(p.text || '');
+        const isNew = i === 0;
+        const cardClass = autoRes === 'auto-win' ? 'result-win' : autoRes === 'auto-loss' ? 'result-loss' : '';
+        const idStr = String(msgId).slice(-4).padStart(4, '0');
+        const conf = extractConfidence(p.text || '');
+
+        // Auto-deduct credit for each new prediction shown (silently)
+        deductCreditForNewPrediction(msgId, idStr, p.text || '');
+
+        let resultHTML = '';
+        const isResultCard = (p.text || '').toLowerCase().includes('result');
+
+        // Timer: sirf pending prediction cards pe — game API se sync hoga
+        let timerHTML = '';
+        const isPredCard = !isResultCard;
+        if (isPredCard) {
+          // Result already resolved hai?
+          const resolvedResult = checkPredictionResult(msgId, p.text || '');
+          if (!resolvedResult) {
+            // Still pending — timer dikhao (gameApiPoller update karega)
+            const nowSec = new Date().getSeconds();
+            const rem = 60 - nowSec;
+            timerHTML = `<span class="pred-timer${rem <= 10 ? ' timer-urgent' : ''}" data-msgid="${msgId}"><span class="timer-dot"></span><span class="timer-txt">${rem}s</span></span>`;
+          }
+        }
+        // Game API se result check karo — 100% accurate
+        const gameResult = !isResultCard ? checkPredictionResult(msgId, p.text || '') : null;
+
+        if (isResultCard) {
+          resultHTML = '';
+        } else if (gameResult === 'win') {
+          resultHTML = `<span class="result-tag auto-win">✅ WIN</span>`;
+        } else if (gameResult === 'loss') {
+          resultHTML = `<span class="result-tag auto-loss">❌ LOSS</span>`;
+        } else {
+          resultHTML = `<span class="result-tag pending" data-pred-msgid="${msgId}">⏳ PENDING</span>`;
+        }
+
+        return `
+          <div class="pred-card ${isNew ? 'is-new' : ''} ${cardClass}" data-msgid="${msgId}" style="animation-delay:${i*0.04}s">
+            <div class="card-header">
+              <div class="card-id">SIG-${idStr}${conf ? ` · ${conf}%` : ''}</div>
+              <div class="card-time">${formatDate(p.date)} · ${formatTime(p.date)}</div>
+            </div>
+            <div class="card-body">${formatPredictionBody(p.text || '')}</div>
+            <div class="card-footer">
+              ${signalHTML(sig)}
+              ${timerHTML}
+              ${resultHTML}
+            </div>
+          </div>`;
+      }).join('') + `</div>`;
+
+      // Smooth silent update
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const newList = tempDiv.querySelector('.card-list');
+      const existingList = content.querySelector('.card-list');
+
+      if (!existingList) {
+        content.innerHTML = html;
+      } else {
+        const existingIds = new Set([...existingList.querySelectorAll('.pred-card')].map(c => c.dataset.msgid));
+        const newCards = [...newList.querySelectorAll('.pred-card')];
+        let added = 0;
+        [...newCards].reverse().forEach(card => {
+          if (!existingIds.has(card.dataset.msgid)) {
+            card.style.animationDelay = '0s';
+            existingList.prepend(card);
+            added++;
+          }
+        });
+        // Update existing cards (win/loss result update)
+        newCards.forEach(card => {
+          const existing = existingList.querySelector(`[data-msgid="${card.dataset.msgid}"]`);
+          if (existing) {
+            const newFooter = card.querySelector('.card-footer');
+            const existFooter = existing.querySelector('.card-footer');
+            if (newFooter && existFooter && newFooter.innerHTML !== existFooter.innerHTML) {
+              existFooter.innerHTML = newFooter.innerHTML;
+            }
+          }
+        });
+        // Max 50 cards
+        const allCards = existingList.querySelectorAll('.pred-card');
+        if (allCards.length > 50) [...allCards].slice(50).forEach(c => c.remove());
+      }
+    }
+
+    // ==================== GAME API ENGINE ====================
+    // Game API se real results fetch karo — win/loss 100% accurate
+    const GAME_API = 'https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json';
+
+    // Results store — period (last 4 digits) → {number, size, fetched}
+    window._gameResults = window._gameResults || {};
+    // Win/Loss override store — msgId → 'win' | 'loss'
+    window._resultMap = window._resultMap || JSON.parse(localStorage.getItem('nx_result_map') || '{}');
+
+    function saveResultMap() {
+      // Sirf last 200 entries rakhho
+      const keys = Object.keys(window._resultMap);
+      if (keys.length > 200) {
+        const toDelete = keys.slice(0, keys.length - 200);
+        toDelete.forEach(k => delete window._resultMap[k]);
+      }
+      localStorage.setItem('nx_result_map', JSON.stringify(window._resultMap));
+    }
+
+    // Game API fetch karo
+    async function fetchGameResults() {
+      try {
+        const res = await fetch(GAME_API);
+        const data = await res.json();
+        const list = data.data.list;
+        if (!list || !list.length) return null;
+
+        // Last 20 results store karo
+        list.forEach(item => {
+          const period4 = String(item.issueNumber).slice(-4);
+          const num = parseInt(item.number);
+          window._gameResults[period4] = {
+            number: num,
+            size: num >= 5 ? 'BIG' : 'SMALL',
+            colour: item.colour || ''
+          };
+        });
+
+        // Latest result return karo
+        const latest = list[0];
+        const nextIssue = (BigInt(latest.issueNumber) + 1n).toString().slice(-4);
+        const nowSec = new Date().getSeconds();
+        const remaining = 60 - nowSec;
+
+        return {
+          latestPeriod: String(latest.issueNumber).slice(-4),
+          nextPeriod: nextIssue,
+          latestNumber: parseInt(latest.number),
+          latestSize: parseInt(latest.number) >= 5 ? 'BIG' : 'SMALL',
+          timerRemaining: remaining
+        };
+      } catch(e) {
+        return null;
+      }
+    }
+
+    // Prediction card ke liye result check karo
+    function checkPredictionResult(msgId, predText) {
+      // Already resolved?
+      if (window._resultMap[String(msgId)]) return window._resultMap[String(msgId)];
+
+      // Period extract karo
+      const period = extractPeriod(predText);
+      if (!period) return null;
+
+      // Game results mein dhundho
+      const gameRes = window._gameResults[period];
+      if (!gameRes) return null;
+
+      // Prediction BIG/SMALL extract karo
+      const t = predText.toLowerCase();
+      const predBig = t.includes('b i g') || (t.includes('big') && !t.includes('result'));
+      const predSmall = t.includes('s m a l l') || (t.includes('small') && !t.includes('result'));
+      if (!predBig && !predSmall) return null;
+
+      const predSize = predBig ? 'BIG' : 'SMALL';
+      const isWin = predSize === gameRes.size;
+
+      const result = isWin ? 'win' : 'loss';
+      window._resultMap[String(msgId)] = result;
+      saveResultMap();
+      return result;
+    }
+
+    // Timer UI update — real game clock se sync
+    function updateGameTimer(remaining) {
+      const timers = document.querySelectorAll('.pred-timer');
+      timers.forEach(el => {
+        const txt = el.querySelector('.timer-txt');
+        if (!txt) return;
+        if (remaining <= 0) {
+          el.classList.add('timer-done');
+          el.classList.remove('timer-urgent');
+          txt.textContent = '⏱ Result aane wala...';
+        } else {
+          el.classList.remove('timer-done');
+          txt.textContent = remaining + 's';
+          if (remaining <= 10) el.classList.add('timer-urgent');
+          else el.classList.remove('timer-urgent');
+        }
+      });
+    }
+
+    // Game API poller — har 3 sec pe check karo
+    let _lastGamePeriod = null;
+    async function gameApiPoller() {
+      const gameData = await fetchGameResults();
+      if (!gameData) { setTimeout(gameApiPoller, 3000); return; }
+
+      // Timer sync karo
+      updateGameTimer(gameData.timerRemaining);
+
+      // Naya result aaya?
+      if (_lastGamePeriod && _lastGamePeriod !== gameData.latestPeriod) {
+        // Naya result — sabhi pending cards check karo
+        document.querySelectorAll('.pred-card').forEach(card => {
+          const msgId = card.dataset.msgid;
+          if (!msgId) return;
+          const pendingTag = card.querySelector('.result-tag.pending');
+          if (!pendingTag) return;
+
+          // Is card ka prediction text dhundho
+          const pred = allPredictions.find(p => String(p.message_id) === msgId);
+          if (!pred) return;
+
+          const result = checkPredictionResult(msgId, pred.text || '');
+          if (result === 'win') {
+            pendingTag.className = 'result-tag auto-win';
+            pendingTag.textContent = '✅ WIN';
+            card.classList.add('result-win');
+            card.classList.remove('result-loss');
+            addNotif('✅ WIN — SIG-' + String(msgId).slice(-4), '✅');
+            (window.updateStats || function(){})();
+          } else if (result === 'loss') {
+            pendingTag.className = 'result-tag auto-loss';
+            pendingTag.textContent = '❌ LOSS';
+            card.classList.add('result-loss');
+            card.classList.remove('result-win');
+            addNotif('❌ LOSS — SIG-' + String(msgId).slice(-4), '❌');
+            (window.updateStats || function(){})();
+          }
+        });
+        // Cards re-render karo updated results ke saath
+        renderCards(allPredictions);
+      }
+
+      // Stats tab UI update karo
+      const timerDisplay = document.getElementById('game-timer-display');
+      const nextPeriodEl = document.getElementById('game-next-period');
+      const lastResultEl = document.getElementById('game-last-result');
+      const timerBar = document.getElementById('game-timer-bar');
+      if (timerDisplay) timerDisplay.textContent = gameData.timerRemaining + 's';
+      if (nextPeriodEl) nextPeriodEl.textContent = '...' + gameData.nextPeriod;
+      if (lastResultEl) {
+        // allPredictions sorted by message_id — latest pehle
+        const sortedPreds = [...allPredictions].sort((a, b) => (b.message_id || 0) - (a.message_id || 0));
+        const latestTgPred = sortedPreds.find(p => {
+          const t = (p.text || '').toLowerCase();
+          const isPred = (t.includes('wingo') || t.includes('b i g') || t.includes('s m a l l') ||
+                         (t.includes('big') && !t.includes('result')) ||
+                         (t.includes('small') && !t.includes('result')));
+          return isPred && !isPromoMessage(p.text || '');
+        });
+        if (latestTgPred) {
+          const t = (latestTgPred.text || '').toLowerCase();
+          const isBig = t.includes('b i g') || (t.includes('big') && !t.includes('result'));
+          const size = isBig ? 'BIG' : 'SMALL';
+          lastResultEl.textContent = size;
+          lastResultEl.style.color = isBig ? 'var(--red)' : 'var(--green)';
+          lastResultEl.style.fontSize = '18px';
+          lastResultEl.style.fontWeight = '700';
+        }
+      }
+      if (timerBar) timerBar.style.width = ((gameData.timerRemaining / 60) * 100) + '%';
+
+      _lastGamePeriod = gameData.latestPeriod;
+      setTimeout(gameApiPoller, 3000);
+    }
+
+    // Start game API poller
+    gameApiPoller();
+
+        // reconcileLossSet — ab _resultMap use karta hai, _lossSet nahi
+    function reconcileLossSet() {
+      // _resultMap mein win hai toh _lossSet se remove karo
+      if (!window._lossSet || window._lossSet.size === 0) return;
+      let changed = false;
+      window._lossSet.forEach(msgId => {
+        if (window._resultMap && window._resultMap[msgId] === 'win') {
+          window._lossSet.delete(msgId);
+          changed = true;
+        }
+      });
+      if (changed) localStorage.setItem('nx_loss_set', JSON.stringify([...window._lossSet]));
+    }
+
+    // ==================== FETCH ====================
+    // Channel se recent messages fetch karo (history)
+    async function fetchChannelHistory() {
+      try {
+        // getChatHistory se recent 50 messages lo
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatHistory?chat_id=${CHANNEL}&limit=50`);
+        const data = await res.json();
+        if (data.ok && data.result && data.result.length > 0) {
+          return data.result.filter(m => m.text).reverse(); // newest last
+        }
+      } catch(e) {}
+      // Fallback: getUpdates se try karo
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100&allowed_updates=%5B%22channel_post%22%5D`);
+        const data = await res.json();
+        if (data.ok && data.result) {
+          return data.result.filter(u => u.channel_post && u.channel_post.text).map(u => u.channel_post);
+        }
+      } catch(e) {}
+      return [];
+    }
+
+    async function fetchPredictions(isRefresh = false) {
+      if (!predictionsRunning && !isFirstLoad) return;
+      const content = document.getElementById('content');
+      if (isFirstLoad) content.innerHTML = `<div class="center-state"><div class="loader"></div><div class="state-title">LOADING SIGNALS...</div></div>`;
+
+      try {
+        if (isFirstLoad) {
+          // First load: channel history se recent messages lo
+          const historyPosts = await fetchChannelHistory();
+          if (historyPosts.length > 0) {
+            allPredictions = historyPosts.slice(-100).reverse();
+            if (allPredictions.length > 0) {
+              // updateOffset set karo taaki longPoll naye messages se shuru kare
+              const lastId = Math.max(...allPredictions.map(p => p.message_id || 0));
+              window._lastHistoryMsgId = lastId;
+            }
+          }
+          // getUpdates queue bhi drain karo taaki longPoll fresh start kare
+          const upRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100&allowed_updates=%5B%22channel_post%22%5D`);
+          const upData = await upRes.json();
+          if (upData.ok && upData.result && upData.result.length > 0) {
+            // Naye messages jo history mein nahi hain
+            const existingIds = new Set(allPredictions.map(p => p.message_id));
+            const freshPosts = upData.result.filter(u => u.channel_post && u.channel_post.text && !existingIds.has(u.channel_post.message_id)).map(u => u.channel_post);
+            if (freshPosts.length > 0) {
+              allPredictions = [...freshPosts, ...allPredictions].slice(0, 100);
+            }
+            updateOffset = upData.result[upData.result.length - 1].update_id + 1;
+          }
+        } else {
+          // Regular poll: sirf naye messages
+          const offsetParam = updateOffset ? `&offset=${updateOffset}` : '';
+          const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100&allowed_updates=%5B%22channel_post%22%5D${offsetParam}`);
+          const data = await res.json();
+          if (data.ok && data.result && data.result.length > 0) {
+            const newPosts = data.result.filter(u => u.channel_post && u.channel_post.text).map(u => u.channel_post);
+            updateOffset = data.result[data.result.length - 1].update_id + 1;
+            const existingIds = new Set(allPredictions.map(p => p.message_id));
+            const brandNew = newPosts.filter(p => !existingIds.has(p.message_id));
+            if (brandNew.length > 0) {
+              allPredictions = [...brandNew, ...allPredictions].slice(0, 100);
+              brandNew.forEach(p => (window.addNotif||function(){})(window.cleanPrediction ? window.cleanPrediction(p.text || '') : p.text, '📡'));
+              (window.playAlert||function(){})(window.cleanPrediction ? window.cleanPrediction(brandNew[0]?.text || "") : "");
+              newCount += brandNew.length;
+              const badge = document.getElementById('fab-new');
+              badge.textContent = newCount;
+              badge.style.display = 'block';
+            }
+          }
+        }
+
+        if (allPredictions.length > 0) {
+          reconcileLossSet(); // Win results se _lossSet clean karo
+          renderCards(allPredictions);
+        }
+        else if (isFirstLoad) {
+          content.innerHTML = `<div class="center-state"><div class="state-icon">⏳</div><div class="state-title">WAITING FOR SIGNALS</div></div>`;
+        }
+
+        document.getElementById('stat-status').textContent = 'LIVE';
+        document.getElementById('stat-status').style.color = 'var(--green)';
+        const now = new Date();
+        document.getElementById('last-updated').textContent = `Last updated: ${now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+      } catch(e) {
+        // ERR nahi dikhana — LIVE hi rakhna
+        document.getElementById('stat-status').textContent = 'LIVE';
+        document.getElementById('stat-status').style.color = 'var(--green)';
+        if (isFirstLoad) content.innerHTML = `<div class="error-box">⚠️ Connection error. Retry karo.<br><small style="opacity:0.6">${e.message}</small></div>`;
+      }
+
+      isFirstLoad = false;
+    }
+
+    function doRefresh() {
+      document.getElementById('fab-new').style.display = 'none';
+      newCount = 0;
+      fetchPredictions(true);
+    }
+
+    async function longPoll() {
+      if (!predictionsRunning) { setTimeout(longPoll, 5000); return; }
+      try {
+        const offsetParam = updateOffset ? `&offset=${updateOffset}` : '';
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?timeout=20&limit=10&allowed_updates=%5B%22channel_post%22%5D${offsetParam}`);
+        const data = await res.json();
+        if (data.ok && data.result && data.result.length > 0) {
+          const newPosts = data.result.filter(u => u.channel_post && u.channel_post.text).map(u => u.channel_post);
+          updateOffset = data.result[data.result.length - 1].update_id + 1;
+          const existingIds = new Set(allPredictions.map(p => p.message_id));
+          const brandNew = newPosts.filter(p => !existingIds.has(p.message_id));
+          if (brandNew.length > 0) {
+            allPredictions = [...brandNew, ...allPredictions].slice(0, 100);
+            renderCards(allPredictions);
+            brandNew.forEach(p => (window.addNotif||function(){})(window.cleanPrediction ? window.cleanPrediction(p.text || '') : p.text, '📡'));
+            playAlert(cleanPrediction(brandNew[0]?.text || ''));
+            document.getElementById('fab-btn').classList.add('spinning');
+            setTimeout(() => document.getElementById('fab-btn').classList.remove('spinning'), 500);
+            const now = new Date();
+            document.getElementById('last-updated').textContent = `Last updated: ${now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+          }
+        }
+      } catch(e) {}
+      longPoll();
+    }
+
+    // ==================== INIT ====================
+    updateCreditUI();
+    updateAdminUI();
+    checkDailyBonus();
+    setTimeout(initWheel, 300);
+    setTimeout(requestNotifPermission, 2000); // 2s baad permission maango
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+  </script>
 </body>
 </html>
