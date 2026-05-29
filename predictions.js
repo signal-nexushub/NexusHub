@@ -113,9 +113,10 @@
         return;
       }
 
+      // Pehle promo filter karo
       let filtered = predictions.filter(p => !isPromoMessage(p.text || ''));
       if (confFilter > 0) {
-        filtered = predictions.filter(p => extractConfidence(p.text || '') >= confFilter);
+        filtered = filtered.filter(p => extractConfidence(p.text || '') >= confFilter);
       }
 
       updateStats();
@@ -173,15 +174,18 @@
             timerHTML = `<span class="pred-timer timer-done"><span class="timer-txt">⏱ Next soon</span></span>`;
           }
         }
+        // Loss check: _lossSet mein hai toh loss (timer expire + message deleted)
+        const isLost = window._lossSet && window._lossSet.has(String(msgId));
+        const finalResult = isLost ? 'auto-loss' : autoRes;
+
         if (isResultCard) {
-          // Result message — WIN/LOSS already shown inside card body, no footer tag needed
           resultHTML = '';
-        } else if (autoRes === 'auto-win') {
+        } else if (finalResult === 'auto-win') {
           resultHTML = `<span class="result-tag auto-win">✅ WIN</span>`;
-        } else if (autoRes === 'auto-loss') {
+        } else if (finalResult === 'auto-loss') {
           resultHTML = `<span class="result-tag auto-loss">❌ LOSS</span>`;
         } else {
-          resultHTML = `<span class="result-tag pending">⏳ PENDING</span>`;
+          resultHTML = `<span class="result-tag pending" data-pred-msgid="${msgId}">⏳ PENDING</span>`;
         }
 
         return `
@@ -236,10 +240,25 @@
     }
 
     // ==================== PREDICTION CARD TIMER ENGINE ====================
+    // Loss detection set — jinhe loss mark kiya gaya
+    window._lossSet = window._lossSet || new Set(JSON.parse(localStorage.getItem('nx_loss_set') || '[]'));
+
+    // Telegram se message exist check karo
+    async function checkMsgExists(msgId) {
+      try {
+        const chatId = CHANNEL.replace('@', '');
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage?chat_id=${chatId}&from_chat_id=${chatId}&message_id=${msgId}`);
+        const data = await res.json();
+        // agar 400 "message to forward not found" → deleted → loss
+        if (!data.ok && data.description && data.description.includes('not found')) return false;
+        return true;
+      } catch(e) { return true; } // network error pe assume exists
+    }
+
     (function startTimerEngine() {
-      setInterval(() => {
+      setInterval(async () => {
         const timers = document.querySelectorAll('.pred-timer[data-born]');
-        timers.forEach(el => {
+        timers.forEach(async el => {
           const born = parseInt(el.getAttribute('data-born'));
           const interval = parseInt(el.getAttribute('data-interval') || '300000');
           const nextTime = born + interval;
@@ -249,8 +268,37 @@
           if (remaining <= 0) {
             el.classList.remove('timer-urgent');
             el.classList.add('timer-done');
-            el.removeAttribute('data-born'); // stop updating
-            txt.textContent = '⏱ Next soon';
+            el.removeAttribute('data-born');
+            txt.textContent = '⏱ Checking...';
+
+            // Timer expire hua — check karo prediction still pending hai ya win/loss hua
+            const msgId = el.getAttribute('data-msgid');
+            if (msgId && !window._lossSet.has(String(msgId))) {
+              // Sirf tab check karo jab result tag pending ho
+              const card = document.querySelector(`.pred-card[data-msgid="${msgId}"]`);
+              const pendingTag = card && card.querySelector('.result-tag.pending');
+              if (pendingTag) {
+                // Telegram se check karo — agar message delete hua toh loss
+                const exists = await checkMsgExists(parseInt(msgId));
+                if (!exists) {
+                  // Message delete hua = LOSS
+                  window._lossSet.add(String(msgId));
+                  localStorage.setItem('nx_loss_set', JSON.stringify([...window._lossSet]));
+                  // Card update karo
+                  if (pendingTag) {
+                    pendingTag.className = 'result-tag auto-loss';
+                    pendingTag.textContent = '❌ LOSS';
+                    card.classList.add('result-loss');
+                  }
+                  // History update
+                  addNotif('❌ LOSS — SIG-' + String(msgId).slice(-4), '❌');
+                } else {
+                  txt.textContent = '⏱ Next soon';
+                }
+              } else {
+                txt.textContent = '⏱ Next soon';
+              }
+            }
           } else {
             const remSec = Math.ceil(remaining / 1000);
             if (remSec > 60) {

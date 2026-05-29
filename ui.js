@@ -115,17 +115,27 @@
 
     function autoDetectResult(text) {
       const t = text.toLowerCase();
-      // Sirf RESULT messages se detect karo (prediction messages se nahi)
-      const isResultMsg = t.includes('result') || t.includes('l o s s') || t.includes('w i n');
-      if (!isResultMsg) return null;
-      // Loss
-      if (t.includes('❌') && (t.includes('loss') || t.includes('l o s s'))) return 'auto-loss';
-      if (t.includes('agli baar') || t.includes('gli baar')) return 'auto-loss';
-      if (t.includes('loss') && t.includes('result')) return 'auto-loss';
-      // Win
-      if (t.includes('✅') && (t.includes('win') || t.includes('w i n'))) return 'auto-win';
-      if (t.includes('win') && t.includes('result') && !t.includes('wingo')) return 'auto-win';
+      // Result message se detect karo
+      const isResultMsg = t.includes('result');
+      if (isResultMsg) {
+        if (t.includes('agli baar') || t.includes('gli baar')) return 'auto-loss';
+        if (t.includes('loss') || t.includes('l o s s') || t.includes('❌')) return 'auto-loss';
+        if (t.includes('win') && !t.includes('wingo')) return 'auto-win';
+        if (t.includes('✅')) return 'auto-win';
+        return null;
+      }
       return null;
+    }
+
+    // Ek prediction ka result fetch karo Telegram se - exist karta hai ya delete hua
+    async function checkPredictionDeleted(msgId) {
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMessages?chat_id=@${CHANNEL_USERNAME}&message_ids=${msgId}`);
+        const data = await res.json();
+        // Agar message exist nahi karta ya empty array aaya → deleted → LOSS
+        if (data.ok && (!data.result || data.result.length === 0)) return true;
+        return false;
+      } catch(e) { return false; }
     }
 
     function extractConfidence(text) {

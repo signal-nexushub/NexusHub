@@ -214,7 +214,10 @@
         return;
       }
       unlockedCards.add(msgId);
+      localStorage.setItem('nx_unlocked', JSON.stringify([...unlockedCards]));
       _ac(-1, '📡 Prediction SIG-' + idStr);
+      // Alerts tab mein bhi dikhao
+      addNotif('📡 Prediction SIG-' + idStr + ' unlocked (-1 credit)', '📡');
       checkCreditAutoStop();
     }
 
