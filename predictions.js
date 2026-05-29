@@ -373,19 +373,23 @@
       if (timerDisplay) timerDisplay.textContent = gameData.timerRemaining + 's';
       if (nextPeriodEl) nextPeriodEl.textContent = '...' + gameData.nextPeriod;
       if (lastResultEl) {
-        // Latest TG prediction se BIG/SMALL dikhao
-        const latestTgPred = allPredictions.find(p => {
+        // allPredictions sorted by message_id — latest pehle
+        const sortedPreds = [...allPredictions].sort((a, b) => (b.message_id || 0) - (a.message_id || 0));
+        const latestTgPred = sortedPreds.find(p => {
           const t = (p.text || '').toLowerCase();
-          return (t.includes('wingo') || t.includes('...')) &&
-                 (t.includes('big') || t.includes('small') || t.includes('b i g') || t.includes('s m a l l'));
+          const isPred = (t.includes('wingo') || t.includes('b i g') || t.includes('s m a l l') ||
+                         (t.includes('big') && !t.includes('result')) ||
+                         (t.includes('small') && !t.includes('result')));
+          return isPred && !isPromoMessage(p.text || '');
         });
         if (latestTgPred) {
           const t = (latestTgPred.text || '').toLowerCase();
           const isBig = t.includes('b i g') || (t.includes('big') && !t.includes('result'));
           const size = isBig ? 'BIG' : 'SMALL';
-          const period = extractPeriod(latestTgPred.text || '') || '...';
-          lastResultEl.textContent = '...' + period.slice(-4) + ' · ' + size;
+          lastResultEl.textContent = size;
           lastResultEl.style.color = isBig ? 'var(--red)' : 'var(--green)';
+          lastResultEl.style.fontSize = '18px';
+          lastResultEl.style.fontWeight = '700';
         }
       }
       if (timerBar) timerBar.style.width = ((gameData.timerRemaining / 60) * 100) + '%';
