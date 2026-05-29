@@ -138,6 +138,15 @@
       } catch(e) { return false; }
     }
 
+    function extractPeriod(text) {
+      // ...1187 ya period: 1187 format se period number nikalo
+      const m = text.match(/\.\.\.?(\d+)/);
+      if (m) return m[1];
+      const m2 = text.match(/period[:\s]+[\.]*(\d+)/i);
+      if (m2) return m2[1];
+      return null;
+    }
+
     function extractConfidence(text) {
       const m = text.match(/confidence[:\s]+(\d+)%/i) || text.match(/(\d+)%/);
       return m ? parseInt(m[1]) : 0;
@@ -214,10 +223,15 @@
       let wins = 0, losses = 0;
       allPredictions.forEach(p => {
         const r = autoDetectResult(p.text || '');
-        if (r === 'auto-win') wins++;
-        else if (r === 'auto-loss') losses++;
+        // Win result message se detect karo
+        if (r === 'auto-win') { wins++; return; }
+        if (r === 'auto-loss') { losses++; return; }
+        // Timer-based loss: _lossSet mein hai aur prediction card hai
+        const t = (p.text || '').toLowerCase();
+        const isPred = (t.includes('wingo') || t.includes('period') || t.includes('...')) && (t.includes('big') || t.includes('small') || t.includes('confidence') || t.includes('b i g') || t.includes('s m a l l'));
+        if (isPred && window._lossSet && window._lossSet.has(String(p.message_id))) losses++;
       });
-      // Win/loss sirf result messages se, total sirf predictions se
+      // Win/loss sirf result messages se ya _lossSet se, total sirf predictions se
 
       const rated = wins + losses;
       const acc = rated > 0 ? Math.round((wins / rated) * 100) : 0;
@@ -231,7 +245,13 @@
 
       let streak = 0, streakType = '';
       for (let p of allPredictions) {
-        const r = autoDetectResult(p.text || '');
+        let r = autoDetectResult(p.text || '');
+        // Timer-based loss bhi check karo
+        if (!r) {
+          const t = (p.text || '').toLowerCase();
+          const isPred = (t.includes('wingo') || t.includes('period') || t.includes('...')) && (t.includes('big') || t.includes('small') || t.includes('confidence') || t.includes('b i g') || t.includes('s m a l l'));
+          if (isPred && window._lossSet && window._lossSet.has(String(p.message_id))) r = 'auto-loss';
+        }
         if (!r) break;
         const isWin = r === 'auto-win';
         if (streak === 0) { streakType = isWin ? 'W' : 'L'; streak = 1; }

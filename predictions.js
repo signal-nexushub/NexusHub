@@ -174,6 +174,11 @@
             timerHTML = `<span class="pred-timer timer-done"><span class="timer-txt">⏱ Next soon</span></span>`;
           }
         }
+        // Win detect hua toh _lossSet se remove karo (win result message aaya = not a loss)
+        if (autoRes === 'auto-win' && window._lossSet && window._lossSet.has(String(msgId))) {
+          window._lossSet.delete(String(msgId));
+          localStorage.setItem('nx_loss_set', JSON.stringify([...window._lossSet]));
+        }
         // Loss check: _lossSet mein hai toh loss (timer expire + message deleted)
         const isLost = window._lossSet && window._lossSet.has(String(msgId));
         const finalResult = isLost ? 'auto-loss' : autoRes;
@@ -243,6 +248,28 @@
     // Loss detection set — jinhe loss mark kiya gaya
     window._lossSet = window._lossSet || new Set(JSON.parse(localStorage.getItem('nx_loss_set') || '[]'));
 
+    // _lossSet ko allPredictions ke win results se reconcile karo
+    function reconcileLossSet() {
+      if (!window._lossSet || window._lossSet.size === 0) return;
+      let changed = false;
+      window._lossSet.forEach(msgId => {
+        // Koi bhi prediction jiska win result hai usse remove karo
+        const pred = allPredictions.find(p => String(p.message_id) === msgId);
+        if (!pred) return;
+        const period = extractPeriod(pred.text || '');
+        if (!period) return;
+        const hasWin = allPredictions.some(p => {
+          const t = (p.text || '').toLowerCase();
+          return t.includes('result') && t.includes(period) && (t.includes('win') || t.includes('✅'));
+        });
+        if (hasWin) {
+          window._lossSet.delete(msgId);
+          changed = true;
+        }
+      });
+      if (changed) localStorage.setItem('nx_loss_set', JSON.stringify([...window._lossSet]));
+    }
+
     // Telegram se message exist check karo
     async function checkMsgExists(msgId) {
       try {
@@ -278,6 +305,20 @@
               const card = document.querySelector(`.pred-card[data-msgid="${msgId}"]`);
               const pendingTag = card && card.querySelector('.result-tag.pending');
               if (pendingTag) {
+                // Pehle check karo - allPredictions mein is period ka win result hai?
+                const thisCard = allPredictions.find(p => p.message_id == msgId);
+                const thisPeriod = thisCard ? extractPeriod(thisCard.text || '') : null;
+                const hasWinResult = thisPeriod && allPredictions.some(p => {
+                  const t = (p.text || '').toLowerCase();
+                  return t.includes('result') && t.includes(thisPeriod) && (t.includes('win') || t.includes('✅'));
+                });
+                if (hasWinResult) {
+                  // Win result aa gaya - pending hatao, win dikhao
+                  pendingTag.className = 'result-tag auto-win';
+                  pendingTag.textContent = '✅ WIN';
+                  card.classList.add('result-win');
+                  return;
+                }
                 // Telegram se check karo — agar message delete hua toh loss
                 const exists = await checkMsgExists(parseInt(msgId));
                 if (!exists) {
@@ -319,27 +360,68 @@
     })();
 
     // ==================== FETCH ====================
+    // Channel se recent messages fetch karo (history)
+    async function fetchChannelHistory() {
+      try {
+        // getChatHistory se recent 50 messages lo
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatHistory?chat_id=${CHANNEL}&limit=50`);
+        const data = await res.json();
+        if (data.ok && data.result && data.result.length > 0) {
+          return data.result.filter(m => m.text).reverse(); // newest last
+        }
+      } catch(e) {}
+      // Fallback: getUpdates se try karo
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100&allowed_updates=%5B%22channel_post%22%5D`);
+        const data = await res.json();
+        if (data.ok && data.result) {
+          return data.result.filter(u => u.channel_post && u.channel_post.text).map(u => u.channel_post);
+        }
+      } catch(e) {}
+      return [];
+    }
+
     async function fetchPredictions(isRefresh = false) {
       if (!predictionsRunning && !isFirstLoad) return;
       const content = document.getElementById('content');
-      const fab = document.getElementById('fab-btn');
       if (isFirstLoad) content.innerHTML = `<div class="center-state"><div class="loader"></div><div class="state-title">LOADING SIGNALS...</div></div>`;
-      // Silent refresh - no spinning animation
 
       try {
-        if (isFirstLoad) await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=-1`);
-        const offsetParam = updateOffset ? `&offset=${updateOffset}` : '';
-        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100&allowed_updates=%5B%22channel_post%22%5D${offsetParam}`);
-        const data = await res.json();
-
-        if (data.ok && data.result && data.result.length > 0) {
-          const newPosts = data.result.filter(u => u.channel_post && u.channel_post.text).map(u => u.channel_post);
-          updateOffset = data.result[data.result.length - 1].update_id + 1;
-          const existingIds = new Set(allPredictions.map(p => p.message_id));
-          const brandNew = newPosts.filter(p => !existingIds.has(p.message_id));
-          if (brandNew.length > 0) {
-            allPredictions = [...brandNew, ...allPredictions].slice(0, 100);
-            if (!isFirstLoad) {
+        if (isFirstLoad) {
+          // First load: channel history se recent messages lo
+          const historyPosts = await fetchChannelHistory();
+          if (historyPosts.length > 0) {
+            allPredictions = historyPosts.slice(-100).reverse();
+            if (allPredictions.length > 0) {
+              // updateOffset set karo taaki longPoll naye messages se shuru kare
+              const lastId = Math.max(...allPredictions.map(p => p.message_id || 0));
+              window._lastHistoryMsgId = lastId;
+            }
+          }
+          // getUpdates queue bhi drain karo taaki longPoll fresh start kare
+          const upRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100&allowed_updates=%5B%22channel_post%22%5D`);
+          const upData = await upRes.json();
+          if (upData.ok && upData.result && upData.result.length > 0) {
+            // Naye messages jo history mein nahi hain
+            const existingIds = new Set(allPredictions.map(p => p.message_id));
+            const freshPosts = upData.result.filter(u => u.channel_post && u.channel_post.text && !existingIds.has(u.channel_post.message_id)).map(u => u.channel_post);
+            if (freshPosts.length > 0) {
+              allPredictions = [...freshPosts, ...allPredictions].slice(0, 100);
+            }
+            updateOffset = upData.result[upData.result.length - 1].update_id + 1;
+          }
+        } else {
+          // Regular poll: sirf naye messages
+          const offsetParam = updateOffset ? `&offset=${updateOffset}` : '';
+          const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100&allowed_updates=%5B%22channel_post%22%5D${offsetParam}`);
+          const data = await res.json();
+          if (data.ok && data.result && data.result.length > 0) {
+            const newPosts = data.result.filter(u => u.channel_post && u.channel_post.text).map(u => u.channel_post);
+            updateOffset = data.result[data.result.length - 1].update_id + 1;
+            const existingIds = new Set(allPredictions.map(p => p.message_id));
+            const brandNew = newPosts.filter(p => !existingIds.has(p.message_id));
+            if (brandNew.length > 0) {
+              allPredictions = [...brandNew, ...allPredictions].slice(0, 100);
               brandNew.forEach(p => addNotif(cleanPrediction(p.text || ''), '📡'));
               playAlert(cleanPrediction(brandNew[0]?.text || ""));
               newCount += brandNew.length;
@@ -350,11 +432,12 @@
           }
         }
 
-        if (allPredictions.length > 0) renderCards(allPredictions);
+        if (allPredictions.length > 0) {
+          reconcileLossSet(); // Win results se _lossSet clean karo
+          renderCards(allPredictions);
+        }
         else if (isFirstLoad) {
-          if (predictionsRunning) {
-            content.innerHTML = `<div class="center-state"><div class="state-icon">⏳</div><div class="state-title">WAITING FOR SIGNALS</div></div>`;
-          }
+          content.innerHTML = `<div class="center-state"><div class="state-icon">⏳</div><div class="state-title">WAITING FOR SIGNALS</div></div>`;
         }
 
         document.getElementById('stat-status').textContent = 'LIVE';
@@ -368,7 +451,6 @@
       }
 
       isFirstLoad = false;
-      // Silent - no spinner
     }
 
     function doRefresh() {
