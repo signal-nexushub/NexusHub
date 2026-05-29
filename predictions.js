@@ -401,7 +401,21 @@
     // Start game API poller
     gameApiPoller();
 
-        // ==================== FETCH ====================
+        // reconcileLossSet — ab _resultMap use karta hai, _lossSet nahi
+    function reconcileLossSet() {
+      // _resultMap mein win hai toh _lossSet se remove karo
+      if (!window._lossSet || window._lossSet.size === 0) return;
+      let changed = false;
+      window._lossSet.forEach(msgId => {
+        if (window._resultMap && window._resultMap[msgId] === 'win') {
+          window._lossSet.delete(msgId);
+          changed = true;
+        }
+      });
+      if (changed) localStorage.setItem('nx_loss_set', JSON.stringify([...window._lossSet]));
+    }
+
+    // ==================== FETCH ====================
     // Channel se recent messages fetch karo (history)
     async function fetchChannelHistory() {
       try {
