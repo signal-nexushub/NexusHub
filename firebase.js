@@ -91,6 +91,8 @@
           updateInstaBtnState();
           updateTgBtnState();
           updateVipBadgeUI();
+          // Firestore load ke baad UI update karo — transactions fresh dikhenge
+          updateCreditUI();
           // Prize notification check
           if (data.prizeNotify) {
             setTimeout(() => {
